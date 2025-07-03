@@ -1,0 +1,71 @@
+.item-card-link {
+    text-decoration: none;
+    color: inherit;
+  }
+  
+  .item-card {
+    @apply border border-gray-300 rounded-lg p-4 m-2.5 bg-white shadow-sm transition-all duration-200 cursor-pointer;
+  }
+
+  .dark .item-card {
+    @apply border-gray-600 bg-gray-800;
+  }
+  
+  .item-card:hover {
+    transform: translateY(-5px);
+    @apply shadow-md;
+  }
+
+  .dark .item-card:hover {
+    @apply shadow-lg shadow-gray-900/50;
+  }
+  
+  .item-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .item-card-name {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: bold;
+    @apply text-gray-800 transition-colors duration-200;
+  }
+
+  .dark .item-card-name {
+    @apply text-gray-200;
+  }
+  
+  .item-card-rarity {
+    font-size: 0.9rem;
+    padding: 3px 8px;
+    border-radius: 12px;
+    color: white;
+    font-weight: bold;
+  }
+  
+  /* Rarity colors (example) */
+  .rarity-common { background-color: #888; }
+  .rarity-uncommon { background-color: #1e90ff; } /* DodgerBlue */
+  .rarity-rare { background-color: #4682b4; } /* SteelBlue */
+  .rarity-very-rare { background-color: #8a2be2; } /* BlueViolet */
+  .rarity-legendary { background-color: #ff8c00; } /* DarkOrange */
+  .rarity-artifact { background-color: #dc143c; } /* Crimson */
+  .rarity-unique { background-color: #ffd700; } /* Gold */
+  
+  
+  .item-card-body {
+    font-size: 0.95rem;
+  }
+  
+  .item-card-type {
+    margin: 0;
+    @apply text-gray-600 transition-colors duration-200;
+  }
+
+  .dark .item-card-type {
+    @apply text-gray-400;
+  }
+  

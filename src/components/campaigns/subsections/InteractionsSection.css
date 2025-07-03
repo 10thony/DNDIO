@@ -1,0 +1,259 @@
+/* Interactions Section */
+.interactions-section {
+  @apply bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm transition-all duration-200;
+}
+
+.dark .interactions-section {
+  @apply bg-gray-800 border-gray-700;
+}
+
+.section-header {
+  @apply flex justify-between items-center p-5 bg-gray-50 border-b border-gray-200;
+}
+
+.dark .section-header {
+  @apply bg-gray-900 border-gray-700;
+}
+
+.header-left {
+  @apply flex items-center gap-3;
+}
+
+.collapse-button {
+  @apply p-1 text-gray-600 hover:text-gray-900 bg-transparent border-none rounded cursor-pointer transition-all duration-200 hover:bg-gray-200;
+}
+
+.dark .collapse-button {
+  @apply text-gray-400 hover:text-gray-200 hover:bg-gray-700;
+}
+
+.section-title {
+  @apply text-lg font-semibold text-gray-900 m-0 transition-colors duration-200;
+}
+
+.dark .section-title {
+  @apply text-gray-100;
+}
+
+.header-actions {
+  @apply flex items-center gap-2;
+}
+
+.add-button {
+  @apply px-4 py-2 bg-blue-600 text-white border-none rounded-md text-sm font-medium cursor-pointer transition-all duration-200 hover:bg-blue-700 hover:transform hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-600/30;
+}
+
+.save-button {
+  @apply px-4 py-2 bg-blue-600 text-white border-none rounded-md text-sm font-medium cursor-pointer transition-all duration-200 hover:bg-blue-700 hover:transform hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-600/30;
+}
+
+.cancel-button {
+  @apply px-4 py-2 bg-gray-600 text-white border-none rounded-md text-sm font-medium cursor-pointer transition-all duration-200 hover:bg-gray-700 hover:transform hover:-translate-y-0.5 hover:shadow-lg hover:shadow-gray-600/30;
+}
+
+/* Form Styles */
+.form-errors {
+  @apply p-4 bg-red-50 border border-red-200 rounded-md mb-4;
+}
+
+.dark .form-errors {
+  @apply bg-red-900/50 border-red-700;
+}
+
+.error-message {
+  @apply text-red-600 text-sm;
+}
+
+.dark .error-message {
+  @apply text-red-400;
+}
+
+.form-content {
+  @apply p-5;
+}
+
+.form-row {
+  @apply flex gap-4 mb-4;
+}
+
+.form-col {
+  @apply flex-1;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-gray-700 mb-2 transition-colors duration-200;
+}
+
+.dark .form-label {
+  @apply text-gray-300;
+}
+
+.form-input {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+.dark .form-input {
+  @apply bg-gray-700 border-gray-600 text-gray-100 focus:ring-blue-400;
+}
+
+.form-textarea {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y;
+}
+
+.dark .form-textarea {
+  @apply bg-gray-700 border-gray-600 text-gray-100 focus:ring-blue-400;
+}
+
+/* Interactions Content */
+.interactions-content {
+  @apply p-5;
+}
+
+.empty-state {
+  @apply text-center py-8;
+}
+
+.empty-state p {
+  @apply text-gray-600 mb-4 transition-colors duration-200;
+}
+
+.dark .empty-state p {
+  @apply text-gray-400;
+}
+
+.interaction-suggestions {
+  @apply flex justify-center gap-6;
+}
+
+.suggestion-item {
+  @apply flex flex-col items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200;
+}
+
+.dark .suggestion-item {
+  @apply bg-gray-700 border-gray-600;
+}
+
+.suggestion-icon {
+  @apply text-2xl;
+}
+
+.suggestion-text {
+  @apply text-sm text-gray-600 font-medium transition-colors duration-200;
+}
+
+.dark .suggestion-text {
+  @apply text-gray-400;
+}
+
+/* Interactions List */
+.interactions-list {
+  @apply space-y-4;
+}
+
+.interaction-item {
+  @apply bg-gray-50 border border-gray-200 rounded-lg p-4 transition-all duration-200 hover:bg-gray-100 hover:border-gray-300 hover:shadow-md cursor-pointer;
+}
+
+.dark .interaction-item {
+  @apply bg-gray-700 border-gray-600 hover:bg-gray-600 hover:border-gray-500;
+}
+
+.interaction-item:hover {
+  @apply transform -translate-y-1;
+}
+
+.interaction-link-actions {
+  @apply flex justify-end mt-3;
+}
+
+.interaction-actions {
+  @apply flex justify-between items-center mt-3;
+}
+
+.view-details-hint {
+  @apply flex items-center;
+}
+
+.hint-text {
+  @apply text-sm text-gray-500 italic transition-colors duration-200;
+}
+
+.dark .hint-text {
+  @apply text-gray-400;
+}
+
+.link-button,
+.unlink-button {
+  @apply px-3 py-1 text-sm font-medium rounded-md transition-all duration-200;
+}
+
+.link-button {
+  @apply bg-green-600 text-white hover:bg-green-700 hover:transform hover:-translate-y-0.5;
+}
+
+.unlink-button {
+  @apply bg-red-600 text-white hover:bg-red-700 hover:transform hover:-translate-y-0.5;
+}
+
+.interaction-header {
+  @apply flex justify-between items-start mb-3;
+}
+
+.interaction-name {
+  @apply text-lg font-semibold text-gray-900 transition-colors duration-200;
+}
+
+.dark .interaction-name {
+  @apply text-gray-100;
+}
+
+.interaction-meta {
+  @apply flex gap-2;
+}
+
+.interaction-date {
+  @apply text-sm text-gray-600 italic transition-colors duration-200;
+}
+
+.dark .interaction-date {
+  @apply text-gray-400;
+}
+
+.interaction-description {
+  @apply text-gray-700 leading-relaxed mb-3 transition-colors duration-200;
+}
+
+.dark .interaction-description {
+  @apply text-gray-300;
+}
+
+.interaction-participants {
+  @apply flex flex-wrap gap-2;
+}
+
+.participant-badge {
+  @apply px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full transition-colors duration-200;
+}
+
+.dark .participant-badge {
+  @apply bg-blue-900/50 text-blue-300;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .form-row {
+    @apply flex-col gap-4;
+  }
+  
+  .interaction-suggestions {
+    @apply flex-col gap-4;
+  }
+  
+  .interaction-header {
+    @apply flex-col gap-2 items-start;
+  }
+  
+  .interaction-participants {
+    @apply flex-col gap-2;
+  }
+} 
