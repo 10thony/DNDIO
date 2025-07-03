@@ -15,7 +15,6 @@ import LocationsSection from "./subsections/LocationsSection";
 import BossMonstersSection from "./subsections/BossMonstersSection";
 import InteractionsSection from "./subsections/InteractionsSection";
 import { LiveInteractionCreationForm } from "../live-interactions/LiveInteractionCreationForm";
-import LiveInteractionDashboard from "../live-interactions/LiveInteractionDashboard";
 import "./CampaignDetail.css";
 
 // Move requirements outside component to prevent recreation on every render

@@ -100,13 +100,13 @@ export const LiveInteractionCreationForm: React.FC<LiveInteractionCreationFormPr
         description: formData.description || undefined,
         clerkId: user.id,
         campaignId: campaignId,
-        relatedLocationId: formData.relatedLocationId || undefined,
+
         relatedQuestId: formData.relatedQuestId || undefined,
-        participantPlayerCharacterIds: selectedPlayerCharacters,
-        participantNpcIds: selectedNPCs,
-        participantMonsterIds: selectedMonsters,
-        rewardItemIds: rewardItems,
-        xpAwards: xpAwards,
+        playerCharacterIds: selectedPlayerCharacters,
+        npcIds: selectedNPCs,
+        monsterIds: selectedMonsters,
+        // rewardItemIds: rewardItems,
+        // xpAwards: xpAwards,
       });
 
       console.log('Live interaction created:', interactionId);

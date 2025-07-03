@@ -13,6 +13,11 @@ export const createInteraction = mutation({
     npcIds: v.optional(v.array(v.id("npcs"))),
     monsterIds: v.optional(v.array(v.id("monsters"))),
     timelineEventIds: v.optional(v.array(v.id("timelineEvents"))),
+    rewardItemIds: v.optional(v.array(v.id("items"))),
+    xpAwards: v.optional(v.array(v.object({
+      playerCharacterId: v.id("playerCharacters"),
+      xp: v.number()
+    }))),
   },
   handler: async (ctx, args) => {
     // Get user ID from clerkId

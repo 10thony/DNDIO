@@ -47,7 +47,7 @@ const InteractionCreationForm: React.FC<InteractionCreationFormProps> = ({
       setFormData({
         name: interaction.name,
         description: interaction.description || "",
-        questId: interaction.questId || "",
+        questId: interaction.relatedQuestId || "",
         questTaskId: interaction.questTaskId || "",
         playerCharacterIds: interaction.playerCharacterIds || [],
         npcIds: interaction.npcIds || [],

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
 import { DiceRoller } from './DiceRoller';
@@ -78,59 +78,65 @@ export const CombatStateManager: React.FC<CombatStateManagerProps> = ({
   );
 
   // Mutations
-  const updateInteraction = useMutation(api.interactions.updateInteraction);
+
 
   useEffect(() => {
     if (interaction) {
       const entities: CombatEntity[] = [];
 
       // Add player characters
-      interaction.participants.playerCharacters.forEach(pc => {
-        entities.push({
-          id: pc._id,
-          name: pc.name,
-          type: 'playerCharacter',
-          maxHp: pc.hitPoints || 10,
-          currentHp: pc.hitPoints || 10,
-          armorClass: pc.armorClass || 10,
-          statusEffects: [],
-          spellSlots: generateSpellSlots(pc.level || 1, pc.class || 'Fighter'),
-          equipment: [],
-          initiativeRoll: 0,
-          isActive: false
-        });
+      interaction.participants.playerCharacters?.forEach(pc => {
+        if (pc) {
+          entities.push({
+            id: pc._id,
+            name: pc.name,
+            type: 'playerCharacter',
+            maxHp: pc.hitPoints || 10,
+            currentHp: pc.hitPoints || 10,
+            armorClass: pc.armorClass || 10,
+            statusEffects: [],
+            spellSlots: generateSpellSlots(pc.level || 1, pc.class || 'Fighter'),
+            equipment: [],
+            initiativeRoll: 0,
+            isActive: false
+          });
+        }
       });
 
       // Add NPCs
-      interaction.participants.npcs.forEach(npc => {
-        entities.push({
-          id: npc._id,
-          name: npc.name,
-          type: 'npc',
-          maxHp: npc.hitPoints || 10,
-          currentHp: npc.hitPoints || 10,
-          armorClass: npc.armorClass || 10,
-          statusEffects: [],
-          equipment: [],
-          initiativeRoll: 0,
-          isActive: false
-        });
+      interaction.participants.npcs?.forEach(npc => {
+        if (npc) {
+          entities.push({
+            id: npc._id,
+            name: npc.name,
+            type: 'npc',
+            maxHp: npc.hitPoints || 10,
+            currentHp: npc.hitPoints || 10,
+            armorClass: npc.armorClass || 10,
+            statusEffects: [],
+            equipment: [],
+            initiativeRoll: 0,
+            isActive: false
+          });
+        }
       });
 
       // Add monsters
-      interaction.participants.monsters.forEach(monster => {
-        entities.push({
-          id: monster._id,
-          name: monster.name,
-          type: 'monster',
-          maxHp: monster.hitPoints || 10,
-          currentHp: monster.hitPoints || 10,
-          armorClass: monster.armorClass || 10,
-          statusEffects: [],
-          equipment: [],
-          initiativeRoll: 0,
-          isActive: false
-        });
+      interaction.participants.monsters?.forEach(monster => {
+        if (monster) {
+          entities.push({
+            id: monster._id,
+            name: monster.name,
+            type: 'monster',
+            maxHp: monster.hitPoints || 10,
+            currentHp: monster.hitPoints || 10,
+            armorClass: monster.armorClass || 10,
+            statusEffects: [],
+            equipment: [],
+            initiativeRoll: 0,
+            isActive: false
+          });
+        }
       });
 
       setCombatEntities(entities);
@@ -187,23 +193,6 @@ export const CombatStateManager: React.FC<CombatStateManagerProps> = ({
       };
       setDamageLog(prev => [logEntry, ...prev.slice(0, 19)]); // Keep last 20 entries
     }
-  };
-
-  const handleStatusEffectAdd = (entityId: string, effect: Omit<StatusEffect, 'id'>) => {
-    const newEffect: StatusEffect = {
-      ...effect,
-      id: Date.now().toString()
-    };
-
-    setCombatEntities(prev => prev.map(entity => {
-      if (entity.id === entityId) {
-        return {
-          ...entity,
-          statusEffects: [...entity.statusEffects, newEffect]
-        };
-      }
-      return entity;
-    }));
   };
 
   const handleStatusEffectRemove = (entityId: string, effectId: string) => {
@@ -361,7 +350,7 @@ export const CombatStateManager: React.FC<CombatStateManagerProps> = ({
                   <span className="ac-value">{entity.armorClass}</span>
                 </div>
 
-                {entity.initiativeRoll > 0 && (
+                {(entity.initiativeRoll || 0) > 0 && (
                   <div className="initiative-section">
                     <span className="initiative-label">Initiative:</span>
                     <span className="initiative-value">{entity.initiativeRoll}</span>

@@ -15,12 +15,11 @@ interface LiveInteractionDashboardProps {
 
 export const LiveInteractionDashboard: React.FC<LiveInteractionDashboardProps> = ({
   campaignId,
-  userId,
   isDM
 }) => {
   const [selectedInteractionId, setSelectedInteractionId] = useState<Id<"interactions"> | null>(null);
   const [activeTab, setActiveTab] = useState<'main' | 'combat' | 'dice' | 'templates'>('main');
-  const [showDiceRoller, setShowDiceRoller] = useState(false);
+
 
   // Queries
   const activeInteraction = useQuery(api.interactions.getActiveInteractionByCampaign, { campaignId });
@@ -155,16 +154,16 @@ export const LiveInteractionDashboard: React.FC<LiveInteractionDashboardProps> =
                     <div className="participant-info">
                       <div className="participant-name">
                         {participant.entityType === 'playerCharacter' && 
-                          interactionWithParticipants?.participants.playerCharacters.find(
-                            pc => pc._id === participant.entityId
+                          interactionWithParticipants?.participants.playerCharacters?.find(
+                            pc => pc?._id === participant.entityId
                           )?.name || 'Unknown Player'}
                         {participant.entityType === 'npc' && 
-                          interactionWithParticipants?.participants.npcs.find(
-                            npc => npc._id === participant.entityId
+                          interactionWithParticipants?.participants.npcs?.find(
+                            npc => npc?._id === participant.entityId
                           )?.name || 'Unknown NPC'}
                         {participant.entityType === 'monster' && 
-                          interactionWithParticipants?.participants.monsters.find(
-                            monster => monster._id === participant.entityId
+                          interactionWithParticipants?.participants.monsters?.find(
+                            monster => monster?._id === participant.entityId
                           )?.name || 'Unknown Monster'}
                       </div>
                       <div className="participant-type">{participant.entityType}</div>
@@ -182,16 +181,16 @@ export const LiveInteractionDashboard: React.FC<LiveInteractionDashboardProps> =
                 <div className="current-participant">
                   <div className="participant-name">
                     {currentParticipant.entityType === 'playerCharacter' && 
-                      interactionWithParticipants?.participants.playerCharacters.find(
-                        pc => pc._id === currentParticipant.entityId
+                      interactionWithParticipants?.participants.playerCharacters?.find(
+                        pc => pc?._id === currentParticipant.entityId
                       )?.name || 'Unknown Player'}
                     {currentParticipant.entityType === 'npc' && 
-                      interactionWithParticipants?.participants.npcs.find(
-                        npc => npc._id === currentParticipant.entityId
+                      interactionWithParticipants?.participants.npcs?.find(
+                        npc => npc?._id === currentParticipant.entityId
                       )?.name || 'Unknown NPC'}
                     {currentParticipant.entityType === 'monster' && 
-                      interactionWithParticipants?.participants.monsters.find(
-                        monster => monster._id === currentParticipant.entityId
+                      interactionWithParticipants?.participants.monsters?.find(
+                        monster => monster?._id === currentParticipant.entityId
                       )?.name || 'Unknown Monster'}
                   </div>
                   <div className="participant-type">{currentParticipant.entityType}</div>
@@ -237,7 +236,7 @@ export const LiveInteractionDashboard: React.FC<LiveInteractionDashboardProps> =
           <div className="dice-panel">
             <DiceRoller
               mode="combat"
-              interactionId={selectedInteractionId}
+              interactionId={selectedInteractionId || undefined}
               onRollComplete={(result) => {
                 console.log('Dice roll result:', result);
                 // TODO: Integrate with combat state

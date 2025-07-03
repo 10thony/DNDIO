@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
+import React, { useState } from 'react';
 import { Id } from '../../../convex/_generated/dataModel';
 import './InteractionTemplates.css';
 
@@ -171,7 +169,6 @@ const defaultTemplates: InteractionTemplate[] = [
 ];
 
 export const InteractionTemplates: React.FC<InteractionTemplatesProps> = ({
-  campaignId,
   onTemplateSelect
 }) => {
   const [templates, setTemplates] = useState<InteractionTemplate[]>(defaultTemplates);
@@ -181,10 +178,7 @@ export const InteractionTemplates: React.FC<InteractionTemplatesProps> = ({
   const [customTemplate, setCustomTemplate] = useState<Partial<InteractionTemplate>>({});
 
   // Queries
-  const campaign = useQuery(api.campaigns.getCampaignById, { id: campaignId });
-  const locations = useQuery(api.locations.getLocationsByCampaign, { campaignId });
-  const quests = useQuery(api.quests.getQuestsByCampaign, { campaignId });
-  const items = useQuery(api.items.getItemsByCampaign, { campaignId });
+
 
   const categories = [
     { id: 'all', name: 'All Templates', icon: '📋' },

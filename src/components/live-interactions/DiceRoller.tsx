@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useMutation } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
+import React, { useState } from 'react';
 import './DiceRoller.css';
 
 interface DiceRollerProps {
@@ -26,11 +24,8 @@ interface DiceExpression {
 }
 
 export const DiceRoller: React.FC<DiceRollerProps> = ({
-  interactionId,
   onRollComplete,
-  mode = 'custom',
-  entityId,
-  entityType
+  mode = 'custom'
 }) => {
   const [customExpression, setCustomExpression] = useState('');
   const [diceHistory, setDiceHistory] = useState<DiceRollResult[]>([]);

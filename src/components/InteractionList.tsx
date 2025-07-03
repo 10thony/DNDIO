@@ -161,7 +161,7 @@ const InteractionList: React.FC = () => {
               
               <div className="interaction-details">
                 <div className="interaction-meta">
-                  {interaction.questId && (
+                  {interaction.relatedQuestId && (
                     <span className="quest-link">📜 Linked to Quest</span>
                   )}
                   {interaction.questTaskId && (

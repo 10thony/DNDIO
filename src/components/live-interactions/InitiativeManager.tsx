@@ -39,30 +39,36 @@ export const InitiativeManager: React.FC<InitiativeManagerProps> = ({
       const allParticipants: InitiativeRoll[] = [];
       
       // Add player characters
-      interaction.participants.playerCharacters.forEach(pc => {
-        allParticipants.push({
-          entityId: pc._id,
-          entityType: 'playerCharacter',
-          initiativeRoll: 0
-        });
+      interaction.participants.playerCharacters?.forEach(pc => {
+        if (pc) {
+          allParticipants.push({
+            entityId: pc._id,
+            entityType: 'playerCharacter',
+            initiativeRoll: 0
+          });
+        }
       });
       
       // Add NPCs
-      interaction.participants.npcs.forEach(npc => {
-        allParticipants.push({
-          entityId: npc._id,
-          entityType: 'npc',
-          initiativeRoll: 0
-        });
+      interaction.participants.npcs?.forEach(npc => {
+        if (npc) {
+          allParticipants.push({
+            entityId: npc._id,
+            entityType: 'npc',
+            initiativeRoll: 0
+          });
+        }
       });
       
       // Add monsters
-      interaction.participants.monsters.forEach(monster => {
-        allParticipants.push({
-          entityId: monster._id,
-          entityType: 'monster',
-          initiativeRoll: 0
-        });
+      interaction.participants.monsters?.forEach(monster => {
+        if (monster) {
+          allParticipants.push({
+            entityId: monster._id,
+            entityType: 'monster',
+            initiativeRoll: 0
+          });
+        }
       });
       
       setInitiativeRolls(allParticipants);
@@ -98,33 +104,39 @@ export const InitiativeManager: React.FC<InitiativeManagerProps> = ({
       const rolls: InitiativeRoll[] = [];
       
       // Roll for player characters
-      interaction.participants.playerCharacters.forEach(pc => {
-        const roll = calculateInitiative(pc, 'playerCharacter');
-        rolls.push({
-          entityId: pc._id,
-          entityType: 'playerCharacter',
-          initiativeRoll: roll
-        });
+      interaction.participants.playerCharacters?.forEach(pc => {
+        if (pc) {
+          const roll = calculateInitiative(pc, 'playerCharacter');
+          rolls.push({
+            entityId: pc._id,
+            entityType: 'playerCharacter',
+            initiativeRoll: roll
+          });
+        }
       });
       
       // Roll for NPCs
-      interaction.participants.npcs.forEach(npc => {
-        const roll = calculateInitiative(npc, 'npc');
-        rolls.push({
-          entityId: npc._id,
-          entityType: 'npc',
-          initiativeRoll: roll
-        });
+      interaction.participants.npcs?.forEach(npc => {
+        if (npc) {
+          const roll = calculateInitiative(npc, 'npc');
+          rolls.push({
+            entityId: npc._id,
+            entityType: 'npc',
+            initiativeRoll: roll
+          });
+        }
       });
       
       // Roll for monsters
-      interaction.participants.monsters.forEach(monster => {
-        const roll = calculateInitiative(monster, 'monster');
-        rolls.push({
-          entityId: monster._id,
-          entityType: 'monster',
-          initiativeRoll: roll
-        });
+      interaction.participants.monsters?.forEach(monster => {
+        if (monster) {
+          const roll = calculateInitiative(monster, 'monster');
+          rolls.push({
+            entityId: monster._id,
+            entityType: 'monster',
+            initiativeRoll: roll
+          });
+        }
       });
       
       await rollInitiative({
@@ -159,11 +171,11 @@ export const InitiativeManager: React.FC<InitiativeManagerProps> = ({
           // Use auto-roll for participants without manual rolls
           let entity;
           if (participant.entityType === 'playerCharacter') {
-            entity = interaction.participants.playerCharacters.find(pc => pc._id === participant.entityId);
+            entity = interaction.participants.playerCharacters?.find(pc => pc?._id === participant.entityId);
           } else if (participant.entityType === 'npc') {
-            entity = interaction.participants.npcs.find(npc => npc._id === participant.entityId);
+            entity = interaction.participants.npcs?.find(npc => npc?._id === participant.entityId);
           } else {
-            entity = interaction.participants.monsters.find(monster => monster._id === participant.entityId);
+            entity = interaction.participants.monsters?.find(monster => monster?._id === participant.entityId);
           }
           
           if (entity) {
@@ -200,11 +212,11 @@ export const InitiativeManager: React.FC<InitiativeManagerProps> = ({
     if (!interaction) return 'Unknown';
     
     if (entityType === 'playerCharacter') {
-      return interaction.participants.playerCharacters.find(pc => pc._id === entityId)?.name || 'Unknown';
+      return interaction.participants.playerCharacters?.find(pc => pc?._id === entityId)?.name || 'Unknown';
     } else if (entityType === 'npc') {
-      return interaction.participants.npcs.find(npc => npc._id === entityId)?.name || 'Unknown';
+      return interaction.participants.npcs?.find(npc => npc?._id === entityId)?.name || 'Unknown';
     } else {
-      return interaction.participants.monsters.find(monster => monster._id === entityId)?.name || 'Unknown';
+      return interaction.participants.monsters?.find(monster => monster?._id === entityId)?.name || 'Unknown';
     }
   };
 

@@ -22,15 +22,12 @@ export const PlayerActionInterface: React.FC<PlayerActionInterfaceProps> = ({
   const [submittedActions, setSubmittedActions] = useState<any[]>([]);
 
   // Queries
-  const playerCharacter = useQuery(api.playerCharacters.getPlayerCharacterById, { id: playerCharacterId });
+  const playerCharacter = useQuery(api.characters.getCharacterById, { id: playerCharacterId });
   const characterActions = useQuery(
     api.playerActions.getPlayerActionsByCharacter,
     { playerCharacterId }
   );
-  const characterItems = useQuery(
-    api.items.getItemsByCharacter,
-    { characterId: playerCharacterId }
-  );
+  const characterItems = useQuery(api.items.getItems);
 
   // Mutations
   const submitPlayerAction = useMutation(api.interactions.submitPlayerAction);
@@ -168,11 +165,11 @@ export const PlayerActionInterface: React.FC<PlayerActionInterfaceProps> = ({
               <select
                 id="associatedItem"
                 value={associatedItemId || ''}
-                onChange={(e) => setAssociatedItemId(e.target.value || undefined)}
+                onChange={(e) => setAssociatedItemId(e.target.value ? e.target.value as Id<"items"> : undefined)}
                 className="form-select"
               >
                 <option value="">No item</option>
-                {characterItems.map((item) => (
+                {characterItems?.map((item) => (
                   <option key={item._id} value={item._id}>
                     {item.name}
                   </option>

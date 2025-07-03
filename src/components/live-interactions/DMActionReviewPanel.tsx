@@ -82,15 +82,12 @@ export const DMActionReviewPanel: React.FC<DMActionReviewPanelProps> = ({
   };
 
   const getPlayerCharacterName = (characterId: Id<"playerCharacters">) => {
-    return interaction?.participants.playerCharacters.find(
-      pc => pc._id === characterId
+    return interaction?.participants.playerCharacters?.find(
+      pc => pc?._id === characterId
     )?.name || 'Unknown Character';
   };
 
-  const getItemName = (itemId: Id<"items">) => {
-    // This would need to be implemented with an items query
-    return 'Item'; // Placeholder
-  };
+
 
   if (!pendingActions) {
     return <div className="dm-action-review-panel loading">Loading actions...</div>;
@@ -137,7 +134,7 @@ export const DMActionReviewPanel: React.FC<DMActionReviewPanelProps> = ({
                   </div>
                   {action.associatedItemId && (
                     <div className="action-item-used">
-                      Using: {getItemName(action.associatedItemId)}
+                      Using: Item
                     </div>
                   )}
                 </div>
@@ -173,7 +170,7 @@ export const DMActionReviewPanel: React.FC<DMActionReviewPanelProps> = ({
               {selectedAction.associatedItemId && (
                 <div className="detail-section">
                   <label>Item Used:</label>
-                  <span>{getItemName(selectedAction.associatedItemId)}</span>
+                  <span>Item</span>
                 </div>
               )}
               

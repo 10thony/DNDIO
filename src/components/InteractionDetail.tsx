@@ -56,7 +56,7 @@ const InteractionDetail: React.FC<InteractionDetailProps> = ({ interactionId }) 
   
   const quest = useQuery(
     api.quests.getQuestById,
-    interaction?.questId ? { id: interaction.questId } : "skip"
+    interaction?.relatedQuestId ? { id: interaction.relatedQuestId } : "skip"
   );
   
   const questTask = useQuery(

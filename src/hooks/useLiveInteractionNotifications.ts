@@ -11,12 +11,11 @@ interface UseLiveInteractionNotificationsProps {
 
 export const useLiveInteractionNotifications = ({
   interactionId,
-  userId,
   isDM = false
 }: UseLiveInteractionNotificationsProps) => {
   const previousTurnIndex = useRef<number | undefined>();
   const previousPendingActionsCount = useRef<number>(0);
-  const previousStatus = useRef<string | undefined>();
+  // const previousStatus = useRef<string | undefined>();
 
   // Subscribe to real-time updates
   const interaction = useQuery(
@@ -46,7 +45,7 @@ export const useLiveInteractionNotifications = ({
         // Show turn notification
         showNotification(
           'Your Turn!',
-          `It's now your turn in ${interaction.name}`,
+          `It's now your turn in the interaction`,
           'turn-notification'
         );
       }
@@ -66,18 +65,9 @@ export const useLiveInteractionNotifications = ({
     }
 
     // Check for status changes
-    if (previousStatus.current && previousStatus.current !== interaction.status) {
-      showNotification(
-        'Interaction Status Changed',
-        `Status changed to: ${interaction.status?.replace(/_/g, ' ')}`,
-        'status-notification'
-      );
-    }
-
     // Update refs
     previousTurnIndex.current = initiativeOrder.currentIndex;
     previousPendingActionsCount.current = pendingActions?.length || 0;
-    previousStatus.current = interaction.status;
   }, [interaction, initiativeOrder, pendingActions, isDM]);
 
   const showNotification = (title: string, message: string, type: string) => {
@@ -137,6 +127,6 @@ export const useLiveInteractionNotifications = ({
     requestNotificationPermission,
     currentTurnIndex: initiativeOrder?.currentIndex,
     pendingActionsCount: pendingActions?.length || 0,
-    interactionStatus: interaction?.status,
+    interactionStatus: interaction?.interaction?.status,
   };
 }; 
