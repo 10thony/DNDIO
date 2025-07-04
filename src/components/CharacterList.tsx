@@ -181,14 +181,16 @@ const CharacterList: React.FC = () => {
             >
               Create Your First Character
             </button>
-            <button
-              onClick={handleImportData}
-              disabled={isImporting}
-              className="import-button"
-              style={{ marginLeft: '10px' }}
-            >
-              {isImporting ? "🔄 Importing..." : "📥 Generate Sample Data"}
-            </button>
+            {isAdmin && (
+              <button
+                onClick={handleImportData}
+                disabled={isImporting}
+                className="import-button"
+                style={{ marginLeft: '10px' }}
+              >
+                {isImporting ? "🔄 Importing..." : "📥 Generate Sample Data"}
+              </button>
+            )}
           </div>
         </div>
       ) : (
