@@ -28,7 +28,6 @@ export const createLocation = mutation({
     description: v.string(),
     type: v.string(),
     clerkId: v.string(),
-    campaignId: v.id("campaigns"),
   },
   handler: async (ctx, args) => {
     // Get user ID from clerkId
@@ -45,7 +44,6 @@ export const createLocation = mutation({
       name: args.name,
       description: args.description,
       type: args.type as LocationType,
-      campaignId: args.campaignId,
       notableNpcIds: [],
       linkedLocations: [],
       interactionsAtLocation: [],
@@ -61,7 +59,6 @@ export const createLocation = mutation({
 
 export const create = mutation({
   args: {
-    campaignId: v.id("campaigns"),
     name: v.string(),
     type: v.string(),
     description: v.string(),
@@ -85,7 +82,6 @@ export const create = mutation({
     }
 
     const locationId = await ctx.db.insert("locations", {
-      campaignId: args.campaignId,
       name: args.name,
       type: args.type as LocationType,
       description: args.description,

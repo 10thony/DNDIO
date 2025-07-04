@@ -1,0 +1,78 @@
+## Development Implementation Plan
+
+### Phase 1: Schema and Backend Adjustments
+
+**1. Update `convex/schema.ts`:**
+   - **Task:** Remove the `campaignId` field from the `monsters` table definition.
+   - **Details:** Locate the `monsters` table definition and delete the line `campaignId: v.optional(v.id("campaigns")),`.
+   - **Verification:** Ensure the schema is saved and the Convex deployment reflects the change.
+
+**2. Update `convex/monsters.ts`:**
+   - **Task:** Remove `campaignId` from mutations and queries related to monsters.
+   - **Details:**
+     - In `createMonster`, remove the `campaignId` argument.
+     - In `updateMonster`, remove the `campaignId` argument.
+     - Review `getMonstersByCampaign` and `getUnassignedMonsters`. The `getMonstersByCampaign` query will likely need to be removed or significantly refactored as the direct link from monster to campaign is gone. The `getUnassignedMonsters` query might still function if `campaignId` was optional and `null` or `undefined` values are handled correctly, but its conceptual meaning might need re-evaluation.
+   - **Verification:**
+     - Run Convex migrations to ensure schema changes are applied correctly.
+     - Test `createMonster` and `updateMonster` mutations locally (if possible) to confirm they do not expect or handle `campaignId`.
+
+### Phase 2: Frontend Modifications (`MonsterCreationForm.tsx`)
+
+**1. Data Model Update:**
+   - **Task:** Remove `campaignId` from `MonsterFormData` interface.
+   - **Details:** Delete the `campaignId?: Id<"campaigns"> | null;` line from the `MonsterFormData` interface.
+
+**2. State Initialization:**
+   - **Task:** Remove `campaignId` from initial `formData` state.
+   - **Details:** Delete the `campaignId: undefined,` line in the `useState` hook.
+
+**3. `useEffect` Hook:**
+   - **Task:** Remove `campaignId` from the `setFormData` call within the `useEffect` hook.
+   - **Details:** Delete the line `campaignId: editingMonster.campaignId || undefined,` when populating `formData` from `editingMonster`.
+
+**4. Form UI - Campaign Selector:**
+   - **Task:** Remove the Campaign dropdown/select element.
+   - **Details:** Comment out or delete the entire `div className="form-col"` block that contains the "Campaign" label and the `<select>` element.
+
+**5. `handleSubmit` Function:**
+   - **Task:** Ensure `campaignId` is not passed to mutations.
+   - **Details:** When `editingMonsterId` is null/undefined (i.e., creating a new monster), ensure the spread `...formData` does not implicitly include a `campaignId`. Since it's removed from `formData`, this should be handled. The `createMonster` mutation call will no longer expect `campaignId`.
+
+**6. Error Handling:**
+   - **Task:** Enhance error display for submission failures.
+   - **Details:**
+     - In the `catch` block of `handleSubmit`, access the `error.message` if available and display it.
+     - Modify the `setErrors` call to include a more informative message, e.g., `setErrors([`Error creating monster: ${error.message || 'An unknown error occurred.'}`]);`.
+
+**7. Challenge Rating UI:**
+   - **Task:** Replace `challengeRating` input with a select component.
+   - **Details:**
+     - Locate the `challengeRating` input field.
+     - Replace the `<input type="text" ... />` with a `<select className="form-select">` element.
+     - Populate the `<select>` with `<option>` tags for "0", "1/8", "1/4", and "1" through "30". Ensure appropriate values are set for each option.
+     - Ensure the `onChange` handler for the select correctly updates `formData.challengeRating`.
+
+**8. Monster List in Campaign Creation Form:**
+   - **Task:** Ensure the monster list within the campaign creation form displays all relevant monster data.
+   - **Details:** This is dependent on how the campaign form uses and displays monster data. If the campaign form fetches a list of monsters, ensure that the query used (e.g., `api.monsters.getAllMonsters`) correctly retrieves all necessary fields and that the display logic in the campaign form component handles this data. *This task requires knowledge of the campaign creation component, which is not provided in the prompt, but implies that any existing logic fetching monsters needs to be verified.*
+
+### Phase 3: Testing and Refinement
+
+**1. Unit Testing (Component Level):**
+   - **Task:** Test the `MonsterCreationForm` component.
+   - **Details:** Verify that form inputs update state correctly, validation works as expected, and submitting the form (both create and update) calls the correct mutations with the correct arguments. Test the new challenge rating select component.
+   - **Tools:** React Testing Library.
+
+**2. Integration Testing (User Flow):**
+   - **Task:** Test the end-to-end user flow.
+   - **Details:**
+     - **Scenario 1:** Create a campaign, then create a monster from the campaign form. Verify that the monster is created successfully and that the `campaignId` is not an issue (as it's no longer part of the monster data).
+     - **Scenario 2:** Directly create a monster without going through the campaign flow. Verify it works as expected.
+     - **Scenario 3:** Edit an existing monster.
+     - **Scenario 4:** Trigger error conditions (e.g., missing required fields) and verify that the custom error messages are displayed correctly.
+   - **Environment:** Local development environment with Convex running.
+
+**3. Review and Refactor:**
+   - **Task:** Review code for clarity, maintainability, and adherence to best practices.
+   - **Details:** Ensure consistent naming, proper TypeScript usage, and efficient state management. Refactor any areas that seem overly complex or difficult to understand.

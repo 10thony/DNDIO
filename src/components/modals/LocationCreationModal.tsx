@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
+import { useRoleAccess } from "../../hooks/useRoleAccess";
 import "./LocationCreationModal.css";
 
 interface LocationCreationModalProps {
@@ -15,7 +17,6 @@ interface LocationFormData {
   name: string;
   description: string;
   type: "City" | "Town" | "Village" | "Dungeon" | "Forest" | "Mountain" | "Desert" | "Swamp" | "Castle" | "Temple" | "Tavern" | "Shop" | "Other";
-  campaignId: string;
 }
 
 const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
@@ -24,14 +25,14 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
   onSuccess
 }) => {
   const { user } = useUser();
+  const { isAdmin } = useRoleAccess();
+  const navigate = useNavigate();
   const createLocation = useMutation(api.locations.createLocation);
-  const campaigns = useQuery(api.campaigns.getAllCampaigns, {}) || [];
   
   const [formData, setFormData] = useState<LocationFormData>({
     name: "",
     description: "",
     type: "Other",
-    campaignId: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,9 +65,7 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
       newErrors.description = "Location description is required";
     }
 
-    if (!formData.campaignId) {
-      newErrors.campaignId = "Campaign selection is required";
-    }
+
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -87,11 +86,20 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
         description: formData.description.trim(),
         type: formData.type,
         clerkId: user.id,
-        campaignId: formData.campaignId as Id<"campaigns">,
       };
 
       const locationId = await createLocation(locationData);
       onSuccess(locationId);
+      
+      // Handle navigation based on user role
+      if (isAdmin) {
+        // Admin flow - navigate to locations list
+        navigate("/locations");
+      } else {
+        // General user flow - navigate to campaign creation with refresh parameter
+        navigate("/campaigns/new?refresh=true");
+      }
+      
       handleClose();
     } catch (error) {
       console.error("Error creating location:", error);
@@ -106,7 +114,6 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
       name: "",
       description: "",
       type: "Other",
-      campaignId: "",
     });
     setErrors({});
     setIsSubmitting(false);
@@ -155,25 +162,7 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
               {errors.description && <span className="error-message">{errors.description}</span>}
             </div>
 
-            <div className="form-group">
-              <label htmlFor="campaignId">Campaign *</label>
-              <select
-                id="campaignId"
-                name="campaignId"
-                value={formData.campaignId}
-                onChange={handleInputChange}
-                className={errors.campaignId ? "error" : ""}
-                required
-              >
-                <option value="">Select a campaign</option>
-                {campaigns.map((campaign: any) => (
-                  <option key={campaign._id} value={campaign._id}>
-                    {campaign.name}
-                  </option>
-                ))}
-              </select>
-              {errors.campaignId && <span className="error-message">{errors.campaignId}</span>}
-            </div>
+
 
             <div className="form-row">
               <div className="form-group">

@@ -241,7 +241,6 @@ export default defineSchema({
     updatedAt: v.number(),
   }),
   locations: defineTable({
-    campaignId: v.id("campaigns"),
     name: v.string(),
     type: v.union(
       v.literal("Town"),
@@ -495,9 +494,6 @@ export default defineSchema({
     updatedAt: v.optional(v.number()),
   }),
   monsters: defineTable({
-    // link to campaign
-    campaignId: v.optional(v.id("campaigns")),
-
     // basic identification
     name: v.string(),
     source: v.optional(v.string()),

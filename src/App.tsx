@@ -46,6 +46,7 @@ import MonsterForm from "./components/MonsterForm";
 import { MapCreator } from "./components/maps/MapCreator";
 import { SessionManager } from "./components/SessionManager";
 import { SessionTest } from "./components/SessionTest";
+import { useRoleAccess } from "./hooks/useRoleAccess";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL);
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -367,7 +368,56 @@ const QuestCreationWrapper: React.FC = () => {
 
 // Wrapper component for location creation
 const LocationCreationWrapper: React.FC = () => {
-  return <LocationForm />;
+  const { isAdmin } = useRoleAccess();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
+
+  const handleSubmitSuccess = () => {
+    if (returnTo === 'campaign-form') {
+      // General user flow - return to campaign creation with refresh parameter
+      navigate("/campaigns/new?refresh=true");
+    } else if (isAdmin) {
+      // Admin flow - return to locations list
+      navigate("/locations");
+    } else {
+      // General user flow - return to locations list
+      navigate("/locations");
+    }
+  };
+
+  const handleCancel = () => {
+    if (returnTo === 'campaign-form') {
+      navigate("/campaigns/new?refresh=true");
+    } else {
+      navigate("/locations");
+    }
+  };
+
+  return (
+    <div>
+      <div className="location-creation-header" style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        padding: '1rem', 
+        borderBottom: '1px solid #e5e7eb',
+        marginBottom: '1rem'
+      }}>
+        <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 'bold' }}>Create New Location</h2>
+        <button 
+          onClick={handleCancel}
+          className="btn-secondary"
+        >
+          {returnTo === 'campaign-form' ? "Back to Campaign Form" : "Cancel"}
+        </button>
+      </div>
+      <LocationForm 
+        onSubmitSuccess={handleSubmitSuccess}
+        onCancel={handleCancel}
+      />
+    </div>
+  );
 };
 
 // Wrapper component for monster creation
@@ -384,7 +434,7 @@ const MapCreationWrapper: React.FC = () => {
 
   const handleMapCreated = () => {
     if (returnTo === 'location-form') {
-      navigate("/locations/new?returnTo=campaign-form");
+      navigate("/locations/new?returnTo=campaign-form&refresh=true");
     } else {
       navigate("/maps");
     }
@@ -408,7 +458,7 @@ const MapCreationWrapper: React.FC = () => {
         <button 
           onClick={() => {
             if (returnTo === 'location-form') {
-              navigate("/locations/new?returnTo=campaign-form");
+              navigate("/locations/new?returnTo=campaign-form&refresh=true");
             } else {
               navigate("/maps");
             }

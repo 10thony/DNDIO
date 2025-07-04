@@ -3,7 +3,6 @@ import { v } from "convex/values";
 
 export const createMonster = mutation({
   args: {
-    campaignId: v.optional(v.id("campaigns")),
     name: v.string(),
     source: v.optional(v.string()),
     page: v.optional(v.string()),
@@ -149,26 +148,7 @@ export const getMonsterById = query({
   },
 });
 
-export const getMonstersByCampaign = query({
-  args: { campaignId: v.id("campaigns") },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("monsters")
-      .filter((q) => q.eq(q.field("campaignId"), args.campaignId))
-      .order("desc")
-      .collect();
-  },
-});
 
-export const getUnassignedMonsters = query({
-  handler: async (ctx) => {
-    return await ctx.db
-      .query("monsters")
-      .filter((q) => q.eq(q.field("campaignId"), undefined))
-      .order("desc")
-      .collect();
-  },
-});
 
 export const deleteMonster = mutation({
   args: { id: v.id("monsters") },
@@ -180,7 +160,6 @@ export const deleteMonster = mutation({
 export const updateMonster = mutation({
   args: {
     id: v.id("monsters"),
-    campaignId: v.optional(v.id("campaigns")),
     name: v.optional(v.string()),
     source: v.optional(v.string()),
     page: v.optional(v.string()),
@@ -302,7 +281,6 @@ export const updateMonster = mutation({
 export const bulkCreateMonsters = mutation({
   args: {
     monsters: v.array(v.object({
-      campaignId: v.optional(v.id("campaigns")),
       name: v.string(),
       source: v.optional(v.string()),
       page: v.optional(v.string()),

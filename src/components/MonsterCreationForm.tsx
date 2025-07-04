@@ -13,7 +13,6 @@ interface MonsterCreationFormProps {
 }
 
 interface MonsterFormData {
-  campaignId?: Id<"campaigns">;
   name: string;
   source: string;
   page: string;
@@ -81,7 +80,6 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
   const returnTo = searchParams.get('returnTo');
 
   const [formData, setFormData] = useState<MonsterFormData>({
-    campaignId: undefined,
     name: "",
     source: "",
     page: "",
@@ -131,8 +129,22 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
 
   const [errors, setErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationAttempted, setValidationAttempted] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  const campaigns = useQuery(api.campaigns.getAllCampaigns, { clerkId: user?.id });
+  // Alignment options data
+  const alignmentOptions = [
+    { alignment: "Lawful good" },
+    { alignment: "Lawful neutral" },
+    { alignment: "Lawful evil" },
+    { alignment: "Neutral good" },
+    { alignment: "True neutral" },
+    { alignment: "Neutral evil" },
+    { alignment: "Chaotic good" },
+    { alignment: "Chaotic neutral" },
+    { alignment: "Chaotic evil" }
+  ];
+
   const createMonster = useMutation(api.monsters.createMonster);
   const updateMonster = useMutation(api.monsters.updateMonster);
   const editingMonster = useQuery(
@@ -143,7 +155,6 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
   useEffect(() => {
     if (editingMonster && editingMonsterId) {
       setFormData({
-        campaignId: editingMonster.campaignId || undefined,
         name: editingMonster.name,
         source: editingMonster.source || "",
         page: editingMonster.page || "",
@@ -182,6 +193,12 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
 
   const handleInputChange = (field: keyof MonsterFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear validation errors when user starts fixing them
+    if (validationAttempted && errors.length > 0) {
+      setErrors([]);
+      setValidationAttempted(false);
+    }
   };
 
   const handleNestedChange = (parentField: keyof MonsterFormData, childField: string, value: any) => {
@@ -189,6 +206,12 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
       ...prev,
       [parentField]: { ...(prev[parentField] as Record<string, any>), [childField]: value }
     }));
+    
+    // Clear validation errors when user starts fixing them
+    if (validationAttempted && errors.length > 0) {
+      setErrors([]);
+      setValidationAttempted(false);
+    }
   };
 
   // const handleArrayChange = (field: keyof MonsterFormData, value: string[]) => {
@@ -208,6 +231,13 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
     if (formData.senses.passivePerception < 0) newErrors.push("Passive Perception must be non-negative");
 
     setErrors(newErrors);
+    setValidationAttempted(true);
+    
+    // Scroll to top if there are errors
+    if (newErrors.length > 0) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
     return newErrors.length === 0;
   };
 
@@ -229,10 +259,20 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
           clerkId: user!.id,
         });
       }
-      onSubmitSuccess();
+      
+      // Show success message briefly before navigating
+      setShowSuccessMessage(true);
+      setTimeout(() => {
+        // Navigate based on returnTo parameter
+        if (returnTo === 'campaign-form') {
+          navigate("/campaigns/new");
+        } else {
+          onSubmitSuccess();
+        }
+      }, 1500);
     } catch (error) {
       console.error("Error saving monster:", error);
-      setErrors(["Failed to save monster. Please try again."]);
+      setErrors([`Error creating monster: ${error instanceof Error ? error.message : 'An unknown error occurred.'}`]);
     } finally {
       setIsSubmitting(false);
     }
@@ -246,16 +286,17 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
     }
   };
 
-  if (!campaigns) {
-    return (
-      <div className="monster-form">
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Loading campaigns...</p>
-        </div>
-      </div>
-    );
-  }
+  // Helper functions to check field-specific errors
+  const hasFieldError = (fieldName: string): boolean => {
+    if (!validationAttempted) return false;
+    return errors.some(error => error.toLowerCase().includes(fieldName.toLowerCase()));
+  };
+
+  const getFieldErrorClass = (fieldName: string): string => {
+    return hasFieldError(fieldName) ? 'form-input-error' : '';
+  };
+
+
 
   return (
     <div className="monster-form">
@@ -268,9 +309,24 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
 
       {errors.length > 0 && (
         <div className="form-error">
-          {errors.map((error, index) => (
-            <div key={index}>{error}</div>
-          ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+            <strong>Please fix the following errors:</strong>
+          </div>
+          <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
+            {errors.map((error, index) => (
+              <li key={index} style={{ marginBottom: '0.25rem' }}>{error}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {showSuccessMessage && (
+        <div className="form-success">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '1.2rem' }}>✅</span>
+            <strong>Monster saved successfully! Redirecting...</strong>
+          </div>
         </div>
       )}
 
@@ -283,26 +339,11 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
               <label className="form-label">Name *</label>
               <input
                 type="text"
-                className="form-input"
+                className={`form-input ${getFieldErrorClass("name")}`}
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="Monster name"
               />
-            </div>
-            <div className="form-col">
-              <label className="form-label">Campaign</label>
-              <select
-                className="form-select"
-                value={formData.campaignId}
-                onChange={(e) => handleInputChange("campaignId", e.target.value)}
-              >
-                <option value="">Select a campaign</option>
-                {campaigns.map((campaign) => (
-                  <option key={campaign._id} value={campaign._id}>
-                    {campaign.name}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
           <div className="form-row">
@@ -310,7 +351,7 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
               <label className="form-label">Type *</label>
               <input
                 type="text"
-                className="form-input"
+                className={`form-input ${getFieldErrorClass("type")}`}
                 value={formData.type}
                 onChange={(e) => handleInputChange("type", e.target.value)}
                 placeholder="e.g., Dragon, Undead, Beast"
@@ -333,13 +374,18 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
             </div>
             <div className="form-col">
               <label className="form-label">Alignment *</label>
-              <input
-                type="text"
-                className="form-input"
+              <select
+                className={`form-select ${getFieldErrorClass("alignment")}`}
                 value={formData.alignment}
                 onChange={(e) => handleInputChange("alignment", e.target.value)}
-                placeholder="e.g., Lawful Good, Chaotic Evil"
-              />
+              >
+                <option value="">Select alignment...</option>
+                {alignmentOptions.map((option, index) => (
+                  <option key={index} value={option.alignment}>
+                    {option.alignment}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <div className="form-row">
@@ -365,13 +411,46 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
             </div>
             <div className="form-col">
               <label className="form-label">Challenge Rating</label>
-              <input
-                type="text"
-                className="form-input"
+              <select
+                className="form-select"
                 value={formData.challengeRating}
                 onChange={(e) => handleInputChange("challengeRating", e.target.value)}
-                placeholder="e.g., 1/4, 1, 5"
-              />
+              >
+                <option value="0">0</option>
+                <option value="1/8">1/8</option>
+                <option value="1/4">1/4</option>
+                <option value="1/2">1/2</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="16">16</option>
+                <option value="17">17</option>
+                <option value="18">18</option>
+                <option value="19">19</option>
+                <option value="20">20</option>
+                <option value="21">21</option>
+                <option value="22">22</option>
+                <option value="23">23</option>
+                <option value="24">24</option>
+                <option value="25">25</option>
+                <option value="26">26</option>
+                <option value="27">27</option>
+                <option value="28">28</option>
+                <option value="29">29</option>
+                <option value="30">30</option>
+              </select>
             </div>
           </div>
         </div>
@@ -384,7 +463,7 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
               <label className="form-label">Armor Class *</label>
               <input
                 type="number"
-                className="form-input"
+                className={`form-input ${getFieldErrorClass("armor class")}`}
                 value={formData.armorClass}
                 onChange={(e) => handleInputChange("armorClass", parseInt(e.target.value) || 0)}
                 min="0"
@@ -404,7 +483,7 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
               <label className="form-label">Hit Points *</label>
               <input
                 type="number"
-                className="form-input"
+                className={`form-input ${getFieldErrorClass("hit points")}`}
                 value={formData.hitPoints}
                 onChange={(e) => handleInputChange("hitPoints", parseInt(e.target.value) || 0)}
                 min="1"
@@ -416,7 +495,7 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
               <label className="form-label">Hit Dice Count</label>
               <input
                 type="number"
-                className="form-input"
+                className={`form-input ${getFieldErrorClass("hit dice count")}`}
                 value={formData.hitDice.count}
                 onChange={(e) => handleNestedChange("hitDice", "count", parseInt(e.target.value) || 0)}
                 min="1"
@@ -440,7 +519,7 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
               <label className="form-label">Proficiency Bonus</label>
               <input
                 type="number"
-                className="form-input"
+                className={`form-input ${getFieldErrorClass("proficiency bonus")}`}
                 value={formData.proficiencyBonus}
                 onChange={(e) => handleInputChange("proficiencyBonus", parseInt(e.target.value) || 0)}
                 min="0"
@@ -538,7 +617,7 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
               <label className="form-label">Passive Perception</label>
               <input
                 type="number"
-                className="form-input"
+                className={`form-input ${getFieldErrorClass("passive perception")}`}
                 value={formData.senses.passivePerception}
                 onChange={(e) => handleNestedChange("senses", "passivePerception", parseInt(e.target.value) || 0)}
                 min="0"

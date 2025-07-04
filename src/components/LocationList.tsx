@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
 import { Link } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
+import { useRoleAccess } from "../hooks/useRoleAccess";
 import LocationForm from "./LocationForm";
 import "./LocationForm.css";
 
@@ -11,6 +12,8 @@ export default function LocationList() {
   const [searchParams] = useSearchParams();
   const [isCreating, setIsCreating] = useState(false);
   const { userId } = useAuth();
+  const { isAdmin } = useRoleAccess();
+  const navigate = useNavigate();
   const locations = useQuery(api.locations.list) || [];
   const maps = useQuery(api.maps.getUserMaps, userId ? { clerkId: userId } : "skip") || [];
 
@@ -25,7 +28,8 @@ export default function LocationList() {
   const handleCancel = () => {
     const returnTo = searchParams.get('returnTo');
     if (returnTo === 'campaign-form') {
-      window.location.href = "/campaigns/new";
+      // General user flow - return to campaign creation with refresh parameter
+      navigate("/campaigns/new?refresh=true");
     } else {
       setIsCreating(false);
       // Clear the create query parameter if it exists
@@ -40,8 +44,19 @@ export default function LocationList() {
   const handleSubmitSuccess = () => {
     const returnTo = searchParams.get('returnTo');
     if (returnTo === 'campaign-form') {
-      window.location.href = "/campaigns/new";
+      // General user flow - return to campaign creation with refresh parameter
+      navigate("/campaigns/new?refresh=true");
+    } else if (isAdmin) {
+      // Admin flow - stay on locations list
+      setIsCreating(false);
+      // Clear the create query parameter if it exists
+      if (searchParams.get('create') === 'true') {
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete('create');
+        window.history.replaceState(null, '', `?${newSearchParams.toString()}`);
+      }
     } else {
+      // General user flow - return to locations list
       setIsCreating(false);
       // Clear the create query parameter if it exists
       if (searchParams.get('create') === 'true') {

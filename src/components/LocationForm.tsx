@@ -6,6 +6,7 @@ import { LocationType, locationTypes } from "../../convex/locations";
 import { Id } from "../../convex/_generated/dataModel";
 import { Link } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
+import { useRoleAccess } from "../hooks/useRoleAccess";
 import { MapPreview } from "./maps/MapPreview";
 import "./LocationForm.css";
 
@@ -16,16 +17,15 @@ interface LocationFormProps {
 
 export default function LocationForm({ onSubmitSuccess, onCancel }: LocationFormProps) {
   const { userId } = useAuth();
+  const { isAdmin } = useRoleAccess();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get('returnTo');
   const createLocation = useMutation(api.locations.create);
-  const campaigns = useQuery(api.campaigns.getAllCampaigns, {}) || [];
   const npcs = useQuery(api.npcs.getAllNpcs, {}) || [];
   const maps = useQuery(api.maps.getUserMaps, userId ? { clerkId: userId } : "skip") || [];
 
   const [formData, setFormData] = useState({
-    campaignId: "" as Id<"campaigns">,
     name: "",
     type: locationTypes[0] as LocationType,
     description: "",
@@ -52,7 +52,6 @@ export default function LocationForm({ onSubmitSuccess, onCancel }: LocationForm
       });
       // Reset form
       setFormData({
-        campaignId: "" as Id<"campaigns">,
         name: "",
         type: locationTypes[0] as LocationType,
         description: "",
@@ -63,6 +62,19 @@ export default function LocationForm({ onSubmitSuccess, onCancel }: LocationForm
         secrets: "",
         mapId: undefined,
       });
+      
+      // Handle navigation based on user role and context
+      if (returnTo === 'campaign-form') {
+        // General user flow - return to campaign creation with refresh parameter
+        navigate("/campaigns/new?refresh=true");
+      } else if (isAdmin) {
+        // Admin flow - return to locations list
+        navigate("/locations");
+      } else {
+        // General user flow - return to locations list
+        navigate("/locations");
+      }
+      
       onSubmitSuccess?.();
     } catch (error) {
       console.error("Error creating location:", error);
@@ -71,7 +83,7 @@ export default function LocationForm({ onSubmitSuccess, onCancel }: LocationForm
 
   const handleCancel = () => {
     if (returnTo === 'campaign-form') {
-      navigate("/campaigns/new");
+      navigate("/campaigns/new?refresh=true");
     } else if (onCancel) {
       onCancel();
     }
@@ -84,22 +96,7 @@ export default function LocationForm({ onSubmitSuccess, onCancel }: LocationForm
       <div className="form-section">
         <h3 className="form-section-title">Basic Information</h3>
         
-        <div className="form-group">
-          <label className="form-label">Campaign</label>
-          <select
-            value={formData.campaignId}
-            onChange={(e) => setFormData({ ...formData, campaignId: e.target.value as Id<"campaigns"> })}
-            className="form-select"
-            required
-          >
-            <option value="">Select a campaign</option>
-            {campaigns.map((campaign: any) => (
-              <option key={campaign._id} value={campaign._id}>
-                {campaign.name}
-              </option>
-            ))}
-          </select>
-        </div>
+
 
         <div className="form-group">
           <label className="form-label">Name</label>

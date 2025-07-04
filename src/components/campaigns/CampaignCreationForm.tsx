@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useUser } from "@clerk/clerk-react";
@@ -9,6 +9,7 @@ import "./CampaignCreationForm.css";
 
 const CampaignCreationForm: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useUser();
   
   // Get or create user in Convex
@@ -66,6 +67,21 @@ const CampaignCreationForm: React.FC = () => {
   const createCampaign = useMutation(api.campaigns.createCampaign);
   const createTimelineEvent = useMutation(api.timelineEvents.createTimelineEvent);
   const addTimelineEventToCampaign = useMutation(api.campaigns.addTimelineEventToCampaign);
+
+  // Force refresh locations when component mounts or when returning from location creation
+  useEffect(() => {
+    const returnFromLocationCreation = searchParams.get('refresh') === 'true';
+    if (returnFromLocationCreation) {
+      // Clear the refresh parameter
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('refresh');
+      window.history.replaceState(null, '', `?${newSearchParams.toString()}`);
+      
+      // Force a re-render by updating the component state
+      // This will cause the locations query to re-run
+      setSelectedLocations(prev => [...prev]);
+    }
+  }, [searchParams]);
 
   const requirements: CampaignCreationRequirements = {
     timelineEventsRequired: 3,
@@ -274,7 +290,7 @@ const CampaignCreationForm: React.FC = () => {
   };
 
   const navigateToCreateLocation = () => {
-    navigate("/locations/new?returnTo=campaign-form");
+    navigate("/locations/new?returnTo=campaign-form&refresh=true");
   };
 
   const navigateToCreateMonster = () => {

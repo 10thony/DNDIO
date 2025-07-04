@@ -23,7 +23,6 @@ const MonsterForm: React.FC<MonsterFormProps> = ({
   const returnTo = searchParams.get('returnTo');
 
   const [formData, setFormData] = useState({
-    campaignId: undefined as Id<"campaigns"> | undefined,
     name: "",
     source: "",
     page: "",
@@ -86,7 +85,19 @@ const MonsterForm: React.FC<MonsterFormProps> = ({
   const [errors, setErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const campaigns = useQuery(api.campaigns.getAllCampaigns, { clerkId: user?.id });
+  // Alignment options data
+  const alignmentOptions = [
+    { alignment: "Lawful good" },
+    { alignment: "Lawful neutral" },
+    { alignment: "Lawful evil" },
+    { alignment: "Neutral good" },
+    { alignment: "True neutral" },
+    { alignment: "Neutral evil" },
+    { alignment: "Chaotic good" },
+    { alignment: "Chaotic neutral" },
+    { alignment: "Chaotic evil" }
+  ];
+
   const createMonster = useMutation(api.monsters.createMonster);
   const updateMonster = useMutation(api.monsters.updateMonster);
   const editingMonster = useQuery(
@@ -97,7 +108,6 @@ const MonsterForm: React.FC<MonsterFormProps> = ({
   useEffect(() => {
     if (editingMonster && editingMonsterId) {
       setFormData({
-        campaignId: editingMonster.campaignId || undefined,
         name: editingMonster.name,
         source: editingMonster.source || "",
         page: editingMonster.page || "",
@@ -179,10 +189,16 @@ const MonsterForm: React.FC<MonsterFormProps> = ({
           clerkId: user!.id,
         });
       }
-      onSubmitSuccess();
+      
+      // Navigate based on returnTo parameter
+      if (returnTo === 'campaign-form') {
+        navigate("/campaigns/new");
+      } else {
+        onSubmitSuccess();
+      }
     } catch (error) {
       console.error("Error saving monster:", error);
-      setErrors(["Failed to save monster. Please try again."]);
+      setErrors([`Error creating monster: ${error instanceof Error ? error.message : 'An unknown error occurred.'}`]);
     } finally {
       setIsSubmitting(false);
     }
@@ -195,17 +211,6 @@ const MonsterForm: React.FC<MonsterFormProps> = ({
       onCancel();
     }
   };
-
-  if (!campaigns) {
-    return (
-      <div className="monster-form">
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Loading campaigns...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="monster-form">
@@ -239,21 +244,6 @@ const MonsterForm: React.FC<MonsterFormProps> = ({
                 placeholder="Monster name"
               />
             </div>
-            <div className="form-col">
-              <label className="form-label">Campaign</label>
-              <select
-                className="form-select"
-                value={formData.campaignId}
-                onChange={(e) => handleInputChange("campaignId", e.target.value)}
-              >
-                <option value="">Select a campaign</option>
-                {campaigns.map((campaign) => (
-                  <option key={campaign._id} value={campaign._id}>
-                    {campaign.name}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
           <div className="form-row">
             <div className="form-col">
@@ -283,13 +273,18 @@ const MonsterForm: React.FC<MonsterFormProps> = ({
             </div>
             <div className="form-col">
               <label className="form-label">Alignment *</label>
-              <input
-                type="text"
-                className="form-input"
+              <select
+                className="form-select"
                 value={formData.alignment}
                 onChange={(e) => handleInputChange("alignment", e.target.value)}
-                placeholder="e.g., Lawful Good, Chaotic Evil"
-              />
+              >
+                <option value="">Select alignment...</option>
+                {alignmentOptions.map((option, index) => (
+                  <option key={index} value={option.alignment}>
+                    {option.alignment}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <div className="form-row">
@@ -315,13 +310,46 @@ const MonsterForm: React.FC<MonsterFormProps> = ({
             </div>
             <div className="form-col">
               <label className="form-label">Challenge Rating</label>
-              <input
-                type="text"
-                className="form-input"
+              <select
+                className="form-select"
                 value={formData.challengeRating}
                 onChange={(e) => handleInputChange("challengeRating", e.target.value)}
-                placeholder="e.g., 1/4, 1, 5"
-              />
+              >
+                <option value="0">0</option>
+                <option value="1/8">1/8</option>
+                <option value="1/4">1/4</option>
+                <option value="1/2">1/2</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="16">16</option>
+                <option value="17">17</option>
+                <option value="18">18</option>
+                <option value="19">19</option>
+                <option value="20">20</option>
+                <option value="21">21</option>
+                <option value="22">22</option>
+                <option value="23">23</option>
+                <option value="24">24</option>
+                <option value="25">25</option>
+                <option value="26">26</option>
+                <option value="27">27</option>
+                <option value="28">28</option>
+                <option value="29">29</option>
+                <option value="30">30</option>
+              </select>
             </div>
           </div>
         </div>
