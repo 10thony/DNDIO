@@ -231,10 +231,10 @@ const InteractionsSection: React.FC<InteractionsSectionProps> = ({
   return (
     <div className="interactions-section">
       <div className="section-header">
-        <div className="header-left">
+        <div className="header-left clickable" onClick={() => setIsCollapsed(!isCollapsed)}>
           <button 
             className="collapse-button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={(e) => e.stopPropagation()}
             aria-label={isCollapsed ? "Expand interactions section" : "Collapse interactions section"}
           >
             {isCollapsed ? "▶️" : "▼"}
@@ -248,7 +248,7 @@ const InteractionsSection: React.FC<InteractionsSectionProps> = ({
             )}
           </h3>
         </div>
-        <div className="header-actions">
+        <div className="header-actions" onClick={(e) => e.stopPropagation()}>
           {activeInteraction && (
             <button 
               className="join-live-button"

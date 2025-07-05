@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
+import BackToCampaign from "./BackToCampaign";
 import "./QuestDetail.css";
 
 const QuestDetail: React.FC = () => {
   const navigate = useNavigate();
   const { questId } = useParams<{ questId: string }>();
+  const [searchParams] = useSearchParams();
+  const campaignId = searchParams.get('campaignId');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   
   const quest = useQuery(api.quests.getQuestById, { id: questId as Id<"quests"> });
@@ -132,12 +135,16 @@ const QuestDetail: React.FC = () => {
             {isUpdatingStatus && <span className="status-updating">Updating...</span>}
           </div>
         </div>
-        <button
-          className="back-btn"
-          onClick={() => navigate("/quests")}
-        >
-          ← Back to Quests
-        </button>
+        {campaignId ? (
+          <BackToCampaign campaignId={campaignId} />
+        ) : (
+          <button
+            className="back-btn"
+            onClick={() => navigate("/quests")}
+          >
+            ← Back to Quests
+          </button>
+        )}
       </div>
 
       <div className="quest-content">

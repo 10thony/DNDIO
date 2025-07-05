@@ -1,20 +1,23 @@
 import React from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { getAbilityModifier, ActionType, AbilityScore, PlayerCharacterAction, DamageDiceType, DamageType } from "../types/dndRules";
 import ActionList from "./ActionList";
+import BackToCampaign from "./BackToCampaign";
 import "./CharacterDetail.css";
 import "./ActionsList.css";
 
 const CharacterDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const character = useQuery(api.characters.getCharacterById, {
+  const [searchParams] = useSearchParams();
+  const campaignId = searchParams.get('campaignId');
+  const character = useQuery(api.characters.getCharacterOrNpcById, {
     id: id as any,
   });
   const actions = useQuery(api.actions.getActionsByClass, {
-    className: character?.class || "",
+    className: (character as any)?.class || "",
   });
 
   // Transform Convex actions to PlayerCharacterAction format
@@ -111,12 +114,13 @@ const CharacterDetail: React.FC = () => {
     }
   }).filter((action): action is NonNullable<typeof action> => action !== null) || []) as PlayerCharacterAction[];
 
-  const deleteCharacter = useMutation(api.characters.deleteCharacter);
+  const deleteCharacterOrNpc = useMutation(api.characters.deleteCharacterOrNpc);
 
   const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this character?")) {
+    const characterType = character?._table === "npcs" ? "NPC" : "character";
+    if (window.confirm(`Are you sure you want to delete this ${characterType}?`)) {
       try {
-        await deleteCharacter({ id: id as any });
+        await deleteCharacterOrNpc({ id: id as any });
         navigate("/characters");
       } catch (error) {
         console.error("Error deleting character:", error);
@@ -149,15 +153,19 @@ const CharacterDetail: React.FC = () => {
     <div className="character-detail">
       <div className="character-detail-header">
         <div className="character-title">
-          <h1>{character.name}</h1>
+          <h1>{(character as any).name}</h1>
           <div className="character-subtitle">
-            Level {character.level} {character.race} {character.class}
+            Level {(character as any).level} {(character as any).race} {(character as any).class}
           </div>
         </div>
         <div className="character-actions">
-          <Link to="/characters" className="btn btn-secondary">
-            Back to List
-          </Link>
+          {campaignId ? (
+            <BackToCampaign campaignId={campaignId} />
+          ) : (
+            <Link to="/characters" className="btn btn-secondary">
+              Back to List
+            </Link>
+          )}
           <button onClick={handleDelete} className="btn btn-danger">
             Delete Character
           </button>
@@ -171,24 +179,24 @@ const CharacterDetail: React.FC = () => {
             <h2>Basic Information</h2>
             <div className="info-grid">
               <div className="info-item">
-                <strong>Race:</strong> <span className="text-primary">{character.race}</span>
+                <strong>Race:</strong> <span className="text-primary">{(character as any).race}</span>
               </div>
               <div className="info-item">
-                <strong>Class:</strong> <span className="text-primary">{character.class}</span>
+                <strong>Class:</strong> <span className="text-primary">{(character as any).class}</span>
               </div>
               <div className="info-item">
-                <strong>Background:</strong> <span className="text-primary">{character.background}</span>
+                <strong>Background:</strong> <span className="text-primary">{(character as any).background}</span>
               </div>
-              {character.alignment && (
+              {(character as any).alignment && (
                 <div className="info-item">
-                  <strong>Alignment:</strong> <span className="text-primary">{character.alignment}</span>
+                  <strong>Alignment:</strong> <span className="text-primary">{(character as any).alignment}</span>
                 </div>
               )}
               <div className="info-item">
-                <strong>Level:</strong> <span className="text-primary">{character.level}</span>
+                <strong>Level:</strong> <span className="text-primary">{(character as any).level}</span>
               </div>
               <div className="info-item">
-                <strong>Proficiency Bonus:</strong> <span className="text-primary">+{character.proficiencyBonus}</span>
+                <strong>Proficiency Bonus:</strong> <span className="text-primary">+{(character as any).proficiencyBonus}</span>
               </div>
             </div>
           </div>
@@ -198,15 +206,15 @@ const CharacterDetail: React.FC = () => {
             <h2>Combat Stats</h2>
             <div className="combat-stats">
               <div className="combat-stat">
-                <div className="stat-value">{character.hitPoints}</div>
+                <div className="stat-value">{(character as any).hitPoints}</div>
                 <div className="stat-label">Hit Points</div>
               </div>
               <div className="combat-stat">
-                <div className="stat-value">{character.armorClass}</div>
+                <div className="stat-value">{(character as any).armorClass}</div>
                 <div className="stat-label">Armor Class</div>
               </div>
               <div className="combat-stat">
-                <div className="stat-value">+{character.proficiencyBonus}</div>
+                <div className="stat-value">+{(character as any).proficiencyBonus}</div>
                 <div className="stat-label">Proficiency</div>
               </div>
             </div>
@@ -216,9 +224,9 @@ const CharacterDetail: React.FC = () => {
           <div className="info-section ability-scores-section">
             <h2>Ability Scores</h2>
             <div className="ability-scores-detail">
-              {Object.entries(character.abilityScores).map(
+              {Object.entries((character as any).abilityScores).map(
                 ([ability, score]) => {
-                  const modifier = getAbilityModifier(score);
+                  const modifier = getAbilityModifier(score as number);
                   return (
                     <div key={ability} className="ability-score-detail">
                       <div className="ability-name">
@@ -243,7 +251,7 @@ const CharacterDetail: React.FC = () => {
               <div className="proficiency-category">
                 <h3>Saving Throws</h3>
                 <div className="proficiency-list">
-                  {character.savingThrows.map((savingThrow) => (
+                  {(character as any).savingThrows.map((savingThrow: any) => (
                     <span key={savingThrow} className="proficiency-item">
                       {savingThrow}
                     </span>
@@ -253,18 +261,18 @@ const CharacterDetail: React.FC = () => {
               <div className="proficiency-category">
                 <h3>Skills</h3>
                 <div className="proficiency-list">
-                  {character.skills.map((skill) => (
+                  {(character as any).skills.map((skill: any) => (
                     <span key={skill} className="proficiency-item">
                       {skill}
                     </span>
                   ))}
                 </div>
               </div>
-              {character.proficiencies.length > 0 && (
+              {(character as any).proficiencies.length > 0 && (
                 <div className="proficiency-category">
                   <h3>Other Proficiencies</h3>
                   <div className="proficiency-list">
-                    {character.proficiencies.map((proficiency) => (
+                    {(character as any).proficiencies.map((proficiency: any) => (
                       <span key={proficiency} className="proficiency-item">
                         {proficiency}
                       </span>
@@ -276,31 +284,31 @@ const CharacterDetail: React.FC = () => {
           </div>
 
           {/* Optional Sections */}
-          {character.traits && character.traits.length > 0 && (
+          {(character as any).traits && (character as any).traits.length > 0 && (
             <div className="info-section">
               <h2>Traits</h2>
               <ul className="trait-list">
-                {character.traits.map((trait, index) => (
+                {(character as any).traits.map((trait: any, index: number) => (
                   <li key={index} className="text-primary">{trait}</li>
                 ))}
               </ul>
             </div>
           )}
 
-          {character.languages && character.languages.length > 0 && (
+          {(character as any).languages && (character as any).languages.length > 0 && (
             <div className="info-section">
               <h2>Languages</h2>
               <div className="language-list">
-                <span className="text-primary">{character.languages.join(", ")}</span>
+                <span className="text-primary">{(character as any).languages.join(", ")}</span>
               </div>
             </div>
           )}
 
-          {character.equipment && character.equipment.length > 0 && (
+          {(character as any).equipment && (character as any).equipment.length > 0 && (
             <div className="info-section">
               <h2>Equipment</h2>
               <ul className="equipment-list">
-                {character.equipment.map((item, index) => (
+                {(character as any).equipment.map((item: any, index: number) => (
                   <li key={index} className="text-primary">{item}</li>
                 ))}
               </ul>
@@ -323,7 +331,7 @@ const CharacterDetail: React.FC = () => {
 
       <div className="character-meta">
         <small className="text-gray-600 dark:text-gray-400">
-          Created: {new Date(character.createdAt).toLocaleDateString()}
+          Created: {new Date((character as any).createdAt).toLocaleDateString()}
         </small>
       </div>
     </div>

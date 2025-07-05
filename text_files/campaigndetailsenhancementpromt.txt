@@ -1,0 +1,57 @@
+Enhanced Prompt
+You are a senior React engineer tasked with refactoring and extending a complex campaign-management component. Your starting point is the CampaignDetail component (PastedText1) shown below. You must preserve existing behavior (data fetching via Convex, Clerk auth, role checks, rendering of subsections) while adding a set of new UX and feature requirements.
+1. Domain Definitions
+
+- DM (Dungeon Master): The user who created a campaign. In the context of that campaign, only the creator is the DM.
+- Public vs. Private Campaigns: Non-admin users may only see campaigns marked isPublic.
+2. Base Component (PastedText1)
+
+	// … imagine the full contents of CampaignDetail.tsx from your codebase here …
+
+3. New Feature Requirements
+
+1. 
+Collapsible Subsections
+
+	- Every campaign subsection (Info, Timeline, Player Characters, NPCs, Quests, Locations, Boss Monsters, Interactions) must be able to collapse/expand when the header area (not the caret icon) is clicked.
+	- Collapsed state hides the subsection body completely; expanded state shows it.
+	- The collapse/expand state should persist while the user stays on the page.
+2. 
+Timeline Events Enhancements
+
+	- DMs must be able to add new timeline events inline.
+	- If there are more than 3 timeline events, the DM can reorder (drag-and-drop or up/down buttons) and remove events.
+	- All changes immediately update the campaign via api.campaigns.updateCampaign.
+3. 
+Separate Regular Monsters & Enemy NPCs
+
+	- Currently there’s only a Boss Monsters section (CR ≥10).
+	- Introduce two new collapsible subsections:
+a. Regular Monsters (CR <10)
+b. Enemy NPCs (non-player NPCs designated as adversaries)
+	- Use the existing monsters and npcIds queries, filtering each group appropriately.
+4. 
+Deep Navigation & Back
+
+	- When the DM clicks on any object element—timeline event, player character, quest, location, boss monster, regular monster, or enemy NPC—the app navigates to that object’s detail page (e.g. /timeline/:timelineId, /monsters/:monsterId, etc.).
+	- On the detail page, the DM must have a “← Back to Campaign” control that returns them to the exact scroll position and collapse state of the CampaignDetail page they left.
+4. Technical Constraints & Guidelines
+
+- Continue using React function components, hooks (useState, useEffect, useMemo), Convex (useQuery, useMutation), Clerk (useUser), and react-router-dom (useNavigate, useParams).
+- Keep your code organized and DRY. If you add a new hook (e.g. useCollapsibleSection) or utility, place it under src/hooks or src/utils.
+- For drag-and-drop reordering, you may use a lightweight library such as react-beautiful-dnd or implement simple up/down arrow controls.
+- Ensure all new UI/UX follows the existing CSS conventions (CampaignDetail.css) and accessibility best practices (keyboard navigable headers).
+5. Acceptance Criteria
+
+-  Each subsection header toggles its own collapse state on click.
+-  Timeline section: can add, remove, and reorder events when >3.
+-  Sections for Regular Monsters and Enemy NPCs appear and correctly list items.
+-  Clicking an item navigates to its detail page; that page shows a “Back” action that restores the previous page without losing scroll or collapse state.
+-  All existing role-based access controls, loading states, and validation logic remain functional.
+-  New code is formatted to 80-column max, uses Prettier, and all math (if any) is in LaTeX per team convention.
+6. Deliverables
+
+- Updated CampaignDetail.tsx (and any new hooks/components).
+- Updated CSS or new stylesheet if needed.
+- Example of a detail-page “Back” button implementation demonstrating state restoration.
+- Short code comments explaining key new logic.

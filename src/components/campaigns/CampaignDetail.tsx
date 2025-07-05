@@ -13,6 +13,8 @@ import NPCsSection from "./subsections/NPCsSection";
 import QuestsSection from "./subsections/QuestsSection";
 import LocationsSection from "./subsections/LocationsSection";
 import BossMonstersSection from "./subsections/BossMonstersSection";
+import RegularMonstersSection from "./subsections/RegularMonstersSection";
+import EnemyNPCsSection from "./subsections/EnemyNPCsSection";
 import InteractionsSection from "./subsections/InteractionsSection";
 import { LiveInteractionCreationForm } from "../live-interactions/LiveInteractionCreationForm";
 import "./CampaignDetail.css";
@@ -358,6 +360,18 @@ const CampaignDetail: React.FC = () => {
         <BossMonstersSection
           campaignId={campaign._id}
           monsterIds={campaign.monsterIds}
+          onUpdate={handleUpdate}
+        />
+
+        <RegularMonstersSection
+          campaignId={campaign._id}
+          monsterIds={campaign.monsterIds}
+          onUpdate={handleUpdate}
+        />
+
+        <EnemyNPCsSection
+          campaignId={campaign._id}
+          npcIds={campaign.npcIds}
           onUpdate={handleUpdate}
         />
 

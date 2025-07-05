@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 // import { useDarkMode } from "../contexts/DarkModeContext";
 import TimelineEventCreationForm from "./TimelineEventCreationForm";
+import BackToCampaign from "./BackToCampaign";
 import "./TimelineEventDetail.css";
 
 interface TimelineEventDetailProps {
@@ -13,6 +14,8 @@ interface TimelineEventDetailProps {
 
 const TimelineEventDetail: React.FC<TimelineEventDetailProps> = ({ timelineEventId }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const campaignId = searchParams.get('campaignId');
   // const { isDarkMode } = useDarkMode();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -137,9 +140,13 @@ const TimelineEventDetail: React.FC<TimelineEventDetailProps> = ({ timelineEvent
           </div>
         </div>
         <div className="header-actions">
-          <button className="back-button" onClick={() => navigate("/timeline-events")}>
-            ← Back to Timeline Events
-          </button>
+          {campaignId ? (
+            <BackToCampaign campaignId={campaignId} />
+          ) : (
+            <button className="back-button" onClick={() => navigate("/timeline-events")}>
+              ← Back to Timeline Events
+            </button>
+          )}
         </div>
       </div>
 

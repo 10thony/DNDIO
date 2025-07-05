@@ -3,6 +3,8 @@ import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
+import { useCollapsibleSection } from "../../../hooks/useCollapsibleSection";
+import { useNavigationState } from "../../../hooks/useNavigationState";
 import EntitySelectionModal from "../../modals/EntitySelectionModal";
 import MonsterCreationModal from "../../modals/MonsterCreationModal";
 import "./BossMonstersSection.css";
@@ -22,7 +24,11 @@ const BossMonstersSection: React.FC<BossMonstersSectionProps> = ({
 }) => {
   const { user } = useUser();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed, toggleCollapsed } = useCollapsibleSection(
+    `boss-monsters-${campaignId}`,
+    false
+  );
+  const { navigateToDetail } = useNavigationState();
 
   const monsters = useQuery(api.monsters.getAllMonsters);
   const updateCampaign = useMutation(api.campaigns.updateCampaign);
@@ -110,20 +116,24 @@ const BossMonstersSection: React.FC<BossMonstersSectionProps> = ({
     }
   };
 
+  const handleMonsterClick = (monsterId: Id<"monsters">) => {
+    navigateToDetail(`/monsters/${monsterId}?campaignId=${campaignId}`);
+  };
+
   return (
     <div className="boss-monsters-section">
       <div className="section-header">
-        <div className="header-left">
+        <div className="header-left clickable" onClick={toggleCollapsed}>
           <button 
             className="collapse-button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={(e) => e.stopPropagation()}
             aria-label={isCollapsed ? "Expand boss monsters section" : "Collapse boss monsters section"}
           >
             {isCollapsed ? "▶️" : "▼"}
           </button>
           <h3 className="section-title">🐉 Boss Monsters ({campaignBossMonsters.length})</h3>
         </div>
-        <div className="header-actions">
+        <div className="header-actions" onClick={(e) => e.stopPropagation()}>
           <button 
             className="add-button"
             onClick={openEntitySelection}
@@ -145,7 +155,10 @@ const BossMonstersSection: React.FC<BossMonstersSectionProps> = ({
             <div className="entities-grid">
               {campaignBossMonsters.map((monster: any) => (
                 <div key={monster._id} className="entity-card">
-                  <div className="entity-info">
+                  <div 
+                    className="entity-info clickable"
+                    onClick={() => handleMonsterClick(monster._id)}
+                  >
                     <h4 className="entity-name">{monster.name}</h4>
                     <p className="entity-description">
                       {monster.size} {monster.type} (CR {monster.challengeRating})

@@ -256,6 +256,26 @@ export const addTimelineEventToCampaign = mutation({
   },
 });
 
+// Remove timeline event from campaign
+export const removeTimelineEventFromCampaign = mutation({
+  args: {
+    campaignId: v.id("campaigns"),
+    timelineEventId: v.id("timelineEvents"),
+  },
+  handler: async (ctx, args) => {
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!campaign) throw new Error("Campaign not found");
+    
+    const currentTimelineEvents = campaign.timelineEventIds || [];
+    const updatedTimelineEvents = currentTimelineEvents.filter(id => id !== args.timelineEventId);
+    
+    await ctx.db.patch(args.campaignId, {
+      timelineEventIds: updatedTimelineEvents,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
 // TODO: implement - Add player character to campaign
 export const addPlayerCharacterToCampaign = mutation({
   args: {

@@ -3,6 +3,8 @@ import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
+import { useCollapsibleSection } from "../../../hooks/useCollapsibleSection";
+import { useNavigationState } from "../../../hooks/useNavigationState";
 import EntitySelectionModal from "../../modals/EntitySelectionModal";
 import "./QuestsSection.css";
 
@@ -21,7 +23,11 @@ const QuestsSection: React.FC<QuestsSectionProps> = ({
 }) => {
   const { user } = useUser();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed, toggleCollapsed } = useCollapsibleSection(
+    `quests-${campaignId}`,
+    false
+  );
+  const { navigateToDetail } = useNavigationState();
 
   const quests = useQuery(api.quests.getAllQuests);
   const updateCampaign = useMutation(api.campaigns.updateCampaign);
@@ -80,20 +86,24 @@ const QuestsSection: React.FC<QuestsSectionProps> = ({
     }
   };
 
+  const handleQuestClick = (questId: Id<"quests">) => {
+    navigateToDetail(`/quests/${questId}?campaignId=${campaignId}`);
+  };
+
   return (
     <div className="quests-section">
       <div className="section-header">
-        <div className="header-left">
+        <div className="header-left clickable" onClick={toggleCollapsed}>
           <button 
             className="collapse-button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={(e) => e.stopPropagation()}
             aria-label={isCollapsed ? "Expand quests section" : "Collapse quests section"}
           >
             {isCollapsed ? "▶️" : "▼"}
           </button>
           <h3 className="section-title">📜 Quests ({campaignQuests.length})</h3>
         </div>
-        <div className="header-actions">
+        <div className="header-actions" onClick={(e) => e.stopPropagation()}>
           <button 
             className="add-button"
             onClick={openEntitySelection}
@@ -109,7 +119,10 @@ const QuestsSection: React.FC<QuestsSectionProps> = ({
             <div className="entities-grid">
               {campaignQuests.map((quest: any) => (
                 <div key={quest._id} className="entity-card">
-                  <div className="entity-info">
+                  <div 
+                    className="entity-info clickable"
+                    onClick={() => handleQuestClick(quest._id)}
+                  >
                     <h4 className="entity-name">{quest.name}</h4>
                     <p className="entity-description">
                       {quest.description?.substring(0, 100)}...

@@ -8,15 +8,27 @@
 }
 
 .section-header {
-  @apply flex justify-between items-center p-5 bg-gray-50 border-b border-gray-200;
+  @apply flex justify-between items-center p-5 bg-gray-50 border-b border-gray-200 cursor-pointer transition-colors duration-200;
+}
+
+.section-header:hover {
+  @apply bg-gray-100;
 }
 
 .dark .section-header {
   @apply bg-gray-900 border-gray-700;
 }
 
+.dark .section-header:hover {
+  @apply bg-gray-600;
+}
+
 .header-left {
   @apply flex items-center gap-3;
+}
+
+.header-left.clickable {
+  @apply cursor-pointer;
 }
 
 .collapse-button {
@@ -204,6 +216,34 @@
 
 .event-number {
   @apply w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold;
+}
+
+.event-actions {
+  @apply flex gap-1;
+}
+
+.move-button {
+  @apply p-1 text-gray-500 hover:text-gray-700 bg-transparent border border-gray-300 rounded cursor-pointer transition-all duration-200 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.dark .move-button {
+  @apply text-gray-400 hover:text-gray-200 border-gray-600 hover:bg-gray-600;
+}
+
+.remove-button {
+  @apply p-1 text-red-500 hover:text-red-700 bg-transparent border border-red-300 rounded cursor-pointer transition-all duration-200 hover:bg-red-50;
+}
+
+.dark .remove-button {
+  @apply text-red-400 hover:text-red-300 border-red-600 hover:bg-red-900/30;
+}
+
+.event-info.clickable {
+  @apply cursor-pointer;
+}
+
+.event-info.clickable:hover {
+  @apply opacity-80;
 }
 
 .event-description {

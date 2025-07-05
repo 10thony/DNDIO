@@ -6,38 +6,47 @@ import { Id } from "../../../../convex/_generated/dataModel";
 import { useCollapsibleSection } from "../../../hooks/useCollapsibleSection";
 import { useNavigationState } from "../../../hooks/useNavigationState";
 import EntitySelectionModal from "../../modals/EntitySelectionModal";
-import "./PlayerCharactersSection.css";
+import NPCCreationModal from "../../modals/NPCCreationModal";
+import "./EnemyNPCsSection.css";
 
-interface PlayerCharactersSectionProps {
+interface EnemyNPCsSectionProps {
   campaignId: Id<"campaigns">;
-  playerCharacterIds?: Id<"playerCharacters">[];
+  npcIds?: Id<"npcs">[];
   onUpdate: () => void;
 }
 
-type ModalType = "entitySelection" | null;
+type ModalType = "entitySelection" | "npcCreation" | null;
 
-const PlayerCharactersSection: React.FC<PlayerCharactersSectionProps> = ({
+const EnemyNPCsSection: React.FC<EnemyNPCsSectionProps> = ({
   campaignId,
-  playerCharacterIds = [],
+  npcIds = [],
   onUpdate,
 }) => {
   const { user } = useUser();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const { isCollapsed, toggleCollapsed } = useCollapsibleSection(
-    `player-characters-${campaignId}`,
+    `enemy-npcs-${campaignId}`,
     false
   );
   const { navigateToDetail } = useNavigationState();
 
-  const playerCharacters = useQuery(api.characters.getAllCharacters);
+  const npcs = useQuery(api.npcs.getAllNpcs);
   const updateCampaign = useMutation(api.campaigns.updateCampaign);
 
-  const campaignPlayerCharacters = playerCharacters?.filter(char => 
-    playerCharacterIds.includes(char._id)
+  // Filter for enemy NPCs (non-player NPCs designated as adversaries)
+  // For now, we'll consider all NPCs as potential enemies
+  // In a real implementation, you might have an "isEnemy" field in the NPC schema
+  const campaignEnemyNpcs = npcs?.filter(npc => 
+    npcIds.includes(npc._id) && 
+    npc.characterType === "NonPlayerCharacter"
   ) || [];
 
   const openEntitySelection = () => {
     setActiveModal("entitySelection");
+  };
+
+  const openNPCCreation = () => {
+    setActiveModal("npcCreation");
   };
 
   const closeModal = () => {
@@ -51,16 +60,39 @@ const PlayerCharactersSection: React.FC<PlayerCharactersSectionProps> = ({
     }
     
     try {
-      const currentChars = playerCharacterIds || [];
+      const currentNpcs = npcIds || [];
       await updateCampaign({ 
         id: campaignId,
         clerkId: user.id,
-        participantPlayerCharacterIds: [...currentChars, entityId] 
+        npcIds: [...currentNpcs, entityId] 
       });
       onUpdate();
     } catch (error) {
-      console.error("Error linking player character:", error);
-      alert("Failed to link player character. Please try again.");
+      console.error("Error linking NPC:", error);
+      alert("Failed to link NPC. Please try again.");
+    }
+    
+    closeModal();
+  };
+
+  const handleNPCCreated = async (npcId: Id<"npcs">) => {
+    if (!user?.id) {
+      alert("You must be logged in to perform this action.");
+      return;
+    }
+    
+    try {
+      const currentNpcs = npcIds || [];
+      await updateCampaign({ 
+        id: campaignId,
+        clerkId: user.id,
+        npcIds: [...currentNpcs, npcId] 
+      });
+      onUpdate();
+      alert("NPC created and linked successfully!");
+    } catch (error) {
+      console.error("Error linking NPC:", error);
+      alert("NPC created but failed to link. You can link it manually.");
     }
     
     closeModal();
@@ -73,65 +105,72 @@ const PlayerCharactersSection: React.FC<PlayerCharactersSectionProps> = ({
     }
     
     try {
-      const currentChars = playerCharacterIds || [];
+      const currentNpcs = npcIds || [];
       await updateCampaign({ 
         id: campaignId,
         clerkId: user.id,
-        participantPlayerCharacterIds: currentChars.filter(id => id !== entityId) 
+        npcIds: currentNpcs.filter(id => id !== entityId) 
       });
       onUpdate();
     } catch (error) {
-      console.error("Error unlinking player character:", error);
-      alert("Failed to unlink player character. Please try again.");
+      console.error("Error unlinking NPC:", error);
+      alert("Failed to unlink NPC. Please try again.");
     }
   };
 
-  const handleCharacterClick = (characterId: Id<"playerCharacters">) => {
-    navigateToDetail(`/characters/${characterId}?campaignId=${campaignId}`);
+  const handleNPCClick = (npcId: Id<"npcs">) => {
+    navigateToDetail(`/npcs/${npcId}?campaignId=${campaignId}`);
   };
 
   return (
-    <div className="player-characters-section">
+    <div className="enemy-npcs-section">
       <div className="section-header">
         <div className="header-left clickable" onClick={toggleCollapsed}>
           <button 
             className="collapse-button"
             onClick={(e) => e.stopPropagation()}
-            aria-label={isCollapsed ? "Expand player characters section" : "Collapse player characters section"}
+            aria-label={isCollapsed ? "Expand enemy NPCs section" : "Collapse enemy NPCs section"}
           >
             {isCollapsed ? "▶️" : "▼"}
           </button>
-          <h3 className="section-title">👤 Player Characters ({campaignPlayerCharacters.length})</h3>
+          <h3 className="section-title">⚔️ Enemy NPCs ({campaignEnemyNpcs.length})</h3>
         </div>
         <div className="header-actions" onClick={(e) => e.stopPropagation()}>
           <button 
             className="add-button"
             onClick={openEntitySelection}
           >
-            + Add Character
+            + Link NPC
+          </button>
+          <button 
+            className="add-button"
+            onClick={openNPCCreation}
+          >
+            + Create NPC
           </button>
         </div>
       </div>
       
       {!isCollapsed && (
         <div className="section-content">
-          {campaignPlayerCharacters.length > 0 ? (
+          {campaignEnemyNpcs.length > 0 ? (
             <div className="entities-grid">
-              {campaignPlayerCharacters.map((character: any) => (
-                <div key={character._id} className="entity-card">
+              {campaignEnemyNpcs.map((npc: any) => (
+                <div key={npc._id} className="entity-card">
                   <div 
                     className="entity-info clickable"
-                    onClick={() => handleCharacterClick(character._id)}
+                    onClick={() => handleNPCClick(npc._id)}
                   >
-                    <h4 className="entity-name">{character.name}</h4>
+                    <h4 className="entity-name">{npc.name}</h4>
                     <p className="entity-description">
-                      {character.race} {character.class} (Level {character.level})
+                      {npc.race} {npc.class} (Level {npc.level})
                     </p>
+                    <span className="entity-level">Level: {npc.level}</span>
                   </div>
                   <div className="entity-actions">
                     <button 
                       className="unlink-button"
-                      onClick={() => handleUnlinkEntity(character._id)}
+                      onClick={() => handleUnlinkEntity(npc._id)}
                     >
                       Unlink
                     </button>
@@ -141,7 +180,7 @@ const PlayerCharactersSection: React.FC<PlayerCharactersSectionProps> = ({
             </div>
           ) : (
             <div className="empty-state">
-              <p>No player characters added to this campaign yet.</p>
+              <p>No enemy NPCs added to this campaign yet.</p>
             </div>
           )}
         </div>
@@ -153,13 +192,21 @@ const PlayerCharactersSection: React.FC<PlayerCharactersSectionProps> = ({
           isOpen={true}
           onClose={closeModal}
           onSelect={handleEntitySelect}
-          entityType="playerCharacters"
-          title="Link Player Character"
-          currentLinkedIds={playerCharacterIds}
+          entityType="npcs"
+          title="Link Existing Enemy NPC"
+          currentLinkedIds={npcIds}
+        />
+      )}
+
+      {activeModal === "npcCreation" && (
+        <NPCCreationModal
+          isOpen={true}
+          onClose={closeModal}
+          onSuccess={handleNPCCreated}
         />
       )}
     </div>
   );
 };
 
-export default PlayerCharactersSection; 
+export default EnemyNPCsSection; 

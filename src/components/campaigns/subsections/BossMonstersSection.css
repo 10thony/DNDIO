@@ -8,15 +8,27 @@
 }
 
 .section-header {
-  @apply flex justify-between items-center p-5 bg-gray-50 border-b border-gray-200;
+  @apply flex justify-between items-center p-5 bg-gray-50 border-b border-gray-200 cursor-pointer transition-colors duration-200;
+}
+
+.section-header:hover {
+  @apply bg-gray-100;
 }
 
 .dark .section-header {
   @apply bg-gray-900 border-gray-700;
 }
 
+.dark .section-header:hover {
+  @apply bg-gray-600;
+}
+
 .header-left {
   @apply flex items-center gap-3;
+}
+
+.header-left.clickable {
+  @apply cursor-pointer;
 }
 
 .collapse-button {

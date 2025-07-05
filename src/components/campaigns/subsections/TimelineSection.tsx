@@ -3,6 +3,8 @@ import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
+import { useCollapsibleSection } from "../../../hooks/useCollapsibleSection";
+import { useNavigationState } from "../../../hooks/useNavigationState";
 import "./TimelineSection.css";
 
 interface TimelineSectionProps {
@@ -18,7 +20,11 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({
 }) => {
   const { user } = useUser();
   const [isCreating, setIsCreating] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { isCollapsed, toggleCollapsed } = useCollapsibleSection(
+    `timeline-${campaignId}`,
+    false
+  );
+  const { navigateToDetail } = useNavigationState();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -30,6 +36,8 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({
   const timelineEvents = useQuery(api.timelineEvents.getAllTimelineEvents);
   const createTimelineEvent = useMutation(api.timelineEvents.createTimelineEvent);
   const addTimelineEventToCampaign = useMutation(api.campaigns.addTimelineEventToCampaign);
+  const updateCampaign = useMutation(api.campaigns.updateCampaign);
+  const removeTimelineEventFromCampaign = useMutation(api.campaigns.removeTimelineEventFromCampaign);
 
   const campaignTimelineEvents = timelineEvents?.filter(event => 
     timelineEventIds.includes(event._id)
@@ -48,10 +56,6 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({
     
     if (!formData.description.trim()) {
       newErrors.push("Event description is required");
-    }
-    
-    if (campaignTimelineEvents.length >= 3) {
-      newErrors.push("Maximum of 3 timeline events allowed");
     }
     
     setErrors(newErrors);
@@ -118,11 +122,69 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({
     }
   };
 
+  const handleTimelineEventClick = (eventId: Id<"timelineEvents">) => {
+    navigateToDetail(`/timeline-events/${eventId}?campaignId=${campaignId}`);
+  };
+
+  const handleMoveEvent = async (eventId: Id<"timelineEvents">, direction: 'up' | 'down') => {
+    if (!user?.id) {
+      alert("You must be logged in to perform this action.");
+      return;
+    }
+
+    try {
+      const currentEvents = [...timelineEventIds];
+      const currentIndex = currentEvents.indexOf(eventId);
+      
+      if (direction === 'up' && currentIndex > 0) {
+        // Move up
+        [currentEvents[currentIndex], currentEvents[currentIndex - 1]] = 
+        [currentEvents[currentIndex - 1], currentEvents[currentIndex]];
+      } else if (direction === 'down' && currentIndex < currentEvents.length - 1) {
+        // Move down
+        [currentEvents[currentIndex], currentEvents[currentIndex + 1]] = 
+        [currentEvents[currentIndex + 1], currentEvents[currentIndex]];
+      }
+
+      await updateCampaign({
+        id: campaignId,
+        clerkId: user.id,
+        timelineEventIds: currentEvents
+      });
+      onUpdate();
+    } catch (error) {
+      console.error("Error reordering timeline event:", error);
+      alert("Failed to reorder timeline event. Please try again.");
+    }
+  };
+
+  const handleRemoveEvent = async (eventId: Id<"timelineEvents">) => {
+    if (!user?.id) {
+      alert("You must be logged in to perform this action.");
+      return;
+    }
+
+    if (!confirm("Are you sure you want to remove this timeline event from the campaign?")) {
+      return;
+    }
+
+    try {
+      await removeTimelineEventFromCampaign({
+        campaignId,
+        timelineEventId: eventId,
+      });
+      onUpdate();
+    } catch (error) {
+      console.error("Error removing timeline event:", error);
+      alert("Failed to remove timeline event. Please try again.");
+    }
+  };
+
   if (isCreating) {
     return (
       <div className="timeline-section">
         <div className="section-header">
-          <h3 className="section-title">📅 Timeline Events ({campaignTimelineEvents.length}/3)</h3>
+          <h3 className="section-title">📅 Timeline Events ({campaignTimelineEvents.length})</h3>
           <div className="header-actions">
             <button className="save-button" onClick={handleCreateEvent}>
               💾 Create Event
@@ -203,22 +265,20 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({
   return (
     <div className="timeline-section">
       <div className="section-header">
-        <div className="header-left">
+        <div className="header-left clickable" onClick={toggleCollapsed}>
           <button 
             className="collapse-button"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={(e) => e.stopPropagation()}
             aria-label={isCollapsed ? "Expand timeline section" : "Collapse timeline section"}
           >
             {isCollapsed ? "▶️" : "▼"}
           </button>
-          <h3 className="section-title">📅 Timeline Events ({campaignTimelineEvents.length}/3)</h3>
+          <h3 className="section-title">📅 Timeline Events ({campaignTimelineEvents.length})</h3>
         </div>
-        <div className="header-actions">
-          {campaignTimelineEvents.length < 3 && (
-            <button className="add-button" onClick={() => setIsCreating(true)}>
-              ➕ Add Event
-            </button>
-          )}
+        <div className="header-actions" onClick={(e) => e.stopPropagation()}>
+          <button className="add-button" onClick={() => setIsCreating(true)}>
+            ➕ Add Event
+          </button>
         </div>
       </div>
 
@@ -226,7 +286,7 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({
         <div className="timeline-content">
           {campaignTimelineEvents.length === 0 ? (
             <div className="empty-state">
-              <p>No timeline events yet. Add up to 3 key events for your campaign.</p>
+              <p>No timeline events yet. Add key events for your campaign.</p>
               <div className="event-suggestions">
                 <div className="suggestion-item">
                   <span className="suggestion-icon">⚔️</span>
@@ -250,7 +310,10 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({
                     <div className="event-icon">
                       {getEventTypeIcon(event.type || "Custom")}
                     </div>
-                    <div className="event-info">
+                    <div 
+                      className="event-info clickable"
+                      onClick={() => handleTimelineEventClick(event._id)}
+                    >
                       <h4 className="event-title">{event.title}</h4>
                       <div className="event-meta">
                         <span className="event-type">{event.type || "Custom"}</span>
@@ -258,6 +321,33 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({
                       </div>
                     </div>
                     <div className="event-number">{index + 1}</div>
+                    {campaignTimelineEvents.length > 3 && (
+                      <div className="event-actions">
+                        <button
+                          className="move-button"
+                          onClick={() => handleMoveEvent(event._id, 'up')}
+                          disabled={index === 0}
+                          title="Move up"
+                        >
+                          ⬆️
+                        </button>
+                        <button
+                          className="move-button"
+                          onClick={() => handleMoveEvent(event._id, 'down')}
+                          disabled={index === campaignTimelineEvents.length - 1}
+                          title="Move down"
+                        >
+                          ⬇️
+                        </button>
+                        <button
+                          className="remove-button"
+                          onClick={() => handleRemoveEvent(event._id)}
+                          title="Remove event"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div className="event-description">
                     {event.description}
@@ -267,9 +357,9 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({
             </div>
           )}
 
-          {campaignTimelineEvents.length === 3 && (
+          {campaignTimelineEvents.length >= 3 && (
             <div className="completion-notice">
-              ✅ Timeline complete! You have all 3 required events.
+              ✅ Timeline has {campaignTimelineEvents.length} events. You can now reorder and remove events.
             </div>
           )}
         </div>

@@ -229,9 +229,9 @@ const App: React.FC = () => {
                     </AdminRoute>
                   } />
                   <Route path="/locations/:locationId" element={
-                    <AdminRoute>
+                    <ProtectedRoute>
                       <LocationDetails />
-                    </AdminRoute>
+                    </ProtectedRoute>
                   } />
                   <Route path="/actions" element={
                     <AdminRoute>
@@ -254,9 +254,9 @@ const App: React.FC = () => {
                     </AdminRoute>
                   } />
                   <Route path="/quests/:questId" element={
-                    <AdminRoute>
+                    <ProtectedRoute>
                       <QuestDetail />
-                    </AdminRoute>
+                    </ProtectedRoute>
                   } />
                   <Route path="/quests/:questId/tasks/new" element={
                     <AdminRoute>
@@ -269,14 +269,19 @@ const App: React.FC = () => {
                     </AdminRoute>
                   } />
                   <Route path="/monsters/:id" element={
-                    <AdminRoute>
+                    <ProtectedRoute>
                       <MonsterDetail />
-                    </AdminRoute>
+                    </ProtectedRoute>
                   } />
                   <Route path="/npcs" element={
                     <AdminRoute>
                       <NPCsList />
                     </AdminRoute>
+                  } />
+                  <Route path="/npcs/:id" element={
+                    <ProtectedRoute>
+                      <CharacterDetail />
+                    </ProtectedRoute>
                   } />
                   <Route path="/factions" element={
                     <AdminRoute>
@@ -299,9 +304,9 @@ const App: React.FC = () => {
                     </AdminRoute>
                   } />
                   <Route path="/timeline-events/:id" element={
-                    <AdminRoute>
+                    <ProtectedRoute>
                       <TimelineEventDetailWrapper />
-                    </AdminRoute>
+                    </ProtectedRoute>
                   } />
                   <Route path="/admin/users" element={
                     <AdminRoute>

@@ -1,15 +1,18 @@
 // import React from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { Id } from "../../convex/_generated/dataModel";
 import { useAuth } from "@clerk/clerk-react";
 import { MapPreview } from "./maps/MapPreview";
+import BackToCampaign from "./BackToCampaign";
 import "./LocationForm.css";
 
 export default function LocationDetails() {
   const { userId } = useAuth();
   const { locationId } = useParams();
+  const [searchParams] = useSearchParams();
+  const campaignId = searchParams.get('campaignId');
   const location = useQuery(api.locations.get, { id: locationId as Id<"locations"> });
   const maps = useQuery(api.maps.getUserMaps, userId ? { clerkId: userId } : "skip") || [];
 
@@ -51,12 +54,16 @@ export default function LocationDetails() {
           >
             Edit Location
           </Link>
-          <Link
-            to="/locations"
-            className="btn-secondary"
-          >
-            Back to Locations
-          </Link>
+          {campaignId ? (
+            <BackToCampaign campaignId={campaignId} />
+          ) : (
+            <Link
+              to="/locations"
+              className="btn-secondary"
+            >
+              Back to Locations
+            </Link>
+          )}
         </div>
       </div>
 

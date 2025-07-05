@@ -102,10 +102,36 @@ export const getCharacterById = query({
   },
 });
 
+export const getCharacterOrNpcById = query({
+  args: { id: v.union(v.id("playerCharacters"), v.id("npcs")) },
+  handler: async (ctx, args) => {
+    // Try to get from playerCharacters first
+    const playerCharacter = await ctx.db.get(args.id as any);
+    if (playerCharacter) {
+      return { ...playerCharacter, _table: "playerCharacters" };
+    }
+    
+    // If not found, try to get from npcs
+    const npc = await ctx.db.get(args.id as any);
+    if (npc) {
+      return { ...npc, _table: "npcs" };
+    }
+    
+    return null;
+  },
+});
+
 export const deleteCharacter = mutation({
   args: { id: v.id("playerCharacters") },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
+  },
+});
+
+export const deleteCharacterOrNpc = mutation({
+  args: { id: v.union(v.id("playerCharacters"), v.id("npcs")) },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id as any);
   },
 });
 

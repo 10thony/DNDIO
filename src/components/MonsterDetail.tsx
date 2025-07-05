@@ -1,14 +1,17 @@
 import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import MonsterForm from "./MonsterForm";
+import BackToCampaign from "./BackToCampaign";
 import "./MonsterDetail.css";
 
 const MonsterDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const campaignId = searchParams.get('campaignId');
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
@@ -82,6 +85,7 @@ const MonsterDetail: React.FC = () => {
           </div>
         </div>
         <div className="header-actions">
+          {campaignId && <BackToCampaign campaignId={campaignId} />}
           <button
             className="edit-button"
             onClick={handleEdit}
