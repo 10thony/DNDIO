@@ -28,6 +28,17 @@ const InteractionsSection: React.FC<InteractionsSectionProps> = ({
   const interactions = useQuery(api.interactions.getAllInteractions);
   const createInteraction = useMutation(api.interactions.createInteraction);
   const updateInteraction = useMutation(api.interactions.updateInteraction);
+  const activateInteraction = useMutation(api.interactions.activateInteraction);
+
+  // Get campaign interactions specifically
+  const campaignInteractions = interactions?.filter(interaction => 
+    interaction.campaignId === campaignId
+  ) || [];
+
+  // Get active interaction for this campaign
+  const activeInteraction = campaignInteractions.find(interaction => 
+    interaction.status !== "COMPLETED" && interaction.status !== "CANCELLED"
+  );
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -49,6 +60,70 @@ const InteractionsSection: React.FC<InteractionsSectionProps> = ({
     } catch (error) {
       console.error("Error updating interaction:", error);
     }
+  };
+
+  const handleActivateInteraction = async (e: React.MouseEvent, interactionId: Id<"interactions">) => {
+    e.stopPropagation();
+    try {
+      await activateInteraction({ 
+        interactionId: interactionId, 
+        campaignId: campaignId 
+      });
+      onUpdate();
+    } catch (error) {
+      console.error("Error activating interaction:", error);
+    }
+  };
+
+  const handleJoinLiveInteraction = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/campaigns/${campaignId}/live-interaction`);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "PENDING_INITIATIVE":
+        return "yellow";
+      case "INITIATIVE_ROLLED":
+        return "blue";
+      case "WAITING_FOR_PLAYER_TURN":
+        return "green";
+      case "PROCESSING_PLAYER_ACTION":
+        return "purple";
+      case "DM_REVIEW":
+        return "orange";
+      case "COMPLETED":
+        return "gray";
+      case "CANCELLED":
+        return "red";
+      default:
+        return "gray";
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "PENDING_INITIATIVE":
+        return "🎲";
+      case "INITIATIVE_ROLLED":
+        return "📋";
+      case "WAITING_FOR_PLAYER_TURN":
+        return "⏳";
+      case "PROCESSING_PLAYER_ACTION":
+        return "⚡";
+      case "DM_REVIEW":
+        return "👁️";
+      case "COMPLETED":
+        return "✅";
+      case "CANCELLED":
+        return "❌";
+      default:
+        return "❓";
+    }
+  };
+
+  const formatStatus = (status: string) => {
+    return status.replace(/_/g, ' ');
   };
 
   const validateForm = (): boolean => {
@@ -164,9 +239,24 @@ const InteractionsSection: React.FC<InteractionsSectionProps> = ({
           >
             {isCollapsed ? "▶️" : "▼"}
           </button>
-          <h3 className="section-title">💬 Interactions ({interactions?.length || 0})</h3>
+          <h3 className="section-title">
+            💬 Interactions ({campaignInteractions.length})
+            {activeInteraction && (
+              <span className={`active-status-badge status-${getStatusColor(activeInteraction.status)}`}>
+                {getStatusIcon(activeInteraction.status)} Active
+              </span>
+            )}
+          </h3>
         </div>
         <div className="header-actions">
+          {activeInteraction && (
+            <button 
+              className="join-live-button"
+              onClick={handleJoinLiveInteraction}
+            >
+              🎮 Join Live
+            </button>
+          )}
           <button className="add-button" onClick={() => setIsCreating(true)}>
             ➕ Add Interaction
           </button>
@@ -195,17 +285,25 @@ const InteractionsSection: React.FC<InteractionsSectionProps> = ({
             </div>
           ) : (
             <div className="interactions-list">
-              {interactions.map((interaction) => {
+              {campaignInteractions.map((interaction) => {
                 const isLinked = interaction.campaignId === campaignId;
+                const isActive = interaction.status !== "COMPLETED" && interaction.status !== "CANCELLED";
+                const isActiveInteraction = activeInteraction?._id === interaction._id;
+                
                 return (
                   <div 
                     key={interaction._id} 
-                    className="interaction-item"
+                    className={`interaction-item ${isActiveInteraction ? 'active-interaction' : ''}`}
                     onClick={() => handleInteractionClick(interaction._id)}
                     style={{ cursor: 'pointer' }}
                   >
                     <div className="interaction-header">
-                      <h4 className="interaction-name">{interaction.name}</h4>
+                      <div className="interaction-title-section">
+                        <h4 className="interaction-name">{interaction.name}</h4>
+                        <span className={`status-badge status-${getStatusColor(interaction.status)}`}>
+                          {getStatusIcon(interaction.status)} {formatStatus(interaction.status)}
+                        </span>
+                      </div>
                       <div className="interaction-meta">
                         <span className="interaction-date">
                           {new Date(interaction.createdAt).toLocaleDateString()}
@@ -233,6 +331,24 @@ const InteractionsSection: React.FC<InteractionsSectionProps> = ({
                       )}
                     </div>
                     <div className="interaction-actions">
+                      <div className="interaction-quick-actions">
+                        {isActive && !isActiveInteraction && (
+                          <button
+                            className="activate-button"
+                            onClick={(e) => handleActivateInteraction(e, interaction._id)}
+                          >
+                            🚀 Activate
+                          </button>
+                        )}
+                        {isActiveInteraction && (
+                          <button
+                            className="join-live-button"
+                            onClick={handleJoinLiveInteraction}
+                          >
+                            🎮 Join Live
+                          </button>
+                        )}
+                      </div>
                       <div className="interaction-link-actions">
                         {isLinked ? (
                           <button

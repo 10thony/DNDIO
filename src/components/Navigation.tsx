@@ -20,7 +20,7 @@ const Navigation: React.FC<NavigationProps> = ({ isCollapsed, setIsCollapsed }) 
   });
 
   // Query for active interactions to show indicator
-  const activeInteractions = useQuery(api.interactions.getAllActiveInteractions);
+  const activeInteractions = useQuery(api.interactions.subscribeToActiveInteractions);
 
   const isAdmin = userRole === "admin";
   const isAuthenticated = !!user;

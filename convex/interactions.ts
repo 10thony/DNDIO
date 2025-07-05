@@ -621,10 +621,388 @@ export const getAllActiveInteractions = query({
     return await ctx.db
       .query("interactions")
       .filter((q) => 
-        q.neq(q.field("status"), "COMPLETED") && 
-        q.neq(q.field("status"), "CANCELLED")
+        q.and(
+          q.neq(q.field("status"), "COMPLETED"),
+          q.neq(q.field("status"), "CANCELLED")
+        )
       )
       .order("desc")
       .collect();
   },
-}); 
+});
+
+export const activateInteraction = mutation({
+  args: {
+    interactionId: v.id("interactions"),
+    campaignId: v.id("campaigns"),
+  },
+  handler: async (ctx, args) => {
+    // Update interaction with campaign and active status
+    await ctx.db.patch(args.interactionId, {
+      campaignId: args.campaignId,
+      status: "PENDING_INITIATIVE",
+      updatedAt: Date.now(),
+    });
+    
+    // Set as active interaction for campaign
+    await ctx.db.patch(args.campaignId, {
+      activeInteractionId: args.interactionId,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const setActiveInteraction = mutation({
+  args: {
+    campaignId: v.id("campaigns"),
+    interactionId: v.id("interactions"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.campaignId, {
+      activeInteractionId: args.interactionId,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+// ===== TRUE CONVEX SUBSCRIPTIONS FOR REAL-TIME UPDATES =====
+
+export const subscribeToInteractionStatus = query({
+  args: { interactionId: v.id("interactions") },
+  handler: async (ctx, args) => {
+    const interaction = await ctx.db.get(args.interactionId);
+    if (!interaction) {
+      return null;
+    }
+
+    // This query will automatically re-run when the interaction is updated
+    return {
+      id: interaction._id,
+      status: interaction.status,
+      currentInitiativeIndex: interaction.currentInitiativeIndex,
+      updatedAt: interaction.updatedAt,
+      participantCount: {
+        playerCharacters: interaction.participantPlayerCharacterIds?.length || 0,
+        npcs: interaction.participantNpcIds?.length || 0,
+        monsters: interaction.participantMonsterIds?.length || 0,
+      }
+    };
+  },
+});
+
+export const subscribeToInteractionParticipants = query({
+  args: { interactionId: v.id("interactions") },
+  handler: async (ctx, args) => {
+    const interaction = await ctx.db.get(args.interactionId);
+    if (!interaction) {
+      return null;
+    }
+
+    // This query will automatically re-run when participants change
+    const playerCharacters = interaction.participantPlayerCharacterIds 
+      ? await Promise.all(interaction.participantPlayerCharacterIds.map(async (id) => {
+          const pc = await ctx.db.get(id);
+          return pc ? {
+            id: pc._id,
+            name: pc.name,
+            level: pc.level,
+            class: pc.class,
+            isActive: true
+          } : null;
+        }))
+      : [];
+    
+    const npcs = interaction.participantNpcIds 
+      ? await Promise.all(interaction.participantNpcIds.map(async (id) => {
+          const npc = await ctx.db.get(id);
+          return npc ? {
+            id: npc._id,
+            name: npc.name,
+            role: npc.class,
+            isActive: true
+          } : null;
+        }))
+      : [];
+    
+    const monsters = interaction.participantMonsterIds 
+      ? await Promise.all(interaction.participantMonsterIds.map(async (id) => {
+          const monster = await ctx.db.get(id);
+          return monster ? {
+            id: monster._id,
+            name: monster.name,
+            type: monster.type,
+            isActive: true
+          } : null;
+        }))
+      : [];
+
+    return {
+      playerCharacters: playerCharacters.filter(Boolean),
+      npcs: npcs.filter(Boolean),
+      monsters: monsters.filter(Boolean),
+      totalParticipants: playerCharacters.length + npcs.length + monsters.length,
+    };
+  },
+});
+
+export const subscribeToInteractionActions = query({
+  args: { interactionId: v.id("interactions") },
+  handler: async (ctx, args) => {
+    // This query will automatically re-run when actions are added/updated
+    const actions = await ctx.db
+      .query("playerActions")
+      .filter((q) => q.eq(q.field("interactionId"), args.interactionId))
+      .order("desc")
+      .collect();
+
+    return {
+      actions: actions.map(action => ({
+        id: action._id,
+        playerCharacterId: action.playerCharacterId,
+        actionDescription: action.actionDescription,
+        actionType: action.actionType,
+        status: action.status,
+        submittedAt: action.submittedAt,
+        dmNotes: action.dmNotes,
+      })),
+      pendingCount: actions.filter(a => a.status === "PENDING").length,
+      resolvedCount: actions.filter(a => a.status === "RESOLVED").length,
+      totalCount: actions.length,
+    };
+  },
+});
+
+export const subscribeToActiveInteractions = query({
+  handler: async (ctx) => {
+    // This query will automatically re-run when any interaction status changes
+    return await ctx.db
+      .query("interactions")
+      .filter((q) => 
+        q.and(
+          q.neq(q.field("status"), "COMPLETED"),
+          q.neq(q.field("status"), "CANCELLED")
+        )
+      )
+      .order("desc")
+      .collect();
+  },
+});
+
+export const subscribeToCampaignActiveInteraction = query({
+  args: { campaignId: v.id("campaigns") },
+  handler: async (ctx, args) => {
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!campaign?.activeInteractionId) {
+      return null;
+    }
+
+    const interaction = await ctx.db.get(campaign.activeInteractionId);
+    if (!interaction) {
+      return null;
+    }
+
+    return {
+      id: interaction._id,
+      name: interaction.name,
+      status: interaction.status,
+      currentInitiativeIndex: interaction.currentInitiativeIndex,
+      updatedAt: interaction.updatedAt,
+    };
+  },
+});
+
+// Enhanced mutation for real-time status updates with optimistic updates
+export const updateInteractionStatusRealTime = mutation({
+  args: {
+    interactionId: v.id("interactions"),
+    status: v.union(
+      v.literal("PENDING_INITIATIVE"),
+      v.literal("INITIATIVE_ROLLED"), 
+      v.literal("WAITING_FOR_PLAYER_TURN"),
+      v.literal("PROCESSING_PLAYER_ACTION"),
+      v.literal("DM_REVIEW"),
+      v.literal("COMPLETED"),
+      v.literal("CANCELLED")
+    ),
+    currentInitiativeIndex: v.optional(v.number()),
+    initiativeOrder: v.optional(v.array(v.object({
+      entityId: v.string(),
+      entityType: v.union(v.literal("playerCharacter"), v.literal("npc"), v.literal("monster")),
+      initiativeRoll: v.number()
+    }))),
+  },
+  handler: async (ctx, args) => {
+    const { interactionId, status, currentInitiativeIndex, initiativeOrder } = args;
+    
+    // Validate the interaction exists
+    const interaction = await ctx.db.get(interactionId);
+    if (!interaction) {
+      throw new Error("Interaction not found");
+    }
+
+    // Apply updates with timestamp
+    await ctx.db.patch(interactionId, {
+      status,
+      ...(currentInitiativeIndex !== undefined && { currentInitiativeIndex }),
+      ...(initiativeOrder && { initiativeOrder }),
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, updatedAt: Date.now() };
+  },
+});
+
+// Real-time participant management
+export const addPlayerCharacterToInteraction = mutation({
+  args: {
+    interactionId: v.id("interactions"),
+    playerCharacterId: v.id("playerCharacters"),
+  },
+  handler: async (ctx, args) => {
+    const { interactionId, playerCharacterId } = args;
+    
+    const interaction = await ctx.db.get(interactionId);
+    if (!interaction) {
+      throw new Error("Interaction not found");
+    }
+
+    const currentParticipants = interaction.participantPlayerCharacterIds || [];
+    if (!currentParticipants.includes(playerCharacterId)) {
+      currentParticipants.push(playerCharacterId);
+      await ctx.db.patch(interactionId, {
+        participantPlayerCharacterIds: currentParticipants,
+        updatedAt: Date.now(),
+      });
+    }
+
+    return { success: true, updatedAt: Date.now() };
+  },
+});
+
+export const addNpcToInteraction = mutation({
+  args: {
+    interactionId: v.id("interactions"),
+    npcId: v.id("npcs"),
+  },
+  handler: async (ctx, args) => {
+    const { interactionId, npcId } = args;
+    
+    const interaction = await ctx.db.get(interactionId);
+    if (!interaction) {
+      throw new Error("Interaction not found");
+    }
+
+    const currentParticipants = interaction.participantNpcIds || [];
+    if (!currentParticipants.includes(npcId)) {
+      currentParticipants.push(npcId);
+      await ctx.db.patch(interactionId, {
+        participantNpcIds: currentParticipants,
+        updatedAt: Date.now(),
+      });
+    }
+
+    return { success: true, updatedAt: Date.now() };
+  },
+});
+
+export const addMonsterToInteraction = mutation({
+  args: {
+    interactionId: v.id("interactions"),
+    monsterId: v.id("monsters"),
+  },
+  handler: async (ctx, args) => {
+    const { interactionId, monsterId } = args;
+    
+    const interaction = await ctx.db.get(interactionId);
+    if (!interaction) {
+      throw new Error("Interaction not found");
+    }
+
+    const currentParticipants = interaction.participantMonsterIds || [];
+    if (!currentParticipants.includes(monsterId)) {
+      currentParticipants.push(monsterId);
+      await ctx.db.patch(interactionId, {
+        participantMonsterIds: currentParticipants,
+        updatedAt: Date.now(),
+      });
+    }
+
+    return { success: true, updatedAt: Date.now() };
+  },
+});
+
+export const removePlayerCharacterFromInteraction = mutation({
+  args: {
+    interactionId: v.id("interactions"),
+    playerCharacterId: v.id("playerCharacters"),
+  },
+  handler: async (ctx, args) => {
+    const { interactionId, playerCharacterId } = args;
+    
+    const interaction = await ctx.db.get(interactionId);
+    if (!interaction) {
+      throw new Error("Interaction not found");
+    }
+
+    const currentParticipants = interaction.participantPlayerCharacterIds || [];
+    const updatedParticipants = currentParticipants.filter(id => id !== playerCharacterId);
+    await ctx.db.patch(interactionId, {
+      participantPlayerCharacterIds: updatedParticipants,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, updatedAt: Date.now() };
+  },
+});
+
+export const removeNpcFromInteraction = mutation({
+  args: {
+    interactionId: v.id("interactions"),
+    npcId: v.id("npcs"),
+  },
+  handler: async (ctx, args) => {
+    const { interactionId, npcId } = args;
+    
+    const interaction = await ctx.db.get(interactionId);
+    if (!interaction) {
+      throw new Error("Interaction not found");
+    }
+
+    const currentParticipants = interaction.participantNpcIds || [];
+    const updatedParticipants = currentParticipants.filter(id => id !== npcId);
+    await ctx.db.patch(interactionId, {
+      participantNpcIds: updatedParticipants,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, updatedAt: Date.now() };
+  },
+});
+
+export const removeMonsterFromInteraction = mutation({
+  args: {
+    interactionId: v.id("interactions"),
+    monsterId: v.id("monsters"),
+  },
+  handler: async (ctx, args) => {
+    const { interactionId, monsterId } = args;
+    
+    const interaction = await ctx.db.get(interactionId);
+    if (!interaction) {
+      throw new Error("Interaction not found");
+    }
+
+    const currentParticipants = interaction.participantMonsterIds || [];
+    const updatedParticipants = currentParticipants.filter(id => id !== monsterId);
+    await ctx.db.patch(interactionId, {
+      participantMonsterIds: updatedParticipants,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, updatedAt: Date.now() };
+  },
+});
+
+
+
+ 

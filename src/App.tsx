@@ -31,6 +31,7 @@ import CampaignDetail from "./components/campaigns/CampaignDetail";
 import CampaignCreationForm from "./components/campaigns/CampaignCreationForm";
 import { LiveInteractionDashboard } from "./components/live-interactions/LiveInteractionDashboard";
 import { LiveInteractionCreationForm } from "./components/live-interactions/LiveInteractionCreationForm";
+import LiveInteractionList from "./components/live-interactions/LiveInteractionList";
 import AdminUsers from "./pages/AdminUsers";
 import { UserSync } from "./components/UserSync";
 import { UserDebug } from "./components/UserDebug";
@@ -149,6 +150,11 @@ const App: React.FC = () => {
                   <Route path="/campaigns/:id/live-interaction/create" element={
                     <ProtectedRoute>
                       <LiveInteractionCreationWrapper />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/live-interactions" element={
+                    <ProtectedRoute>
+                      <LiveInteractionList />
                     </ProtectedRoute>
                   } />
                   <Route path="/live-interactions/:id" element={

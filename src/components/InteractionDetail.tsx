@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useUser } from "@clerk/clerk-react";
 // import { useDarkMode } from "../contexts/DarkModeContext";
 import InteractionCreationForm from "./InteractionCreationForm";
 import EntitySelectionModal from "./modals/EntitySelectionModal";
@@ -23,6 +24,7 @@ type ModalType =
   | "questCreation"
   | "questTaskCreation"
   | "characterCreation"
+  | "campaignSelection"
   | null;
 
 type EntityType = "quests" | "questTasks" | "locations" | "npcs" | "monsters" | "playerCharacters" | "timelineEvents";
@@ -30,16 +32,25 @@ type EntityType = "quests" | "questTasks" | "locations" | "npcs" | "monsters" | 
 const InteractionDetail: React.FC<InteractionDetailProps> = ({ interactionId }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user } = useUser();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [entitySelectionType, setEntitySelectionType] = useState<EntityType>("quests");
   const [entitySelectionTitle, setEntitySelectionTitle] = useState("");
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [selectedCampaignId, setSelectedCampaignId] = useState<Id<"campaigns"> | null>(null);
   
   const interaction = useQuery(api.interactions.getInteractionById, { id: interactionId });
   const deleteInteraction = useMutation(api.interactions.deleteInteraction);
   const updateInteraction = useMutation(api.interactions.updateInteraction);
+  const activateInteraction = useMutation(api.interactions.activateInteraction);
+  const setActiveInteraction = useMutation(api.interactions.setActiveInteraction);
+  
+  // Get user's campaigns for linking
+  const userCampaigns = useQuery(api.campaigns.getAllCampaigns, { 
+    clerkId: user?.id || undefined 
+  });
   
   // Check if user came from a campaign
   const fromCampaignId = searchParams.get('fromCampaign');
@@ -204,22 +215,58 @@ const InteractionDetail: React.FC<InteractionDetailProps> = ({ interactionId }) 
     closeModal();
   };
 
-  const handleMonsterCreated = async (monsterId: Id<"monsters">) => {
-    if (!interaction) return;
+  const handleMonsterCreated = async () => {
+    alert("Monster created successfully! You can now link it to this interaction.");
+    closeModal();
+  };
+
+  const handleActivateInteraction = async () => {
+    if (!selectedCampaignId) {
+      alert("Please select a campaign to activate this interaction.");
+      return;
+    }
 
     try {
-      const currentMonsters = interaction.monsterIds || [];
-      await updateInteraction({ 
-        id: interactionId, 
-        monsterIds: [...currentMonsters, monsterId] 
+      // Link to campaign and set as active
+      await activateInteraction({ 
+        interactionId: interactionId, 
+        campaignId: selectedCampaignId
       });
-      alert("Monster created and linked successfully!");
+      
+      alert("Interaction activated successfully! You can now join the live interaction.");
+      setSelectedCampaignId(null);
+      setActiveModal(null);
     } catch (error) {
-      console.error("Error linking monster:", error);
-      alert("Monster created but failed to link. You can link it manually.");
+      console.error("Error activating interaction:", error);
+      alert("Failed to activate interaction. Please try again.");
     }
-    
-    closeModal();
+  };
+
+  const handleJoinLiveInteraction = () => {
+    if (!interaction?.campaignId) {
+      alert("This interaction is not linked to a campaign.");
+      return;
+    }
+    navigate(`/campaigns/${interaction.campaignId}/live-interaction`);
+  };
+
+  const handleCompleteInteraction = async () => {
+    if (window.confirm("Are you sure you want to mark this interaction as completed?")) {
+      try {
+        await updateInteraction({ 
+          id: interactionId, 
+          status: "COMPLETED" 
+        });
+        alert("Interaction marked as completed.");
+      } catch (error) {
+        console.error("Error completing interaction:", error);
+        alert("Failed to complete interaction. Please try again.");
+      }
+    }
+  };
+
+  const openCampaignSelection = () => {
+    setActiveModal("campaignSelection");
   };
 
   const handleUnlinkEntity = async (entityType: string, entityId: Id<any>) => {
@@ -410,6 +457,59 @@ const InteractionDetail: React.FC<InteractionDetailProps> = ({ interactionId }) 
           <p className="description-content">{interaction.description}</p>
         </div>
       )}
+
+      {/* Status Management Section */}
+      <div className="status-management-section">
+        <h3 className="section-title">Interaction Status</h3>
+        <div className="status-display">
+          <span className={`status-badge ${interaction.status.toLowerCase().replace(/_/g, '-')}`}>
+            {interaction.status.replace(/_/g, ' ')}
+          </span>
+        </div>
+        
+        {/* Action Buttons based on current status */}
+        {interaction.status === "PENDING_INITIATIVE" && !interaction.campaignId && (
+          <div className="status-actions">
+            <button 
+              className="action-button primary"
+              onClick={openCampaignSelection}
+            >
+              🚀 Activate Interaction
+            </button>
+            <p className="status-help-text">
+              Link this interaction to a campaign to start live interaction mode.
+            </p>
+          </div>
+        )}
+        
+        {interaction.status !== "COMPLETED" && interaction.status !== "CANCELLED" && interaction.campaignId && (
+          <div className="status-actions">
+            <button 
+              className="action-button primary"
+              onClick={handleJoinLiveInteraction}
+            >
+              🎮 Join Live Interaction
+            </button>
+            <p className="status-help-text">
+              Enter live interaction mode to manage this encounter in real-time.
+            </p>
+          </div>
+        )}
+        
+        {interaction.status === "PENDING_INITIATIVE" && (
+          <div className="status-actions">
+            <button 
+              className="action-button secondary"
+              onClick={handleCompleteInteraction}
+            >
+              ✅ Mark as Completed
+            </button>
+            <p className="status-help-text">
+              Mark this interaction as completed if it's been resolved.
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Dynamic Content Sections */}
       <div className="interaction-sections">
@@ -814,6 +914,51 @@ const InteractionDetail: React.FC<InteractionDetailProps> = ({ interactionId }) 
           onClose={closeModal}
           onSuccess={handleMonsterCreated}
         />
+      )}
+
+      {activeModal === "campaignSelection" && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Select Campaign to Activate Interaction</h3>
+              <button className="modal-close" onClick={closeModal}>×</button>
+            </div>
+            <div className="modal-body">
+              {userCampaigns && userCampaigns.length > 0 ? (
+                <div className="campaign-selection-list">
+                  {userCampaigns.map((campaign) => (
+                    <div 
+                      key={campaign._id} 
+                      className={`campaign-option ${selectedCampaignId === campaign._id ? 'selected' : ''}`}
+                      onClick={() => setSelectedCampaignId(campaign._id)}
+                    >
+                      <h4>{campaign.name}</h4>
+                      <p>{campaign.description || "No description"}</p>
+                      <span className="campaign-dm">DM: {campaign.dmId}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p>No campaigns available. Please create a campaign first.</p>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="action-button secondary" 
+                onClick={closeModal}
+              >
+                Cancel
+              </button>
+              <button 
+                className="action-button primary" 
+                onClick={handleActivateInteraction}
+                disabled={!selectedCampaignId}
+              >
+                Activate Interaction
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
