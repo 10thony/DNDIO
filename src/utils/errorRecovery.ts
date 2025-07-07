@@ -391,7 +391,7 @@ export class ErrorRecoveryManager {
     console.warn('Authentication error detected - user may need to re-authenticate');
   }
 
-  private handleConflictError(classification: ErrorClassification): void {
+  private handleConflictError(_classification: ErrorClassification): void {
     // Implement conflict resolution
     console.warn('Conflict detected - may need manual resolution');
   }

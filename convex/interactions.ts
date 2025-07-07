@@ -1003,6 +1003,133 @@ export const removeMonsterFromInteraction = mutation({
   },
 });
 
+// ===== NEW INTERACTION MANAGEMENT FUNCTIONS =====
+
+export const getAvailableInteractionsForCampaign = query({
+  args: { campaignId: v.id("campaigns") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("interactions")
+      .filter((q) => 
+        q.or(
+          q.eq(q.field("campaignId"), undefined),
+          q.neq(q.field("campaignId"), args.campaignId)
+        )
+      )
+      .order("desc")
+      .collect();
+  },
+});
+
+export const getUnlinkedInteractions = query({
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("interactions")
+      .filter((q) => q.eq(q.field("campaignId"), undefined))
+      .order("desc")
+      .collect();
+  },
+});
+
+export const linkInteractionToCampaign = mutation({
+  args: {
+    campaignId: v.id("campaigns"),
+    interactionId: v.id("interactions"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.interactionId, {
+      campaignId: args.campaignId,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const unlinkInteractionFromCampaign = mutation({
+  args: {
+    interactionId: v.id("interactions"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.interactionId, {
+      campaignId: undefined,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const bulkLinkInteractionsToCampaign = mutation({
+  args: {
+    campaignId: v.id("campaigns"),
+    interactionIds: v.array(v.id("interactions")),
+  },
+  handler: async (ctx, args) => {
+    const results = [];
+    for (const interactionId of args.interactionIds) {
+      try {
+        await ctx.db.patch(interactionId, {
+          campaignId: args.campaignId,
+          updatedAt: Date.now(),
+        });
+        results.push({ interactionId, success: true });
+      } catch (error) {
+        results.push({ interactionId, success: false, error: String(error) });
+      }
+    }
+    return results;
+  },
+});
+
+export const bulkUnlinkInteractionsFromCampaign = mutation({
+  args: {
+    interactionIds: v.array(v.id("interactions")),
+  },
+  handler: async (ctx, args) => {
+    const results = [];
+    for (const interactionId of args.interactionIds) {
+      try {
+        await ctx.db.patch(interactionId, {
+          campaignId: undefined,
+          updatedAt: Date.now(),
+        });
+        results.push({ interactionId, success: true });
+      } catch (error) {
+        results.push({ interactionId, success: false, error: String(error) });
+      }
+    }
+    return results;
+  },
+});
+
+// ===== OPTIMISTIC UPDATE FUNCTIONS =====
+
+export const updateInteractionOptimistic = mutation({
+  args: {
+    id: v.id("interactions"),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    campaignId: v.optional(v.id("campaigns")),
+    relatedQuestId: v.optional(v.id("quests")),
+    questTaskId: v.optional(v.id("questTasks")),
+    playerCharacterIds: v.optional(v.array(v.id("playerCharacters"))),
+    npcIds: v.optional(v.array(v.id("npcs"))),
+    monsterIds: v.optional(v.array(v.id("monsters"))),
+    timelineEventIds: v.optional(v.array(v.id("timelineEvents"))),
+    status: v.optional(v.union(
+      v.literal("PENDING_INITIATIVE"),
+      v.literal("INITIATIVE_ROLLED"), 
+      v.literal("WAITING_FOR_PLAYER_TURN"),
+      v.literal("PROCESSING_PLAYER_ACTION"),
+      v.literal("DM_REVIEW"),
+      v.literal("COMPLETED"),
+      v.literal("CANCELLED")
+    )),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...updates } = args;
+    await ctx.db.patch(id, { ...updates, updatedAt: Date.now() });
+    return { success: true, updatedAt: Date.now() };
+  },
+});
+
 
 
  

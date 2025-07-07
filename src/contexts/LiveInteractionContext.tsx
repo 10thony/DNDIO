@@ -276,6 +276,9 @@ interface LiveInteractionContextType {
   batchDispatch: (actions: LiveInteractionAction[]) => void;
   getPerformanceMetrics: () => { renderTime: number; renderCount: number; memoryUsage: number };
   isDataStale: (thresholdMs?: number) => boolean;
+  // Missing methods for compatibility
+  optimisticUpdate: (key: string, data: any) => void;
+  rollbackUpdate: (key: string) => void;
 }
 
 const LiveInteractionContext = createContext<LiveInteractionContextType | undefined>(undefined);
@@ -283,12 +286,10 @@ const LiveInteractionContext = createContext<LiveInteractionContextType | undefi
 // Enhanced Provider component
 interface LiveInteractionProviderProps {
   children: ReactNode;
-  userId?: Id<"users">;
 }
 
 export const LiveInteractionProvider: React.FC<LiveInteractionProviderProps> = ({ 
-  children, 
-  userId 
+  children 
 }) => {
   const [state, dispatch] = useReducer(liveInteractionReducer, initialState);
 
@@ -493,6 +494,15 @@ export const LiveInteractionProvider: React.FC<LiveInteractionProviderProps> = (
     return Date.now() - state.lastUpdate > thresholdMs;
   }, [state.lastUpdate]);
 
+  // Missing methods for compatibility
+  const optimisticUpdate = useCallback((key: string, data: any) => {
+    dispatch({ type: 'ADD_OPTIMISTIC_UPDATE', payload: { key, data } });
+  }, []);
+
+  const rollbackUpdate = useCallback((key: string) => {
+    dispatch({ type: 'REMOVE_OPTIMISTIC_UPDATE', payload: key });
+  }, []);
+
   // Memoized context value for performance
   const contextValue = useMemo(() => ({
     state,
@@ -508,7 +518,9 @@ export const LiveInteractionProvider: React.FC<LiveInteractionProviderProps> = (
     resolveConflict,
     batchDispatch,
     getPerformanceMetrics,
-    isDataStale
+    isDataStale,
+    optimisticUpdate,
+    rollbackUpdate
   }), [
     state,
     setCurrentInteraction,
@@ -522,7 +534,9 @@ export const LiveInteractionProvider: React.FC<LiveInteractionProviderProps> = (
     resolveConflict,
     batchDispatch,
     getPerformanceMetrics,
-    isDataStale
+    isDataStale,
+    optimisticUpdate,
+    rollbackUpdate
   ]);
 
   return (

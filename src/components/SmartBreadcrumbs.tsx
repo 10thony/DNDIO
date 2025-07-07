@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
-import { Id } from '../../convex/_generated/dataModel';
 import './SmartBreadcrumbs.css';
 
 interface BreadcrumbItem {
@@ -108,7 +107,7 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
   };
 
   const handleCampaignRoute = (
-    segment: string,
+    _segment: string,
     currentPath: string,
     pathSegments: string[],
     index: number
@@ -149,7 +148,7 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
   };
 
   const handleInteractionRoute = (
-    segment: string,
+    _segment: string,
     currentPath: string,
     pathSegments: string[],
     index: number
@@ -180,9 +179,9 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
   };
 
   const handleLiveInteractionRoute = (
-    segment: string,
+    _segment: string,
     currentPath: string,
-    pathSegments: string[],
+    _pathSegments: string[],
     index: number
   ): BreadcrumbItem | null => {
     if (index === 0) {
@@ -199,9 +198,9 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
   };
 
   const handleCharacterRoute = (
-    segment: string,
+    _segment: string,
     currentPath: string,
-    pathSegments: string[],
+    _pathSegments: string[],
     index: number
   ): BreadcrumbItem | null => {
     if (index === 0) {
@@ -218,9 +217,9 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
   };
 
   const handleItemRoute = (
-    segment: string,
+    _segment: string,
     currentPath: string,
-    pathSegments: string[],
+    _pathSegments: string[],
     index: number
   ): BreadcrumbItem | null => {
     if (index === 0) {
@@ -237,9 +236,9 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
   };
 
   const handleMonsterRoute = (
-    segment: string,
+    _segment: string,
     currentPath: string,
-    pathSegments: string[],
+    _pathSegments: string[],
     index: number
   ): BreadcrumbItem | null => {
     if (index === 0) {
@@ -256,9 +255,9 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
   };
 
   const handleNPCRoute = (
-    segment: string,
+    _segment: string,
     currentPath: string,
-    pathSegments: string[],
+    _pathSegments: string[],
     index: number
   ): BreadcrumbItem | null => {
     if (index === 0) {
@@ -275,9 +274,9 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
   };
 
   const handleQuestRoute = (
-    segment: string,
+    _segment: string,
     currentPath: string,
-    pathSegments: string[],
+    _pathSegments: string[],
     index: number
   ): BreadcrumbItem | null => {
     if (index === 0) {
@@ -296,10 +295,10 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
   const createGenericBreadcrumbItem = (
     segment: string,
     currentPath: string,
-    index: number
+    _index: number
   ): BreadcrumbItem => {
     return {
-      id: `segment-${index}`,
+      id: `segment-${_index}`,
       label: segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' '),
       path: currentPath,
       icon: '📄',

@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import DarkModeToggle from "./DarkModeToggle";
 import { AdminOnly } from "./AdminOnly";
+import NotificationsIcon from "./NotificationsIcon";
 import "./Navigation.css";
 
 interface NavigationProps {
@@ -204,11 +205,14 @@ const Navigation: React.FC<NavigationProps> = ({ isCollapsed, setIsCollapsed }) 
             
             <DarkModeToggle isCollapsed={isCollapsed} />
             {isAuthenticated && (
-              <SignOutButton>
-                <button className="nav-link sign-out" title="Sign Out">
-                  {isCollapsed ? "🚪" : "Sign Out"}
-                </button>
-              </SignOutButton>
+              <>
+                <NotificationsIcon />
+                <SignOutButton>
+                  <button className="nav-link sign-out" title="Sign Out">
+                    {isCollapsed ? "🚪" : "Sign Out"}
+                  </button>
+                </SignOutButton>
+              </>
             )}
           </div>
         </div>

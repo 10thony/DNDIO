@@ -12,6 +12,8 @@ interface QuestsSectionProps {
   campaignId: Id<"campaigns">;
   questIds?: Id<"quests">[];
   onUpdate: () => void;
+  canAdd?: boolean;
+  canUnlink?: boolean;
 }
 
 type ModalType = "entitySelection" | null;
@@ -20,6 +22,8 @@ const QuestsSection: React.FC<QuestsSectionProps> = ({
   campaignId,
   questIds = [],
   onUpdate,
+  canAdd = false,
+  canUnlink = false,
 }) => {
   const { user } = useUser();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -104,12 +108,14 @@ const QuestsSection: React.FC<QuestsSectionProps> = ({
           <h3 className="section-title">📜 Quests ({campaignQuests.length})</h3>
         </div>
         <div className="header-actions" onClick={(e) => e.stopPropagation()}>
-          <button 
-            className="add-button"
-            onClick={openEntitySelection}
-          >
-            + Add Quest
-          </button>
+          {canAdd && (
+            <button 
+              className="add-button"
+              onClick={openEntitySelection}
+            >
+              + Add Quest
+            </button>
+          )}
         </div>
       </div>
       
@@ -130,12 +136,14 @@ const QuestsSection: React.FC<QuestsSectionProps> = ({
                     <span className="entity-status">{quest.status}</span>
                   </div>
                   <div className="entity-actions">
-                    <button 
-                      className="unlink-button"
-                      onClick={() => handleUnlinkEntity(quest._id)}
-                    >
-                      Unlink
-                    </button>
+                    {canUnlink && (
+                      <button 
+                        className="unlink-button"
+                        onClick={() => handleUnlinkEntity(quest._id)}
+                      >
+                        Unlink
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

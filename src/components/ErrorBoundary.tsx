@@ -337,7 +337,7 @@ export const NetworkErrorBoundary: React.FC<{ children: ReactNode }> = ({ childr
     retryLimit={3}
     retryDelay={2000}
     showDetails={false}
-    onError={(error, errorInfo) => {
+    onError={(error) => {
       const classification = classifyError(error);
       if (classification.type === ErrorType.NETWORK) {
         console.warn('Network error detected, will retry automatically');
@@ -353,7 +353,7 @@ export const AuthenticationErrorBoundary: React.FC<{ children: ReactNode }> = ({
     context="AuthenticationErrorBoundary"
     autoRetry={false}
     showDetails={false}
-    onError={(error, errorInfo) => {
+    onError={(error) => {
       const classification = classifyError(error);
       if (classification.type === ErrorType.AUTHENTICATION) {
         // Redirect to login or show login modal

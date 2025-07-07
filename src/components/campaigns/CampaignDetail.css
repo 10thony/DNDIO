@@ -77,6 +77,14 @@
   @apply bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500;
 }
 
+.join-request-button {
+  @apply px-4 py-2 bg-blue-600 border border-blue-600 rounded-md text-white text-sm font-medium cursor-pointer transition-all duration-200 hover:bg-blue-700 hover:border-blue-700 no-underline inline-flex items-center;
+}
+
+.join-request-button:hover {
+  @apply bg-blue-700 border-blue-700;
+}
+
 /* Validation Status */
 .validation-status {
   @apply mb-8 p-6 rounded-lg border-2 transition-all duration-200;

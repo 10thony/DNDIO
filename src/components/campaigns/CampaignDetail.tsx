@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../../convex/_generated/api";
 import { useRoleAccess } from "../../hooks/useRoleAccess";
+import { useCampaignAccess } from "../../hooks/useCampaignAccess";
 import { AdminOnly } from "../AdminOnly";
 import { CampaignValidationState, CampaignCreationRequirements } from "../../schemas/campaign";
 import InfoSection from "./subsections/InfoSection";
@@ -16,7 +17,9 @@ import BossMonstersSection from "./subsections/BossMonstersSection";
 import RegularMonstersSection from "./subsections/RegularMonstersSection";
 import EnemyNPCsSection from "./subsections/EnemyNPCsSection";
 import InteractionsSection from "./subsections/InteractionsSection";
+import JoinRequestsSection from "./subsections/JoinRequestsSection";
 import { LiveInteractionCreationForm } from "../live-interactions/LiveInteractionCreationForm";
+import JoinRequestModal from "../JoinRequestModal";
 import "./CampaignDetail.css";
 
 // Move requirements outside component to prevent recreation on every render
@@ -36,6 +39,18 @@ const CampaignDetail: React.FC = () => {
   const { user } = useUser();
   const { isAdmin } = useRoleAccess();
   
+  // For non-admin users, don't pass clerkId to ensure they only see public campaigns
+  const campaign = useQuery(
+    api.campaigns.getCampaignById,
+    id ? { 
+      id: id as any, 
+      clerkId: isAdmin ? user?.id : undefined 
+    } : "skip"
+  );
+
+  // Get campaign access control
+  const campaignAccess = useCampaignAccess(campaign);
+  
   const [validationState, setValidationState] = useState<CampaignValidationState>({
     hasName: false,
     hasTimelineEvents: false,
@@ -48,15 +63,7 @@ const CampaignDetail: React.FC = () => {
   });
 
   const [showLiveInteractionModal, setShowLiveInteractionModal] = useState(false);
-
-  // For non-admin users, don't pass clerkId to ensure they only see public campaigns
-  const campaign = useQuery(
-    api.campaigns.getCampaignById,
-    id ? { 
-      id: id as any, 
-      clerkId: isAdmin ? user?.id : undefined 
-    } : "skip"
-  );
+  const [showJoinRequestModal, setShowJoinRequestModal] = useState(false);
 
   // Query for active interaction
   const activeInteraction = useQuery(
@@ -69,6 +76,12 @@ const CampaignDetail: React.FC = () => {
   const interactions = useQuery(
     api.interactions.getInteractionsByCampaign,
     id ? { campaignId: id as any } : "skip"
+  );
+
+  // Get user's existing join requests for this campaign
+  const existingRequests = useQuery(
+    api.joinRequests.getJoinRequestsByUser,
+    user?.id ? { clerkId: user.id } : "skip"
   );
 
   const updateCampaign = useMutation(api.campaigns.updateCampaign);
@@ -108,6 +121,31 @@ const CampaignDetail: React.FC = () => {
 
   const isCampaignComplete = Object.values(validationState).every(Boolean);
 
+  // Check if user can request to join this campaign
+  const canRequestToJoin = useMemo(() => {
+    if (!user?.id || !campaign) return false;
+    
+    // User must not be admin (admins don't need to request)
+    if (isAdmin) return false;
+    
+    // Campaign must be public
+    if (!campaign.isPublic) return false;
+    
+    // User must not be the DM
+    if (campaign.dmId === user.id) return false;
+    
+    // User must not already be a participant
+    if (campaign.players?.includes(user.id)) return false;
+    
+    // User must not have a pending or approved request
+    const hasExistingRequest = existingRequests?.some(
+      request => request.campaignId === campaign._id && 
+      (request.status === "PENDING" || request.status === "APPROVED")
+    );
+    
+    return !hasExistingRequest;
+  }, [user?.id, campaign, isAdmin, existingRequests]);
+
   const handleUpdate = () => {
     // Trigger a re-render to update validation state
     // This will be called by child components when they update the campaign
@@ -129,6 +167,11 @@ const CampaignDetail: React.FC = () => {
       console.error("Error saving campaign:", error);
       alert("Failed to save campaign. Please try again.");
     }
+  };
+
+  const handleJoinRequestSuccess = () => {
+    // Refresh the page to update the UI
+    window.location.reload();
   };
 
   // Check if user has access to this campaign
@@ -201,6 +244,14 @@ const CampaignDetail: React.FC = () => {
           <button className="back-button" onClick={() => navigate("/campaigns")}>
             ← Back to Campaigns
           </button>
+          {canRequestToJoin && (
+            <button 
+              className="join-request-button"
+              onClick={() => setShowJoinRequestModal(true)}
+            >
+              🎲 Request to Join
+            </button>
+          )}
           {(isAdmin || campaign.dmId === user?.id) && (
             <button 
               className="edit-button"
@@ -325,60 +376,87 @@ const CampaignDetail: React.FC = () => {
           worldSetting={campaign.worldSetting}
           isPublic={campaign.isPublic}
           onUpdate={handleUpdate}
+          canEdit={campaignAccess.canEdit}
         />
 
         <TimelineSection
           campaignId={campaign._id}
           timelineEventIds={campaign.timelineEventIds}
           onUpdate={handleUpdate}
+          canAdd={campaignAccess.canAdd}
+          canEdit={campaignAccess.canEdit}
         />
 
         <PlayerCharactersSection
           campaignId={campaign._id}
           playerCharacterIds={campaign.participantPlayerCharacterIds}
           onUpdate={handleUpdate}
+          canAdd={campaignAccess.canAdd}
+          canUnlink={campaignAccess.canUnlink}
         />
 
         <NPCsSection
           campaignId={campaign._id}
           npcIds={campaign.npcIds}
           onUpdate={handleUpdate}
+          canAdd={campaignAccess.canAdd}
+          canUnlink={campaignAccess.canUnlink}
         />
 
         <QuestsSection
           campaignId={campaign._id}
           questIds={campaign.questIds}
           onUpdate={handleUpdate}
+          canAdd={campaignAccess.canAdd}
+          canUnlink={campaignAccess.canUnlink}
         />
 
         <LocationsSection
           campaignId={campaign._id}
           locationIds={campaign.locationIds}
           onUpdate={handleUpdate}
+          canAdd={campaignAccess.canAdd}
+          canUnlink={campaignAccess.canUnlink}
         />
 
         <BossMonstersSection
           campaignId={campaign._id}
           monsterIds={campaign.monsterIds}
           onUpdate={handleUpdate}
+          canAdd={campaignAccess.canAdd}
+          canUnlink={campaignAccess.canUnlink}
         />
 
         <RegularMonstersSection
           campaignId={campaign._id}
           monsterIds={campaign.monsterIds}
           onUpdate={handleUpdate}
+          canAdd={campaignAccess.canAdd}
+          canUnlink={campaignAccess.canUnlink}
         />
 
         <EnemyNPCsSection
           campaignId={campaign._id}
           npcIds={campaign.npcIds}
           onUpdate={handleUpdate}
+          canAdd={campaignAccess.canAdd}
+          canUnlink={campaignAccess.canUnlink}
         />
 
         <InteractionsSection
           campaignId={campaign._id}
           onUpdate={handleUpdate}
+          canAdd={campaignAccess.canAdd}
+          canEdit={campaignAccess.canEdit}
         />
+
+        {/* Join Requests Section - Only show for DM/admin */}
+        {(isAdmin || campaign.dmId === user?.id) && (
+          <JoinRequestsSection
+            campaignId={campaign._id}
+            onRequestProcessed={handleUpdate}
+          />
+        )}
       </div>
 
       {/* Save Button - Only show for admins or campaign owners */}
@@ -420,6 +498,17 @@ const CampaignDetail: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Join Request Modal */}
+      {showJoinRequestModal && (
+        <JoinRequestModal
+          campaignId={campaign._id}
+          campaignName={campaign.name}
+          isOpen={showJoinRequestModal}
+          onClose={() => setShowJoinRequestModal(false)}
+          onSuccess={handleJoinRequestSuccess}
+        />
       )}
     </div>
   );

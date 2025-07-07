@@ -13,6 +13,8 @@ interface EnemyNPCsSectionProps {
   campaignId: Id<"campaigns">;
   npcIds?: Id<"npcs">[];
   onUpdate: () => void;
+  canAdd?: boolean;
+  canUnlink?: boolean;
 }
 
 type ModalType = "entitySelection" | "npcCreation" | null;
@@ -21,6 +23,8 @@ const EnemyNPCsSection: React.FC<EnemyNPCsSectionProps> = ({
   campaignId,
   npcIds = [],
   onUpdate,
+  canAdd = false,
+  canUnlink = false,
 }) => {
   const { user } = useUser();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -136,18 +140,22 @@ const EnemyNPCsSection: React.FC<EnemyNPCsSectionProps> = ({
           <h3 className="section-title">⚔️ Enemy NPCs ({campaignEnemyNpcs.length})</h3>
         </div>
         <div className="header-actions" onClick={(e) => e.stopPropagation()}>
-          <button 
-            className="add-button"
-            onClick={openEntitySelection}
-          >
-            + Link NPC
-          </button>
-          <button 
-            className="add-button"
-            onClick={openNPCCreation}
-          >
-            + Create NPC
-          </button>
+          {canAdd && (
+            <>
+              <button 
+                className="add-button"
+                onClick={openEntitySelection}
+              >
+                + Link NPC
+              </button>
+              <button 
+                className="add-button"
+                onClick={openNPCCreation}
+              >
+                + Create NPC
+              </button>
+            </>
+          )}
         </div>
       </div>
       
@@ -168,12 +176,14 @@ const EnemyNPCsSection: React.FC<EnemyNPCsSectionProps> = ({
                     <span className="entity-level">Level: {npc.level}</span>
                   </div>
                   <div className="entity-actions">
-                    <button 
-                      className="unlink-button"
-                      onClick={() => handleUnlinkEntity(npc._id)}
-                    >
-                      Unlink
-                    </button>
+                    {canUnlink && (
+                      <button 
+                        className="unlink-button"
+                        onClick={() => handleUnlinkEntity(npc._id)}
+                      >
+                        Unlink
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

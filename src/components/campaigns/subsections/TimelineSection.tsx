@@ -11,12 +11,16 @@ interface TimelineSectionProps {
   campaignId: Id<"campaigns">;
   timelineEventIds?: Id<"timelineEvents">[];
   onUpdate: () => void;
+  canAdd?: boolean;
+  canEdit?: boolean;
 }
 
 const TimelineSection: React.FC<TimelineSectionProps> = ({
   campaignId,
   timelineEventIds = [],
   onUpdate,
+  canAdd = false,
+  canEdit = false,
 }) => {
   const { user } = useUser();
   const [isCreating, setIsCreating] = useState(false);
@@ -276,9 +280,11 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({
           <h3 className="section-title">📅 Timeline Events ({campaignTimelineEvents.length})</h3>
         </div>
         <div className="header-actions" onClick={(e) => e.stopPropagation()}>
-          <button className="add-button" onClick={() => setIsCreating(true)}>
-            ➕ Add Event
-          </button>
+          {canAdd && (
+            <button className="add-button" onClick={() => setIsCreating(true)}>
+              ➕ Add Event
+            </button>
+          )}
         </div>
       </div>
 
@@ -321,7 +327,7 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({
                       </div>
                     </div>
                     <div className="event-number">{index + 1}</div>
-                    {campaignTimelineEvents.length > 3 && (
+                    {campaignTimelineEvents.length > 3 && canEdit && (
                       <div className="event-actions">
                         <button
                           className="move-button"

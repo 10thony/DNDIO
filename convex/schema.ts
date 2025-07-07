@@ -757,4 +757,21 @@ export default defineSchema({
     details: v.any(),
     timestamp: v.number(),
   }),
+  joinRequests: defineTable({
+    campaignId: v.id("campaigns"),
+    requesterUserClerkId: v.string(),
+    requesterUserId: v.id("users"),
+    playerCharacterId: v.id("playerCharacters"),
+    status: v.union(v.literal("PENDING"), v.literal("APPROVED"), v.literal("DENIED")),
+    denyReason: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  }),
+  notifications: defineTable({
+    userClerkId: v.string(),
+    type: v.union(v.literal("JOIN_REQUEST"), v.literal("JOIN_APPROVED"), v.literal("JOIN_DENIED")),
+    payload: v.any(),
+    isRead: v.boolean(),
+    createdAt: v.number(),
+  }),
 });

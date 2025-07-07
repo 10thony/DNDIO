@@ -13,6 +13,8 @@ interface LocationsSectionProps {
   campaignId: Id<"campaigns">;
   locationIds?: Id<"locations">[];
   onUpdate: () => void;
+  canAdd?: boolean;
+  canUnlink?: boolean;
 }
 
 type ModalType = "entitySelection" | "locationCreation" | null;
@@ -21,6 +23,8 @@ const LocationsSection: React.FC<LocationsSectionProps> = ({
   campaignId,
   locationIds = [],
   onUpdate,
+  canAdd = false,
+  canUnlink = false,
 }) => {
   const { user } = useUser();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -132,18 +136,22 @@ const LocationsSection: React.FC<LocationsSectionProps> = ({
           <h3 className="section-title">🗺️ Locations ({campaignLocations.length})</h3>
         </div>
         <div className="header-actions" onClick={(e) => e.stopPropagation()}>
-          <button 
-            className="add-button"
-            onClick={openEntitySelection}
-          >
-            + Link Location
-          </button>
-          <button 
-            className="add-button"
-            onClick={openLocationCreation}
-          >
-            + Create Location
-          </button>
+          {canAdd && (
+            <>
+              <button 
+                className="add-button"
+                onClick={openEntitySelection}
+              >
+                + Link Location
+              </button>
+              <button 
+                className="add-button"
+                onClick={openLocationCreation}
+              >
+                + Create Location
+              </button>
+            </>
+          )}
         </div>
       </div>
       
@@ -164,12 +172,14 @@ const LocationsSection: React.FC<LocationsSectionProps> = ({
                     <span className="entity-type">{location.type}</span>
                   </div>
                   <div className="entity-actions">
-                    <button 
-                      className="unlink-button"
-                      onClick={() => handleUnlinkEntity(location._id)}
-                    >
-                      Unlink
-                    </button>
+                    {canUnlink && (
+                      <button 
+                        className="unlink-button"
+                        onClick={() => handleUnlinkEntity(location._id)}
+                      >
+                        Unlink
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

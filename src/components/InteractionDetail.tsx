@@ -45,7 +45,6 @@ const InteractionDetail: React.FC<InteractionDetailProps> = ({ interactionId }) 
   const deleteInteraction = useMutation(api.interactions.deleteInteraction);
   const updateInteraction = useMutation(api.interactions.updateInteraction);
   const activateInteraction = useMutation(api.interactions.activateInteraction);
-  const setActiveInteraction = useMutation(api.interactions.setActiveInteraction);
   
   // Get user's campaigns for linking
   const userCampaigns = useQuery(api.campaigns.getAllCampaigns, { 

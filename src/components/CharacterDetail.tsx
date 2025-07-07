@@ -232,7 +232,7 @@ const CharacterDetail: React.FC = () => {
                       <div className="ability-name">
                         {ability.charAt(0).toUpperCase() + ability.slice(1)}
                       </div>
-                      <div className="ability-score-value">{score}</div>
+                      <div className="ability-score-value">{String(score)}</div>
                       <div className="ability-modifier">
                         {modifier >= 0 ? "+" : ""}
                         {modifier}

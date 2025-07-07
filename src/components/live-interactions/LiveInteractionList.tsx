@@ -12,19 +12,13 @@ interface LiveInteractionListProps {
   isDM?: boolean;
 }
 
-const LiveInteractionList: React.FC<LiveInteractionListProps> = ({
-  userId,
-  isDM = false
-}) => {
+const LiveInteractionList: React.FC<LiveInteractionListProps> = () => {
   const navigate = useNavigate();
   const { user } = useUser();
   const [filterCampaign, setFilterCampaign] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   
   const activeInteractions = useQuery(api.interactions.subscribeToActiveInteractions);
-  const userCampaigns = useQuery(api.campaigns.getAllCampaigns, { 
-    clerkId: user?.id || undefined 
-  });
   
   // Get campaigns for filtering
   const campaigns = useQuery(api.campaigns.getAllCampaigns, { 

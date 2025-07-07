@@ -223,12 +223,11 @@ export const useLiveInteractionNotifications = ({
     try {
       const notification = new Notification(title, {
         body: message,
-        icon: '/favicon.ico',
+        icon: type === 'turn-notification' ? '/dice-icon.png' : '/favicon.ico',
         tag: type,
         requireInteraction: options?.priority === 'high',
         silent: !options?.sound,
         badge: '/favicon.ico',
-        image: type === 'turn-notification' ? '/dice-icon.png' : undefined,
       });
 
       // Auto-close after appropriate time
@@ -325,7 +324,7 @@ export const useLiveInteractionNotifications = ({
       
       showNotification(
         'Turn Changed!',
-        `It's now turn ${interactionStatus.currentInitiativeIndex + 1} in the interaction`,
+        `It's now turn ${(interactionStatus.currentInitiativeIndex ?? 0) + 1} in the interaction`,
         'turn-notification',
         { priority: 'high', sound: true, duration: 10000 }
       );

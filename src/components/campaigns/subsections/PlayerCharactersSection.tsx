@@ -12,6 +12,8 @@ interface PlayerCharactersSectionProps {
   campaignId: Id<"campaigns">;
   playerCharacterIds?: Id<"playerCharacters">[];
   onUpdate: () => void;
+  canAdd?: boolean;
+  canUnlink?: boolean;
 }
 
 type ModalType = "entitySelection" | null;
@@ -20,6 +22,8 @@ const PlayerCharactersSection: React.FC<PlayerCharactersSectionProps> = ({
   campaignId,
   playerCharacterIds = [],
   onUpdate,
+  canAdd = false,
+  canUnlink = false,
 }) => {
   const { user } = useUser();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -104,12 +108,14 @@ const PlayerCharactersSection: React.FC<PlayerCharactersSectionProps> = ({
           <h3 className="section-title">👤 Player Characters ({campaignPlayerCharacters.length})</h3>
         </div>
         <div className="header-actions" onClick={(e) => e.stopPropagation()}>
-          <button 
-            className="add-button"
-            onClick={openEntitySelection}
-          >
-            + Add Character
-          </button>
+          {canAdd && (
+            <button 
+              className="add-button"
+              onClick={openEntitySelection}
+            >
+              + Add Character
+            </button>
+          )}
         </div>
       </div>
       
@@ -129,12 +135,14 @@ const PlayerCharactersSection: React.FC<PlayerCharactersSectionProps> = ({
                     </p>
                   </div>
                   <div className="entity-actions">
-                    <button 
-                      className="unlink-button"
-                      onClick={() => handleUnlinkEntity(character._id)}
-                    >
-                      Unlink
-                    </button>
+                    {canUnlink && (
+                      <button 
+                        className="unlink-button"
+                        onClick={() => handleUnlinkEntity(character._id)}
+                      >
+                        Unlink
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

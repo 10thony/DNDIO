@@ -13,6 +13,8 @@ interface BossMonstersSectionProps {
   campaignId: Id<"campaigns">;
   monsterIds?: Id<"monsters">[];
   onUpdate: () => void;
+  canAdd?: boolean;
+  canUnlink?: boolean;
 }
 
 type ModalType = "entitySelection" | "monsterCreation" | null;
@@ -21,6 +23,8 @@ const BossMonstersSection: React.FC<BossMonstersSectionProps> = ({
   campaignId,
   monsterIds = [],
   onUpdate,
+  canAdd = false,
+  canUnlink = false,
 }) => {
   const { user } = useUser();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -134,18 +138,22 @@ const BossMonstersSection: React.FC<BossMonstersSectionProps> = ({
           <h3 className="section-title">🐉 Boss Monsters ({campaignBossMonsters.length})</h3>
         </div>
         <div className="header-actions" onClick={(e) => e.stopPropagation()}>
-          <button 
-            className="add-button"
-            onClick={openEntitySelection}
-          >
-            + Link Monster
-          </button>
-          <button 
-            className="add-button"
-            onClick={openMonsterCreation}
-          >
-            + Create Monster
-          </button>
+          {canAdd && (
+            <>
+              <button 
+                className="add-button"
+                onClick={openEntitySelection}
+              >
+                + Link Monster
+              </button>
+              <button 
+                className="add-button"
+                onClick={openMonsterCreation}
+              >
+                + Create Monster
+              </button>
+            </>
+          )}
         </div>
       </div>
       
@@ -166,12 +174,14 @@ const BossMonstersSection: React.FC<BossMonstersSectionProps> = ({
                     <span className="entity-cr">Challenge Rating: {monster.challengeRating}</span>
                   </div>
                   <div className="entity-actions">
-                    <button 
-                      className="unlink-button"
-                      onClick={() => handleUnlinkEntity(monster._id)}
-                    >
-                      Unlink
-                    </button>
+                    {canUnlink && (
+                      <button 
+                        className="unlink-button"
+                        onClick={() => handleUnlinkEntity(monster._id)}
+                      >
+                        Unlink
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

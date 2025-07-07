@@ -12,6 +12,7 @@ interface InfoSectionProps {
   worldSetting?: string;
   isPublic: boolean;
   onUpdate: () => void;
+  canEdit?: boolean;
 }
 
 const InfoSection: React.FC<InfoSectionProps> = ({
@@ -21,6 +22,7 @@ const InfoSection: React.FC<InfoSectionProps> = ({
   worldSetting,
   isPublic,
   onUpdate,
+  canEdit = false,
 }) => {
   const { user } = useUser();
   const [isEditing, setIsEditing] = useState(false);
@@ -169,9 +171,11 @@ const InfoSection: React.FC<InfoSectionProps> = ({
       <div className="section-header">
         <h3 className="section-title">📋 Campaign Info</h3>
         <div className="header-actions">
-          <button className="edit-button" onClick={() => setIsEditing(true)}>
-            ✏️ Edit
-          </button>
+          {canEdit && (
+            <button className="edit-button" onClick={() => setIsEditing(true)}>
+              ✏️ Edit
+            </button>
+          )}
         </div>
       </div>
 

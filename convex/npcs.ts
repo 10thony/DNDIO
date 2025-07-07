@@ -70,6 +70,13 @@ export const getAllNpcs = query({
   },
 });
 
+// Alias for compatibility with frontend code
+export const getAllNPCs = query({
+  handler: async (ctx) => {
+    return await ctx.db.query("npcs").order("desc").collect();
+  },
+});
+
 export const getNpcById = query({
   args: { id: v.id("npcs") },
   handler: async (ctx, args) => {

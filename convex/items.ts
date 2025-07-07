@@ -64,6 +64,64 @@ export const getItems = query({
   },
 });
 
+export const getAllItems = query({
+  args: {
+    userId: v.optional(v.string()),
+    type: v.optional(v.union(
+      v.literal("Weapon"),
+      v.literal("Armor"),
+      v.literal("Potion"),
+      v.literal("Scroll"),
+      v.literal("Wondrous Item"),
+      v.literal("Ring"),
+      v.literal("Rod"),
+      v.literal("Staff"),
+      v.literal("Wand"),
+      v.literal("Ammunition"),
+      v.literal("Adventuring Gear"),
+      v.literal("Tool"),
+      v.literal("Mount"),
+      v.literal("Vehicle"),
+      v.literal("Treasure"),
+      v.literal("Other")
+    )),
+    rarity: v.optional(v.union(
+      v.literal("Common"),
+      v.literal("Uncommon"),
+      v.literal("Rare"),
+      v.literal("Very Rare"),
+      v.literal("Legendary"),
+      v.literal("Artifact"),
+      v.literal("Unique")
+    )),
+  },
+  handler: async (ctx, args) => {
+    let query = ctx.db.query("items");
+    
+    // Apply filters if provided
+    if (args.userId) {
+      const user = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("clerkId"), args.userId))
+        .first();
+      
+      if (user) {
+        query = query.filter((q) => q.eq(q.field("userId"), user._id));
+      }
+    }
+    
+    if (args.type) {
+      query = query.filter((q) => q.eq(q.field("type"), args.type));
+    }
+    
+    if (args.rarity) {
+      query = query.filter((q) => q.eq(q.field("rarity"), args.rarity));
+    }
+    
+    return await query.collect();
+  },
+});
+
 export const getItem = query({
   args: { itemId: v.id("items") },
   handler: async (ctx, args) => {

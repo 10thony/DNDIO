@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
-import { Id } from '../../convex/_generated/dataModel';
 import { useUser } from '@clerk/clerk-react';
 import './QuickAccessPanel.css';
 
@@ -27,7 +26,6 @@ interface QuickAccessPanelProps {
 
 export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
   isVisible = false,
-  onToggle,
   maxRecentItems = 5,
   enableSearch = true
 }) => {
@@ -38,15 +36,15 @@ export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
   const [recentItems, setRecentItems] = useState<QuickAccessItem[]>([]);
   const [searchResults, setSearchResults] = useState<QuickAccessItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Queries for data
   const activeInteractions = useQuery(api.interactions.subscribeToActiveInteractions);
-  const campaigns = useQuery(api.campaigns.getAllCampaigns, { clerkId: user?.id || undefined });
-  const characters = useQuery(api.characters.getAllCharacters, { clerkId: user?.id || undefined });
-  const items = useQuery(api.items.getAllItems);
+  const campaigns = useQuery(api.campaigns.getAllCampaigns, { clerkId: user?.id ?? '' });
+  const characters = useQuery(api.characters.getAllCharacters);
+  const items = useQuery(api.items.getItems);
   const monsters = useQuery(api.monsters.getAllMonsters);
-  const npcs = useQuery(api.npcs.getAllNPCs);
+  const npcs = useQuery(api.npcs.getAllNpcs);
 
   // Load recent items from localStorage
   useEffect(() => {
@@ -138,7 +136,7 @@ export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
           id: `campaign-${campaign._id}`,
           type: 'campaign',
           title: campaign.name,
-          subtitle: `DM: ${campaign.dmName || 'Unknown'}`,
+          subtitle: `DM: ${campaign.dmId || 'Unknown'}`,
           icon: '📚',
           path: `/campaigns/${campaign._id}`,
           timestamp: campaign.updatedAt || campaign.createdAt,
@@ -164,7 +162,7 @@ export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
     });
 
     // Search items
-    items?.forEach(item => {
+    items?.forEach((item: any) => {
       if (item.name.toLowerCase().includes(lowerQuery)) {
         results.push({
           id: `item-${item._id}`,
@@ -196,7 +194,7 @@ export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
     });
 
     // Search NPCs
-    npcs?.forEach(npc => {
+    npcs?.forEach((npc: any) => {
       if (npc.name.toLowerCase().includes(lowerQuery)) {
         results.push({
           id: `npc-${npc._id}`,

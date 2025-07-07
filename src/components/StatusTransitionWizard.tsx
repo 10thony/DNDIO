@@ -54,7 +54,6 @@ const StatusTransitionWizard: React.FC<StatusTransitionWizardProps> = ({
   const { optimisticUpdate, rollbackUpdate } = useLiveInteraction();
   const { handleError, retryWithBackoff } = useErrorRecovery();
   
-  const updateInteraction = useMutation(api.interactions.updateInteraction);
   const updateInteractionOptimistic = useMutation(api.interactions.updateInteractionOptimistic);
 
   // Define transition steps based on current status
@@ -206,7 +205,6 @@ const StatusTransitionWizard: React.FC<StatusTransitionWizardProps> = ({
     
     try {
       // Create optimistic update
-      const optimisticKey = `status-transition-${interactionId}`;
       optimisticUpdate(interactionId, {
         status: transitionData.newStatus,
         updatedAt: Date.now()
@@ -215,19 +213,15 @@ const StatusTransitionWizard: React.FC<StatusTransitionWizardProps> = ({
       // Perform the actual update
       await retryWithBackoff(async () => {
         await updateInteractionOptimistic({
-          interactionId,
-          updates: {
-            status: transitionData.newStatus,
-            ...(transitionData.initiativeOrder && { initiativeOrder: transitionData.initiativeOrder }),
-            ...(transitionData.notes && { notes: transitionData.notes })
-          }
+          id: interactionId,
+          status: transitionData.newStatus as any
         });
       });
 
       onComplete?.(transitionData.newStatus);
     } catch (error) {
       // Rollback optimistic update
-      rollbackUpdate(interactionId, { status: currentStatus });
+      rollbackUpdate(interactionId);
       
       // Handle error
       await handleError(error, 'StatusTransitionWizard');
@@ -415,7 +409,7 @@ const InitiativeSetupStep: React.FC<{
   data: TransitionData;
   onChange: (data: Partial<TransitionData>) => void;
   isValid: boolean;
-}> = ({ data, onChange }) => {
+}> = ({ onChange }) => {
   // This would be a more complex component for setting up initiative
   return (
     <div className="initiative-setup">
@@ -431,7 +425,7 @@ const RewardsStep: React.FC<{
   data: TransitionData;
   onChange: (data: Partial<TransitionData>) => void;
   isValid: boolean;
-}> = ({ data, onChange }) => {
+}> = ({ onChange }) => {
   return (
     <div className="rewards-step">
       <p>Rewards configuration would go here</p>
@@ -466,7 +460,7 @@ const CancellationReasonStep: React.FC<{
   data: TransitionData;
   onChange: (data: Partial<TransitionData>) => void;
   isValid: boolean;
-}> = ({ data, onChange }) => {
+}> = ({ data, onChange, isValid }) => {
   return (
     <div className="cancellation-reason">
       <label>

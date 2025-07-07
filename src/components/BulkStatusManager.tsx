@@ -54,7 +54,6 @@ const BulkStatusManager: React.FC<BulkStatusManagerProps> = ({
   const { optimisticUpdate, rollbackUpdate } = useLiveInteraction();
   const { handleError, retryWithBackoff } = useErrorRecovery();
 
-  const updateInteraction = useMutation(api.interactions.updateInteraction);
   const updateInteractionOptimistic = useMutation(api.interactions.updateInteractionOptimistic);
 
   // Fetch interactions
@@ -163,8 +162,8 @@ const BulkStatusManager: React.FC<BulkStatusManagerProps> = ({
         // Perform the actual update
         await retryWithBackoff(async () => {
           await updateInteractionOptimistic({
-            interactionId: interaction.id,
-            updates: { status: newStatus }
+            id: interaction.id,
+            status: newStatus as any
           });
         });
 
@@ -176,7 +175,7 @@ const BulkStatusManager: React.FC<BulkStatusManagerProps> = ({
 
       } catch (error) {
         // Rollback optimistic update
-        rollbackUpdate(interaction.id, { status: interaction.status });
+        rollbackUpdate(interaction.id);
         
         // Handle error
         await handleError(error, 'BulkStatusManager');

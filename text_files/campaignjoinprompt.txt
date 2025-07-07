@@ -1,0 +1,97 @@
+1. 
+Data model/schema changes (convex/schema.ts)
+• Define a new table “joinRequests”:
+– campaignId: id(“campaigns”)
+– requesterUserClerkId: string
+– requesterUserId: id(“users”)  // optional if you want DB refs
+– playerCharacterId: id(“playerCharacters”)
+– status: union(“PENDING”, “APPROVED”, “DENIED”)
+– denyReason: optional(string)
+– createdAt: number
+– updatedAt: optional(number)
+• Define a new table “notifications” (optional, or you can derive from joinRequests):
+– userClerkId: string
+– type: union(“JOIN_REQUEST”)
+– payload: any  // e.g. { campaignId, joinRequestId }
+– isRead: boolean
+– createdAt: number
+
+
+2. 
+Server API (convex/campaigns.ts and new file convex/joinRequests.ts)
+A. In convex/_generated/api add new queries & mutations:
+– createJoinRequest({ campaignId, requesterUserClerkId, playerCharacterId })
+– getJoinRequestsByCampaign({ campaignId })
+– approveJoinRequest({ joinRequestId, clerkId })
+– denyJoinRequest({ joinRequestId, clerkId, reason })
+– getNotifications({ clerkId })
+– markNotificationRead({ notificationId, clerkId })
+B. Handlers must:
+– authorize via clerkId + useRoleAccess logic
+– on createJoinRequest insert into joinRequests; insert a notification for the DM of that campaign
+– on approveJoinRequest set status=“APPROVED”, updatedAt; patch campaigns.participantPlayerCharacterIds (reuse addPlayerCharacterToCampaign), insert notification for requester
+– on denyJoinRequest set status=“DENIED”, denyReason, updatedAt; insert notification for requester
+
+
+3. 
+Front-end: React components and hooks
+A. JoinRequestModal component
+– Props: campaignId, onClose, onSuccess
+– useQuery(api.playerCharacters.getByUserClerkId, { clerkId: user.id }) to list PCs
+– If list empty, embed or link to existing “NewPlayerCharacterForm” (similar to PlayerCharactersSection)
+– On submit, call useMutation(api.joinRequests.createJoinRequest)
+– Show loading / success / error states
+B. In CampaignDetail.tsx
+
+	1. For non-DM, non-admin users AND campaign.isPublic AND user not already participant:
+– Render a “Request to Join” button
+– onClick → set state showJoinRequestModal
+– <JoinRequestModal campaignId={campaign._id} …/>
+	2. For DM (campaign.dmId===user.id) OR admin:
+– Add a “Join Requests” section under LiveInteraction or beside ValidationStatus
+– useQuery(api.joinRequests.getJoinRequestsByCampaign, { campaignId: id })
+– For each pending request render:
+• character name, requester displayName, date
+• Approve button → call approveJoinRequest → refresh list + show toast
+• Deny button → open inline textarea for reason → call denyJoinRequest
+– After approve/deny, also call api.notifications.markAsRead or re-query notifications
+C. Global Notifications UI
+– Add a <NotificationsIcon /> in AppHeader
+– useQuery(api.notifications.getNotifications, { clerkId: user.id })
+– Show badge count of unread
+– On click, open dropdown <NotificationsPanel>
+• List notifications: for JOIN_REQUEST notify DMs; for APPROVED/DENIED notify requesters
+• Each item clickable: e.g. view campaign or view request detail
+• On open or click, call markNotificationRead
+D. Styles
+– Follow existing CSS class patterns (.campaign-detail-container, .modal-overlay, .validation-status)
+– Create CampaignJoinRequest.css / Notifications.css matching naming conventions
+4. 
+Hook into role/access logic
+– Reuse useRoleAccess() to check isAdmin() and campaign DM status
+– Ensure createJoinRequest and approval mutations enforce authorization on server
+
+
+5. 
+Testing & edge cases
+– User without PCs must be able to create one in the modal
+– Duplicate requests should be prevented (check existing PENDING/APPROVED)
+– Deny flow must require a reason
+– Only show Request button if not already participant
+– Notifications must only surface to appropriate users
+
+
+6. 
+Deliverables
+– Updated convex/schema.ts with joinRequests (+ notifications)
+– New convex/joinRequests.ts with all mutations & queries
+– Front-end:
+• JoinRequestModal.tsx + CampaignDetail.tsx updates
+• JoinRequestsSection.tsx for DM view
+• NotificationsIcon.tsx + NotificationsPanel.tsx
+• Updated CSS files
+– Update api/_generated with new endpoints
+– Manual QA: simulate join request, approve, deny, notification flows
+
+
+Please break this into small PRs: (1) schema & server APIs, (2) JoinRequestModal + CampaignDetail UI, (3) DM approval UI, (4) global notifications. Adhere strictly to existing TypeScript types, useQuery/useMutation patterns, and the CSS utility classes in CampaignList.css / CampaignDetail.css.
