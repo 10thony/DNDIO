@@ -1,9 +1,9 @@
+/* Import global dark mode styles */
+@import './styles/darkMode.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import global dark mode styles */
-@import './styles/darkMode.css';
 
 body {
   margin: 0;
