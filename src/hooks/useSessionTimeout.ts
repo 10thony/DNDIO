@@ -16,8 +16,8 @@ export const useSessionTimeout = ({
 }: UseSessionTimeoutOptions = {}) => {
   const { user } = useUser();
   const { signOut } = useClerk();
-  const timeoutRef = useRef<number>();
-  const warningRef = useRef<number>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const warningRef = useRef<ReturnType<typeof setTimeout>>();
   const lastActivityRef = useRef<number>(Date.now());
   const isWarningShownRef = useRef<boolean>(false);
 
