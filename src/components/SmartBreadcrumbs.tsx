@@ -2,9 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import './SmartBreadcrumbs.css';
 
-interface BreadcrumbItem {
+interface BreadcrumbItemData {
   id: string;
   label: string;
   path: string;
@@ -26,9 +38,9 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([]);
+  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItemData[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [navigationHistory, setNavigationHistory] = useState<BreadcrumbItem[]>([]);
+  const [navigationHistory, setNavigationHistory] = useState<BreadcrumbItemData[]>([]);
 
   // Queries for dynamic breadcrumb data
   const campaigns = useQuery(api.campaigns.getAllCampaigns, { clerkId: undefined });
@@ -36,9 +48,9 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
 
   // Parse current path and generate breadcrumbs
   useEffect(() => {
-    const generateBreadcrumbs = (): BreadcrumbItem[] => {
+    const generateBreadcrumbs = (): BreadcrumbItemData[] => {
       const pathSegments = location.pathname.split('/').filter(Boolean);
-      const items: BreadcrumbItem[] = [];
+      const items: BreadcrumbItemData[] = [];
       
       // Always start with home
       items.push({
@@ -82,7 +94,7 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
     currentPath: string,
     pathSegments: string[],
     index: number
-  ): BreadcrumbItem | null => {
+  ): BreadcrumbItemData | null => {
     // Handle different route patterns
     switch (pathSegments[0]) {
       case 'campaigns':
@@ -111,7 +123,7 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
     currentPath: string,
     pathSegments: string[],
     index: number
-  ): BreadcrumbItem | null => {
+  ): BreadcrumbItemData | null => {
     if (index === 0) {
       return {
         id: 'campaigns',
@@ -152,7 +164,7 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
     currentPath: string,
     pathSegments: string[],
     index: number
-  ): BreadcrumbItem | null => {
+  ): BreadcrumbItemData | null => {
     if (index === 0) {
       return {
         id: 'interactions',
@@ -183,7 +195,7 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
     currentPath: string,
     _pathSegments: string[],
     index: number
-  ): BreadcrumbItem | null => {
+  ): BreadcrumbItemData | null => {
     if (index === 0) {
       return {
         id: 'live-interactions',
@@ -202,13 +214,13 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
     currentPath: string,
     _pathSegments: string[],
     index: number
-  ): BreadcrumbItem | null => {
+  ): BreadcrumbItemData | null => {
     if (index === 0) {
       return {
         id: 'characters',
         label: 'Characters',
         path: '/characters',
-        icon: '👤',
+        icon: '👥',
         isActive: currentPath === '/characters'
       };
     }
@@ -221,13 +233,13 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
     currentPath: string,
     _pathSegments: string[],
     index: number
-  ): BreadcrumbItem | null => {
+  ): BreadcrumbItemData | null => {
     if (index === 0) {
       return {
         id: 'items',
         label: 'Items',
         path: '/items',
-        icon: '⚔️',
+        icon: '📦',
         isActive: currentPath === '/items'
       };
     }
@@ -240,13 +252,13 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
     currentPath: string,
     _pathSegments: string[],
     index: number
-  ): BreadcrumbItem | null => {
+  ): BreadcrumbItemData | null => {
     if (index === 0) {
       return {
         id: 'monsters',
         label: 'Monsters',
         path: '/monsters',
-        icon: '🐉',
+        icon: '👹',
         isActive: currentPath === '/monsters'
       };
     }
@@ -259,13 +271,13 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
     currentPath: string,
     _pathSegments: string[],
     index: number
-  ): BreadcrumbItem | null => {
+  ): BreadcrumbItemData | null => {
     if (index === 0) {
       return {
         id: 'npcs',
         label: 'NPCs',
         path: '/npcs',
-        icon: '👥',
+        icon: '👤',
         isActive: currentPath === '/npcs'
       };
     }
@@ -278,13 +290,13 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
     currentPath: string,
     _pathSegments: string[],
     index: number
-  ): BreadcrumbItem | null => {
+  ): BreadcrumbItemData | null => {
     if (index === 0) {
       return {
         id: 'quests',
         label: 'Quests',
         path: '/quests',
-        icon: '🗺️',
+        icon: '📜',
         isActive: currentPath === '/quests'
       };
     }
@@ -296,9 +308,9 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
     segment: string,
     currentPath: string,
     _index: number
-  ): BreadcrumbItem => {
+  ): BreadcrumbItemData => {
     return {
-      id: `segment-${_index}`,
+      id: segment,
       label: segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' '),
       path: currentPath,
       icon: '📄',
@@ -306,120 +318,103 @@ export const SmartBreadcrumbs: React.FC<SmartBreadcrumbsProps> = ({
     };
   };
 
-  const handleBreadcrumbClick = (item: BreadcrumbItem) => {
-    if (enableDeepLinking) {
+  const handleBreadcrumbClick = (item: BreadcrumbItemData) => {
+    if (enableDeepLinking && item.path !== location.pathname) {
       navigate(item.path);
     }
   };
 
-  const handleHistoryItemClick = (item: BreadcrumbItem) => {
+  const handleHistoryItemClick = (item: BreadcrumbItemData) => {
     navigate(item.path);
     setShowDropdown(false);
   };
 
-  const getVisibleBreadcrumbs = (): BreadcrumbItem[] => {
+  const getVisibleBreadcrumbs = (): BreadcrumbItemData[] => {
     if (breadcrumbs.length <= maxItems) {
       return breadcrumbs;
     }
 
-    // Show first, last, and some in between
-    const first = breadcrumbs[0];
-    const last = breadcrumbs[breadcrumbs.length - 1];
-    const middle = breadcrumbs.slice(1, -1);
-    
-    if (middle.length <= 2) {
-      return breadcrumbs;
-    }
+    const firstItem = breadcrumbs[0];
+    const lastItem = breadcrumbs[breadcrumbs.length - 1];
+    const middleItems = breadcrumbs.slice(1, -1);
+    const visibleMiddleItems = middleItems.slice(-(maxItems - 2));
 
-    // Take first and last from middle
-    const visibleMiddle = [middle[0], middle[middle.length - 1]];
-    
-    return [first, ...visibleMiddle, last];
+    return [firstItem, ...visibleMiddleItems, lastItem];
   };
 
   const visibleBreadcrumbs = getVisibleBreadcrumbs();
 
   return (
-    <nav className="smart-breadcrumbs" aria-label="Breadcrumb navigation">
-      <div className="breadcrumbs-container">
-        <ol className="breadcrumbs-list">
+    <div className="smart-breadcrumbs">
+      <Breadcrumb>
+        <BreadcrumbList>
           {visibleBreadcrumbs.map((item, index) => (
-            <li key={item.id} className="breadcrumb-item">
-              {index > 0 && <span className="breadcrumb-separator">/</span>}
-              
-              {index === 0 && breadcrumbs.length > maxItems && (
-                <span className="breadcrumb-ellipsis">...</span>
+            <React.Fragment key={item.id}>
+              <BreadcrumbItem>
+                {item.isActive ? (
+                  <BreadcrumbPage className="flex items-center gap-2">
+                    {item.icon && <span>{item.icon}</span>}
+                    <span>{item.label}</span>
+                    {item.metadata && (
+                      <Badge variant="secondary" className="text-xs">
+                        {item.metadata.type}
+                      </Badge>
+                    )}
+                  </BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink 
+                    onClick={() => handleBreadcrumbClick(item)}
+                    className="flex items-center gap-2 cursor-pointer hover:text-primary"
+                  >
+                    {item.icon && <span>{item.icon}</span>}
+                    <span>{item.label}</span>
+                    {item.metadata && (
+                      <Badge variant="outline" className="text-xs">
+                        {item.metadata.type}
+                      </Badge>
+                    )}
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+              {index < visibleBreadcrumbs.length - 1 && (
+                <BreadcrumbSeparator />
               )}
-              
-              <button
-                className={`breadcrumb-link ${item.isActive ? 'active' : ''}`}
-                onClick={() => handleBreadcrumbClick(item)}
-                disabled={!enableDeepLinking}
-                title={item.label}
-              >
-                {item.icon && <span className="breadcrumb-icon">{item.icon}</span>}
-                <span className="breadcrumb-label">{item.label}</span>
-              </button>
-              
-              {index === visibleBreadcrumbs.length - 2 && breadcrumbs.length > maxItems && (
-                <span className="breadcrumb-ellipsis">...</span>
-              )}
-            </li>
+            </React.Fragment>
           ))}
-        </ol>
+        </BreadcrumbList>
+      </Breadcrumb>
 
-        {/* Navigation History Dropdown */}
-        {showHistory && navigationHistory.length > 0 && (
-          <div className="breadcrumb-actions">
-            <button
-              className="history-button"
-              onClick={() => setShowDropdown(!showDropdown)}
-              title="Navigation History"
+      {/* Navigation History Dropdown */}
+      {showHistory && navigationHistory.length > 0 && (
+        <DropdownMenu open={showDropdown} onOpenChange={setShowDropdown}>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="ml-2"
             >
-              📜
-            </button>
-            
-            {showDropdown && (
-              <div className="history-dropdown">
-                <div className="dropdown-header">
-                  <h4>Recent Pages</h4>
-                  <button 
-                    className="close-button"
-                    onClick={() => setShowDropdown(false)}
-                  >
-                    ×
-                  </button>
-                </div>
-                
-                <div className="history-list">
-                  {navigationHistory.map((item, index) => (
-                    <button
-                      key={`${item.id}-${index}`}
-                      className="history-item"
-                      onClick={() => handleHistoryItemClick(item)}
-                    >
-                      {item.icon && <span className="history-icon">{item.icon}</span>}
-                      <span className="history-label">{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-                
-                <div className="dropdown-footer">
-                  <button 
-                    className="clear-history-button"
-                    onClick={() => {
-                      setNavigationHistory([]);
-                      setShowDropdown(false);
-                    }}
-                  >
-                    Clear History
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </nav>
+              📚 History
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            {navigationHistory.map((item) => (
+              <DropdownMenuItem 
+                key={item.id}
+                onClick={() => handleHistoryItemClick(item)}
+                className="flex items-center gap-2"
+              >
+                {item.icon && <span>{item.icon}</span>}
+                <span className="truncate">{item.label}</span>
+                {item.metadata && (
+                  <Badge variant="outline" className="text-xs ml-auto">
+                    {item.metadata.type}
+                  </Badge>
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </div>
   );
 }; 

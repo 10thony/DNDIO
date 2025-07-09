@@ -1,27 +1,50 @@
 // src/components/Modal/Modal.tsx
 import React from "react";
-import "./Modal.css"; // Basic styling
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+import "./Modal.css";
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
   title?: string;
+  description?: string;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title }) => {
-  if (!isOpen) return null;
-
+const Modal: React.FC<ModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  children, 
+  title,
+  description 
+}) => {
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        {title && <div className="modal-header"><h2>{title}</h2></div>}
-        <button className="modal-close" onClick={onClose}>
-          &times;
-        </button>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          {title && <DialogTitle>{title}</DialogTitle>}
+          {description && <DialogDescription>{description}</DialogDescription>}
+        </DialogHeader>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="absolute right-4 top-4 h-6 w-6 p-0"
+          onClick={onClose}
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </Button>
         <div className="modal-body">{children}</div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

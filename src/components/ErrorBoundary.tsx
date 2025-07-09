@@ -1,3 +1,4 @@
+
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { errorRecoveryManager } from '../utils/errorRecovery';
 import { classifyError, ErrorType, ErrorSeverity } from '../utils/errorRecovery';

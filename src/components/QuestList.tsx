@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import QuestForm from "./QuestForm";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Separator } from "./ui/separator";
 import "./QuestList.css";
 
 const QuestList: React.FC = () => {
@@ -28,7 +32,9 @@ const QuestList: React.FC = () => {
     }
   }, [searchParams]);
 
-  const handleDelete = async (id: Id<"quests">) => {
+  const handleDelete = async (id: Id<"quests">, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (window.confirm("Are you sure you want to delete this quest? This action cannot be undone.")) {
       setIsDeleting(id);
       try {
@@ -42,7 +48,9 @@ const QuestList: React.FC = () => {
     }
   };
 
-  const handleEdit = (id: Id<"quests">) => {
+  const handleEdit = (id: Id<"quests">, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setEditingQuest(id);
   };
 
@@ -88,18 +96,18 @@ const QuestList: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (status: string) => {
     switch (status) {
       case "NotStarted":
-        return "status-not-started";
+        return "secondary";
       case "InProgress":
-        return "status-in-progress";
+        return "default";
       case "Completed":
-        return "status-completed";
+        return "default";
       case "Failed":
-        return "status-failed";
+        return "destructive";
       default:
-        return "status-unknown";
+        return "outline";
     }
   };
 
@@ -150,13 +158,13 @@ const QuestList: React.FC = () => {
             Manage and organize all your quests and adventures
           </p>
         </div>
-        <button
-          className="create-quest-btn"
+        <Button
           onClick={() => setIsCreating(true)}
+          className="create-quest-btn"
         >
           <span className="button-icon">+</span>
           Create New Quest
-        </button>
+        </Button>
       </div>
 
       {quests.length === 0 ? (
@@ -165,77 +173,85 @@ const QuestList: React.FC = () => {
           <h3>No Quests Yet</h3>
           <p>Get started by creating your first quest for your adventures.</p>
           <div className="empty-state-buttons">
-            <button
-              className="create-quest-btn"
+            <Button
               onClick={() => setIsCreating(true)}
+              className="create-quest-btn"
             >
               Create Your First Quest
-            </button>
-            <button
-              className="generate-sample-btn"
+            </Button>
+            <Button
               onClick={handleGenerateSampleQuests}
               disabled={isGenerating}
+              variant="outline"
+              className="generate-sample-btn"
             >
               {isGenerating ? "Generating..." : "Generate Sample Quests"}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
         <div className="quests-grid">
           {quests.map((quest) => (
-            <div key={quest._id} className="quest-card">
-              <div 
-                className="quest-card-content"
-                onClick={() => navigate(`/quests/${quest._id}`)}
+            <div key={quest._id} className="quest-card-link-wrapper">
+              <Link
+                to={`/quests/${quest._id}`}
+                className="quest-card-link"
+                aria-label={`View details for ${quest.name}`}
               >
-                <div className="quest-card-header">
-                  <h3 className="quest-name">{quest.name}</h3>
-                  <span className={`quest-status ${getStatusColor(quest.status)}`}>
-                    {getStatusText(quest.status)}
-                  </span>
-                </div>
-                
-                {quest.description && (
-                  <p className="quest-description">
-                    {quest.description.length > 100
-                      ? `${quest.description.substring(0, 100)}...`
-                      : quest.description}
-                  </p>
-                )}
-                
-                <div className="quest-meta">
-                  <span className="quest-tasks">
-                    {quest.taskIds.length} task{quest.taskIds.length !== 1 ? 's' : ''}
-                  </span>
-                  <span className="quest-date">
-                    {new Date(quest.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-
-              <div className="quest-actions">
-                <button
-                  className="edit-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEdit(quest._id);
-                  }}
-                  title="Edit this quest"
-                >
-                  ✏️ Edit
-                </button>
-                <button
-                  className="delete-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(quest._id);
-                  }}
-                  disabled={isDeleting === quest._id}
-                  title="Delete this quest"
-                >
-                  {isDeleting === quest._id ? "🗑️ Deleting..." : "🗑️ Delete"}
-                </button>
-              </div>
+                <Card className="clickable-card quest-card">
+                  <CardHeader className="quest-card-header">
+                    <div className="quest-title-section">
+                      <CardTitle className="quest-name">{quest.name}</CardTitle>
+                      <Badge variant={getStatusVariant(quest.status)} className="quest-status">
+                        {getStatusText(quest.status)}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="quest-card-content">
+                    {quest.description && (
+                      <p className="quest-description">
+                        {quest.description.length > 100
+                          ? `${quest.description.substring(0, 100)}...`
+                          : quest.description}
+                      </p>
+                    )}
+                    
+                    <Separator className="my-2" />
+                    
+                    <div className="quest-meta">
+                      <Badge variant="outline" className="quest-tasks">
+                        {quest.taskIds.length} task{quest.taskIds.length !== 1 ? 's' : ''}
+                      </Badge>
+                      <Badge variant="outline" className="quest-date">
+                        {new Date(quest.createdAt).toLocaleDateString()}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                  
+                  <div className="quest-actions">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => handleEdit(quest._id, e)}
+                      title="Edit this quest"
+                      className="edit-button"
+                    >
+                      ✏️ Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => handleDelete(quest._id, e)}
+                      disabled={isDeleting === quest._id}
+                      title="Delete this quest"
+                      className="delete-button"
+                    >
+                      {isDeleting === quest._id ? "🗑️ Deleting..." : "🗑️ Delete"}
+                    </Button>
+                  </div>
+                </Card>
+              </Link>
             </div>
           ))}
         </div>

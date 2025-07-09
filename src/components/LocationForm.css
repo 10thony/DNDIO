@@ -715,4 +715,27 @@
 
 .dark .map-preview-section {
   border-color: #374151;
+}
+
+/* Selected Map Card Styles */
+.selected-map-card {
+  border-color: #2563eb !important;
+  background-color: #eff6ff !important;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.1) !important;
+}
+
+.dark .selected-map-card {
+  border-color: #3b82f6 !important;
+  background-color: #1e3a8a !important;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2) !important;
+}
+
+.selected-map-card:hover {
+  border-color: #1d4ed8 !important;
+  background-color: #dbeafe !important;
+}
+
+.dark .selected-map-card:hover {
+  border-color: #2563eb !important;
+  background-color: #1e40af !important;
 } 

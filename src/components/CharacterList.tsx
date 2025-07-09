@@ -7,6 +7,12 @@ import { getAbilityModifier } from "../types/dndRules";
 import CharacterForm from "./CharacterForm";
 import { useRoleAccess } from "../hooks/useRoleAccess";
 import { useUser } from "@clerk/clerk-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 import "./CharacterList.css";
 
 const CharacterList: React.FC = () => {
@@ -109,12 +115,13 @@ const CharacterList: React.FC = () => {
     return (
       <div className="character-list">
         <div className="character-list-header">
-          <button
+          <Button
+            variant="ghost"
             onClick={handleCancel}
             className="back-button"
           >
             {returnTo === 'campaign-form' ? "← Back to Campaign Form" : "← Back to Characters"}
-          </button>
+          </Button>
         </div>
         <CharacterForm onSuccess={handleSubmitSuccess} />
       </div>
@@ -160,13 +167,13 @@ const CharacterList: React.FC = () => {
             Manage and organize all player characters and NPCs in your campaign
           </p>
         </div>
-        <button
-          className="create-button"
+        <Button
           onClick={() => setIsCreating(true)}
+          className="create-button"
         >
           <span className="button-icon">+</span>
           Create New Character
-        </button>
+        </Button>
       </div>
 
       {!hasAnyCharacters ? (
@@ -175,119 +182,135 @@ const CharacterList: React.FC = () => {
           <h3>No Characters Yet</h3>
           <p>{isAdmin ? "No characters have been created yet." : "You haven't created any characters yet."}</p>
           <div className="empty-state-buttons">
-            <button
+            <Button
               onClick={() => setIsCreating(true)}
               className="create-button"
             >
               Create Your First Character
-            </button>
+            </Button>
             {isAdmin && (
-              <button
+              <Button
                 onClick={handleImportData}
                 disabled={isImporting}
-                className="import-button"
-                style={{ marginLeft: '10px' }}
+                variant="outline"
+                className="import-button ml-2"
               >
                 {isImporting ? "🔄 Importing..." : "📥 Generate Sample Data"}
-              </button>
+              </Button>
             )}
           </div>
         </div>
       ) : (
         <div className="characters-grid">
           {characters?.map((character: PlayerCharacter) => (
-            <div key={character._id} className="character-card">
-              <div className="character-card-header">
-                <h3>{character.name}</h3>
-                <div className="character-card-actions">
-                  <Link
-                    to={`/characters/${character._id}`}
-                    className="btn btn-small btn-secondary"
-                  >
-                    View
-                  </Link>
-                  <button
-                    onClick={() => handleDelete(character._id!)}
-                    className="btn btn-small btn-danger"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-
-              <div className="character-basic-info">
-                <div className="character-identity">
-                  <span className="race">{character.race}</span>
-                  <span className="class">{character.class}</span>
-                  <span className="level">Level {character.level}</span>
-                  <span className="character-type">{character.characterType}</span>
-                </div>
-                <div className="character-background">
-                  {character.background}
-                </div>
-                {character.alignment && (
-                  <div className="character-alignment">
-                    {character.alignment}
-                  </div>
-                )}
-              </div>
-
-              <div className="character-stats">
-                <div className="stat-group">
-                  <div className="stat">
-                    <span className="stat-label">HP</span>
-                    <span className="stat-value">{character.hitPoints}</span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-label">AC</span>
-                    <span className="stat-value">{character.armorClass}</span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-label">Prof</span>
-                    <span className="stat-value">
-                      +{character.proficiencyBonus}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="ability-scores-summary">
-                  {Object.entries(character.abilityScores).map(
-                    ([ability, score]) => (
-                      <div key={ability} className="ability-summary">
-                        <span className="ability-name">
-                          {ability.slice(0, 3).toUpperCase()}
+            <div key={character._id} className="character-card-link-wrapper">
+              <Link to={`/characters/${character._id}`} className="character-card-link" tabIndex={-1} aria-label={`View details for ${character.name}`}> 
+                <Card className="character-card clickable-card">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarFallback className="bg-primary text-primary-foreground">
+                            {character.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <CardTitle className="text-lg">{character.name}</CardTitle>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Badge variant="outline">{character.race}</Badge>
+                            <Badge variant="secondary">{character.class}</Badge>
+                            <Badge variant="default">Level {character.level}</Badge>
+                            <Badge variant="outline" className="capitalize">
+                              {character.characterType === "PlayerCharacter" ? "PC" : "NPC"}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          onClick={e => { e.preventDefault(); e.stopPropagation(); handleDelete(character._id!); }}
+                          variant="destructive"
+                          size="sm"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Character Background */}
+                    <div className="text-sm text-muted-foreground">
+                      <strong>Background:</strong> {character.background}
+                      {character.alignment && (
+                        <span className="ml-2">
+                          • <strong>Alignment:</strong> {character.alignment}
                         </span>
-                        <span className="ability-score">{score}</span>
-                        <span className="ability-modifier">
-                          {getAbilityModifier(score) >= 0 ? "+" : ""}
-                          {getAbilityModifier(score)}
+                      )}
+                    </div>
+                    <Separator />
+                    {/* Character Stats */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">{character.hitPoints}</div>
+                        <div className="text-xs text-muted-foreground">Hit Points</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">{character.armorClass}</div>
+                        <div className="text-xs text-muted-foreground">Armor Class</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-primary">+{character.proficiencyBonus}</div>
+                        <div className="text-xs text-muted-foreground">Proficiency</div>
+                      </div>
+                    </div>
+                    <Separator />
+                    {/* Ability Scores */}
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">Ability Scores</h4>
+                      <div className="grid grid-cols-3 gap-2">
+                        {Object.entries(character.abilityScores).map(
+                          ([ability, score]) => (
+                            <div key={ability} className="text-center p-2 bg-muted rounded">
+                              <div className="text-xs font-medium uppercase text-muted-foreground">
+                                {ability.slice(0, 3)}
+                              </div>
+                              <div className="text-lg font-bold">{score}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {getAbilityModifier(score) >= 0 ? "+" : ""}
+                                {getAbilityModifier(score)}
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                    <Separator />
+                    {/* Proficiencies */}
+                    <div className="space-y-2">
+                      <div className="text-sm">
+                        <strong>Saving Throws:</strong>{" "}
+                        <span className="text-muted-foreground">
+                          {character.savingThrows.join(", ")}
                         </span>
                       </div>
-                    )
-                  )}
-                </div>
-              </div>
-
-              <div className="character-proficiencies">
-                <div className="proficiency-group">
-                  <strong>Saving Throws:</strong>
-                  <span>{character.savingThrows.join(", ")}</span>
-                </div>
-                <div className="proficiency-group">
-                  <strong>Skills:</strong>
-                  <span>{character.skills.slice(0, 3).join(", ")}</span>
-                  {character.skills.length > 3 && (
-                    <span className="more-skills">
-                      {" "}
-                      +{character.skills.length - 3} more
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="character-created">
-                Created: {new Date(character.createdAt).toLocaleDateString()}
-              </div>
+                      <div className="text-sm">
+                        <strong>Skills:</strong>{" "}
+                        <span className="text-muted-foreground">
+                          {character.skills.slice(0, 3).join(", ")}
+                          {character.skills.length > 3 && (
+                            <span className="text-primary">
+                              {" "+"+"}{character.skills.length - 3} more
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground pt-2 border-t">
+                      Created: {new Date(character.createdAt).toLocaleDateString()}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             </div>
           ))}
         </div>

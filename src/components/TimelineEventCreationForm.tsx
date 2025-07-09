@@ -3,7 +3,22 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { useUser } from "@clerk/clerk-react";
-import "./TimelineEventCreationForm.css";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Alert, AlertDescription } from "./ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Separator } from "./ui/separator";
+import { 
+  AlertCircle, 
+  ArrowLeft, 
+  Calendar,
+  BookOpen,
+  Target
+} from "lucide-react";
 
 interface TimelineEventCreationFormProps {
   onSubmitSuccess: () => void;
@@ -122,136 +137,227 @@ const TimelineEventCreationForm: React.FC<TimelineEventCreationFormProps> = ({
     }
   };
 
+  const getEventTypeIcon = (type: string) => {
+    switch (type) {
+      case "Battle": return "⚔️";
+      case "Alliance": return "🤝";
+      case "Discovery": return "🔍";
+      case "Disaster": return "💥";
+      case "Political": return "👑";
+      case "Cultural": return "🎭";
+      default: return "📅";
+    }
+  };
+
   return (
-    <div className="timeline-event-form">
-      <div className="form-header">
-        <h2 className="form-section-title">
-          {editingTimelineEventId ? "Edit Timeline Event" : "Create New Timeline Event"}
-        </h2>
-        <button className="back-button" onClick={onCancel}>
-          ← Back
-        </button>
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">
+              {editingTimelineEventId ? "Edit Timeline Event" : "Create New Timeline Event"}
+            </h1>
+            <p className="text-muted-foreground">
+              {editingTimelineEventId ? "Update timeline event details" : "Add a new event to your campaign timeline"}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="form-section">
-          <h3 className="form-section-title">Basic Information</h3>
-          
-          <div className="form-row">
-            <div className="form-col">
-              <label className="form-label" htmlFor="title">
-                Event Title *
-              </label>
-              <input
-                type="text"
+      {/* Error Messages */}
+      {errors.general && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{errors.general}</AlertDescription>
+        </Alert>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Event Information
+            </CardTitle>
+            <CardDescription>
+              Basic details about the timeline event
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Event Title *</Label>
+              <Input
                 id="title"
-                className="form-input"
                 value={formData.title}
                 onChange={(e) => handleInputChange("title", e.target.value)}
                 placeholder="Enter event title"
+                className={errors.title ? "border-destructive" : ""}
               />
-              {errors.title && <div className="form-error">{errors.title}</div>}
+              {errors.title && (
+                <p className="text-sm text-destructive">{errors.title}</p>
+              )}
             </div>
 
-            <div className="form-col">
-              <label className="form-label" htmlFor="type">
-                Event Type
-              </label>
-              <select
-                id="type"
-                className="form-select"
-                value={formData.type}
-                onChange={(e) => handleInputChange("type", e.target.value)}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="type">Event Type</Label>
+                <Select 
+                  value={formData.type} 
+                  onValueChange={(value) => handleInputChange("type", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Custom">
+                      <div className="flex items-center gap-2">
+                        <span>📅</span>
+                        <span>Custom</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Battle">
+                      <div className="flex items-center gap-2">
+                        <span>⚔️</span>
+                        <span>Battle</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Alliance">
+                      <div className="flex items-center gap-2">
+                        <span>🤝</span>
+                        <span>Alliance</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Discovery">
+                      <div className="flex items-center gap-2">
+                        <span>🔍</span>
+                        <span>Discovery</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Disaster">
+                      <div className="flex items-center gap-2">
+                        <span>💥</span>
+                        <span>Disaster</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Political">
+                      <div className="flex items-center gap-2">
+                        <span>👑</span>
+                        <span>Political</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Cultural">
+                      <div className="flex items-center gap-2">
+                        <span>🎭</span>
+                        <span>Cultural</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="date">Event Date *</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => handleInputChange("date", e.target.value)}
+                  className={errors.date ? "border-destructive" : ""}
+                />
+                {errors.date && (
+                  <p className="text-sm text-destructive">{errors.date}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="campaignId">Campaign *</Label>
+              <Select 
+                value={formData.campaignId} 
+                onValueChange={(value) => handleInputChange("campaignId", value)}
               >
-                <option value="Custom">Custom</option>
-                <option value="Battle">Battle</option>
-                <option value="Alliance">Alliance</option>
-                <option value="Discovery">Discovery</option>
-                <option value="Disaster">Disaster</option>
-                <option value="Political">Political</option>
-                <option value="Cultural">Cultural</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-col">
-              <label className="form-label" htmlFor="campaignId">
-                Campaign *
-              </label>
-              <select
-                id="campaignId"
-                className="form-select"
-                value={formData.campaignId}
-                onChange={(e) => handleInputChange("campaignId", e.target.value)}
-              >
-                <option value="">Select a campaign</option>
-                {campaigns?.map((campaign) => (
-                  <option key={campaign._id} value={campaign._id}>
-                    {campaign.name}
-                  </option>
-                ))}
-              </select>
-              {errors.campaignId && <div className="form-error">{errors.campaignId}</div>}
+                <SelectTrigger className={errors.campaignId ? "border-destructive" : ""}>
+                  <SelectValue placeholder="Select a campaign" />
+                </SelectTrigger>
+                <SelectContent>
+                  {campaigns?.map((campaign) => (
+                    <SelectItem key={campaign._id} value={campaign._id}>
+                      {campaign.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.campaignId && (
+                <p className="text-sm text-destructive">{errors.campaignId}</p>
+              )}
             </div>
 
-            <div className="form-col">
-              <label className="form-label" htmlFor="date">
-                Event Date *
-              </label>
-              <input
-                type="date"
-                id="date"
-                className="form-input"
-                value={formData.date}
-                onChange={(e) => handleInputChange("date", e.target.value)}
-              />
-              {errors.date && <div className="form-error">{errors.date}</div>}
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-col full-width">
-              <label className="form-label" htmlFor="description">
-                Description *
-              </label>
-              <textarea
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
                 id="description"
-                className="form-textarea"
                 value={formData.description}
                 onChange={(e) => handleInputChange("description", e.target.value)}
                 placeholder="Describe the timeline event..."
+                rows={4}
+                className={errors.description ? "border-destructive" : ""}
               />
-              {errors.description && <div className="form-error">{errors.description}</div>}
+              {errors.description && (
+                <p className="text-sm text-destructive">{errors.description}</p>
+              )}
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        {errors.general && <div className="form-error">{errors.general}</div>}
+        {/* Event Type Preview */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Event Preview
+            </CardTitle>
+            <CardDescription>
+              How this event will appear in your timeline
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="border-l-4 border-l-primary pl-4 py-2">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl">{getEventTypeIcon(formData.type)}</span>
+                <h4 className="font-semibold">{formData.title || "Event Title"}</h4>
+                <Badge variant="outline">{formData.type}</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground mb-2">
+                {formData.date ? new Date(formData.date).toLocaleDateString() : "Date"}
+              </p>
+              <p className="text-sm">
+                {formData.description || "Event description will appear here..."}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="form-actions">
-          <button
+        {/* Form Actions */}
+        <div className="flex justify-end gap-4 pt-6 border-t">
+          <Button
             type="button"
-            className="btn-secondary"
+            variant="outline"
             onClick={onCancel}
             disabled={isSubmitting}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
-            className="btn-primary"
             disabled={isSubmitting}
           >
-            {isSubmitting
-              ? editingTimelineEventId
-                ? "Updating..."
-                : "Creating..."
-              : editingTimelineEventId
-              ? "Update Timeline Event"
-              : "Create Timeline Event"
-            }
-          </button>
+            {isSubmitting ? "Saving..." : (editingTimelineEventId ? "Save Changes" : "Create Event")}
+          </Button>
         </div>
       </form>
     </div>

@@ -1,7 +1,9 @@
 import React from "react";
 import type { Item } from "../types/item";
-import "./ItemCard.css"; // Basic styling
-import { Link } from "react-router-dom"; // For linking to details
+import { Link } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
+import "./ItemCard.css";
 
 interface ItemCardProps {
   item: Item;
@@ -15,21 +17,51 @@ const ItemCard: React.FC<ItemCardProps> = ({ item, onClick }) => {
     }
   };
 
+  const getRarityVariant = (rarity: string) => {
+    switch (rarity.toLowerCase()) {
+      case "common":
+        return "secondary";
+      case "uncommon":
+        return "default";
+      case "rare":
+        return "default";
+      case "very rare":
+        return "default";
+      case "legendary":
+        return "default";
+      default:
+        return "outline";
+    }
+  };
+
   return (
-    <Link to={`/items/${item._id}`} className="item-card-link">
-      <div className="item-card" onClick={handleClick}>
-        <div className="item-card-header">
-          <h3 className="item-card-name">{item.name}</h3>
-          <span className={`item-card-rarity rarity-${item.rarity.toLowerCase().replace(/\s+/g, "-")}`}>
-            {item.rarity}
-          </span>
-        </div>
-        <div className="item-card-body">
-          <p className="item-card-type">{item.type}</p>
-          {/* Optionally add a brief description snippet */}
-        </div>
-      </div>
-    </Link>
+    <div className="item-card-link-wrapper">
+      <Link 
+        to={`/items/${item._id}`} 
+        className="item-card-link"
+        aria-label={`View details for ${item.name}`}
+        onClick={handleClick}
+      >
+        <Card className="clickable-card item-card">
+          <CardHeader className="item-card-header">
+            <div className="item-title-section">
+              <CardTitle className="item-card-name">{item.name}</CardTitle>
+              <Badge 
+                variant={getRarityVariant(item.rarity)} 
+                className={`item-card-rarity rarity-${item.rarity.toLowerCase().replace(/\s+/g, "-")}`}
+              >
+                {item.rarity}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="item-card-body">
+            <Badge variant="outline" className="item-card-type">
+              {item.type}
+            </Badge>
+          </CardContent>
+        </Card>
+      </Link>
+    </div>
   );
 };
 

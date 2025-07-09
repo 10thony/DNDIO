@@ -460,6 +460,44 @@
     @apply opacity-50 cursor-not-allowed;
   }
   
+  /* Make the card clickable and add hover/focus styles */
+.character-card-link-wrapper {
+  position: relative;
+  display: block;
+  height: 100%;
+}
+
+.character-card-link {
+  display: block;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+
+.clickable-card {
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.clickable-card:hover,
+.clickable-card:focus-within {
+  box-shadow: 0 4px 24px 0 rgba(80, 120, 255, 0.15), 0 1.5px 6px 0 rgba(0,0,0,0.08);
+  transform: translateY(-2px) scale(1.01);
+  border-color: #3b82f6;
+}
+
+/* Prevent Delete button from triggering link */
+.character-card-link .btn-destructive, .character-card-link .btn[variant="destructive"] {
+  z-index: 2;
+  position: relative;
+  pointer-events: auto;
+}
+
+.character-card-link .btn-destructive:focus, .character-card-link .btn[variant="destructive"]:focus {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
+}
+  
   @media (max-width: 768px) {
     .character-list {
       padding: 1rem;

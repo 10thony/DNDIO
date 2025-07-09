@@ -1,0 +1,23 @@
+MAP COMPONENTS RESPONSIVENESS AND DARK MODE UPDATE
+
+Summary of Changes (July 2025):
+
+1. MapPreview.tsx
+- Made the map preview grid fully responsive: it now uses a flex wrapper, max-width, max-height, and overflow handling to ensure it never overflows its container and is scrollable on small screens.
+- Updated cell color classes to use Tailwind's dark: variants, so cell colors adapt to dark mode.
+- Added border and background classes for dark mode.
+- Added a comment at the top of the file documenting these changes.
+
+2. MapsList.tsx
+- Made map cards responsive by adding max-w-xs, w-full, and mx-auto to the card container.
+- Made the preview container inside each card responsive with overflow-x-auto and max-w-full.
+- Ensured all backgrounds and borders are dark mode aware.
+- Added a comment at the top of the file documenting these changes.
+
+3. MapCreator.tsx
+- Made the preview container in the creation form responsive with max-w-full, overflow-auto, and flex centering.
+- Ensured backgrounds and borders are dark mode aware.
+- Added a comment at the top of the file documenting these changes.
+
+Result:
+- All map previews and cards now adapt to both light and dark mode, and are usable on all screen sizes without overflow or layout issues. 

@@ -4,6 +4,7 @@ import { api } from "../../convex/_generated/api";
 import ItemCard from "./ItemCard";
 import ItemCreationForm from "./ItemCreationForm";
 import BulkItemGenerator from "./BulkItemGenerator";
+import { Button } from "./ui/button";
 import "./ItemList.css";
 
 const ItemList: React.FC = () => {
@@ -26,12 +27,13 @@ const ItemList: React.FC = () => {
     return (
       <div className="item-list">
         <div className="item-list-header">
-          <button
+          <Button
             onClick={handleCancel}
+            variant="outline"
             className="back-button"
           >
             ← Back to Items
-          </button>
+          </Button>
         </div>
         <ItemCreationForm 
           onSubmitSuccess={handleSubmitSuccess}
@@ -49,12 +51,12 @@ const ItemList: React.FC = () => {
     <div className="item-list">
       <div className="item-list-header">
         <h2>Items</h2>
-        <button
-          className="create-button"
+        <Button
           onClick={() => setIsCreating(true)}
+          className="create-button"
         >
           Create New Item
-        </button>
+        </Button>
       </div>
       
       {items.length === 0 && (

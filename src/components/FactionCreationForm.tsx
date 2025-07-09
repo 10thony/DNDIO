@@ -4,7 +4,27 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import "./FactionCreationForm.css";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Alert, AlertDescription } from "./ui/alert";
+import { Checkbox } from "./ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Separator } from "./ui/separator";
+import { 
+  AlertCircle, 
+  ArrowLeft, 
+  Users,
+  Target,
+  Shield,
+  Sword,
+  Plus,
+  X
+} from "lucide-react";
 
 interface FactionCreationFormProps {
   editingFactionId?: Id<"factions"> | null;
@@ -139,201 +159,289 @@ const FactionCreationForm: React.FC<FactionCreationFormProps> = ({
   const availableFactions = factions?.filter(f => !editingFactionId || f._id !== editingFactionId) || [];
 
   return (
-    <div className="faction-form">
-      <div className="form-header">
-        <button type="button" onClick={handleCancel} className="back-button">
-          ← Back to Factions List
-        </button>
-        <h2 className="form-section-title">
-          {editingFactionId ? "Edit Faction" : "Create New Faction"}
-        </h2>
-      </div>
-
-      {error && <div className="form-error">{error}</div>}
-
-      <form onSubmit={handleSubmit}>
-        {/* Basic Information Section */}
-        <div className="form-section">
-          <div className="form-section-title">Basic Information</div>
-          <div className="form-row">
-            <div className="form-col">
-              <label htmlFor="name" className="form-label">Faction Name *</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                className="form-input"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                placeholder="Enter faction name"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-col full-width">
-              <label htmlFor="description" className="form-label">Description *</label>
-              <textarea
-                id="description"
-                name="description"
-                className="form-textarea"
-                value={formData.description}
-                onChange={handleChange}
-                required
-                rows={4}
-                placeholder="Enter a detailed description of the faction..."
-              />
-            </div>
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={handleCancel}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Factions List
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">
+              {editingFactionId ? "Edit Faction" : "Create New Faction"}
+            </h1>
+            <p className="text-muted-foreground">
+              {editingFactionId ? "Update faction details" : "Define a new faction with goals and relationships"}
+            </p>
           </div>
         </div>
+      </div>
 
-        {/* Goals Section */}
-        <div className="form-section">
-          <div className="form-section-title">Goals</div>
-          <div className="form-row">
-            <div className="form-col full-width">
-              <label className="form-label">Faction Goals</label>
-              <div className="goals-input-group">
-                <input
-                  type="text"
-                  className="form-input"
-                  value={newGoal}
-                  onChange={(e) => setNewGoal(e.target.value)}
-                  placeholder="Enter a goal for this faction"
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addGoal();
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={addGoal}
-                  className="btn-secondary"
-                  disabled={!newGoal.trim()}
-                >
-                  Add Goal
-                </button>
-              </div>
-              
-              {formData.goals.length > 0 && (
-                <div className="goals-list">
-                  {formData.goals.map((goal, index) => (
-                    <div key={index} className="goal-item">
-                      <span className="goal-text">{goal}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeGoal(index)}
-                        className="remove-goal-btn"
+      {/* Error Messages */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Tabs defaultValue="basic" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="basic" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Basic Info
+            </TabsTrigger>
+            <TabsTrigger value="goals" className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Goals
+            </TabsTrigger>
+            <TabsTrigger value="leadership" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Leadership
+            </TabsTrigger>
+            <TabsTrigger value="relationships" className="flex items-center gap-2">
+              <Sword className="h-4 w-4" />
+              Relationships
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Basic Information Tab */}
+          <TabsContent value="basic" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Basic Information</CardTitle>
+                <CardDescription>
+                  Core details about the faction
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Faction Name *</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Enter faction name"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description *</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="Enter a detailed description of the faction..."
+                    rows={4}
+                    required
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Goals Tab */}
+          <TabsContent value="goals" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  Faction Goals
+                </CardTitle>
+                <CardDescription>
+                  Define the primary objectives and aspirations of this faction
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="newGoal">Add New Goal</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="newGoal"
+                      value={newGoal}
+                      onChange={(e) => setNewGoal(e.target.value)}
+                      placeholder="Enter a new goal..."
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addGoal())}
+                    />
+                    <Button type="button" variant="outline" onClick={addGoal}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {formData.goals.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Current Goals</Label>
+                    <div className="space-y-2">
+                      {formData.goals.map((goal, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                          <span className="flex-1">{goal}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeGoal(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {formData.goals.length === 0 && (
+                  <div className="text-center py-8">
+                    <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No goals defined yet. Add some goals to define the faction's objectives.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Leadership Tab */}
+          <TabsContent value="leadership" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Leadership
+                </CardTitle>
+                <CardDescription>
+                  Select NPCs who lead this faction
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {npcs?.map((npc) => (
+                    <div key={npc._id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`leader-${npc._id}`}
+                        checked={formData.leaderNpcIds.includes(npc._id)}
+                        onCheckedChange={(checked) => handleMultiSelectChange("leaderNpcIds", npc._id, checked as boolean)}
+                      />
+                      <Label 
+                        htmlFor={`leader-${npc._id}`}
+                        className="text-sm font-normal cursor-pointer"
                       >
-                        ×
-                      </button>
+                        {npc.name}
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          Level {npc.level}
+                        </Badge>
+                      </Label>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Relationships Section */}
-        <div className="form-section">
-          <div className="form-section-title">Relationships</div>
-          
-          {/* Leader NPCs */}
-          <div className="form-row">
-            <div className="form-col full-width">
-              <label className="form-label">Leader NPCs</label>
-              <div className="multi-select-container">
-                {npcs && npcs.length > 0 ? (
-                  <div className="checkbox-group">
-                    {npcs.map((npc) => (
-                      <label key={npc._id} className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          checked={formData.leaderNpcIds.includes(npc._id)}
-                          onChange={(e) => handleMultiSelectChange(
-                            'leaderNpcIds', 
-                            npc._id, 
-                            e.target.checked
-                          )}
-                        />
-                        <span className="checkbox-label">{npc.name}</span>
-                      </label>
-                    ))}
+                {(!npcs || npcs.length === 0) && (
+                  <div className="text-center py-8">
+                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No NPCs available. Create some NPCs first to assign as faction leaders.</p>
                   </div>
-                ) : (
-                  <p className="form-help-text">No NPCs available. Create some NPCs first.</p>
                 )}
-              </div>
-            </div>
-          </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          {/* Allied Factions */}
-          <div className="form-row">
-            <div className="form-col full-width">
-              <label className="form-label">Allied Factions (Optional)</label>
-              <div className="multi-select-container">
-                {availableFactions.length > 0 ? (
-                  <div className="checkbox-group">
-                    {availableFactions.map((faction) => (
-                      <label key={faction._id} className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          checked={formData.alliedFactionIds.includes(faction._id)}
-                          onChange={(e) => handleMultiSelectChange(
-                            'alliedFactionIds', 
-                            faction._id, 
-                            e.target.checked
-                          )}
-                        />
-                        <span className="checkbox-label">{faction.name}</span>
-                      </label>
-                    ))}
+          {/* Relationships Tab */}
+          <TabsContent value="relationships" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Allied Factions
+                </CardTitle>
+                <CardDescription>
+                  Select factions that are friendly or allied with this faction
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {availableFactions.map((faction) => (
+                    <div key={faction._id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`allied-${faction._id}`}
+                        checked={formData.alliedFactionIds.includes(faction._id)}
+                        onCheckedChange={(checked) => handleMultiSelectChange("alliedFactionIds", faction._id, checked as boolean)}
+                      />
+                      <Label 
+                        htmlFor={`allied-${faction._id}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {faction.name}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                {availableFactions.length === 0 && (
+                  <div className="text-center py-8">
+                    <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No other factions available to form alliances with.</p>
                   </div>
-                ) : (
-                  <p className="form-help-text">No other factions available to ally with.</p>
                 )}
-              </div>
-            </div>
-          </div>
+              </CardContent>
+            </Card>
 
-          {/* Enemy Factions */}
-          <div className="form-row">
-            <div className="form-col full-width">
-              <label className="form-label">Enemy Factions (Optional)</label>
-              <div className="multi-select-container">
-                {availableFactions.length > 0 ? (
-                  <div className="checkbox-group">
-                    {availableFactions.map((faction) => (
-                      <label key={faction._id} className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          checked={formData.enemyFactionIds.includes(faction._id)}
-                          onChange={(e) => handleMultiSelectChange(
-                            'enemyFactionIds', 
-                            faction._id, 
-                            e.target.checked
-                          )}
-                        />
-                        <span className="checkbox-label">{faction.name}</span>
-                      </label>
-                    ))}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sword className="h-5 w-5" />
+                  Enemy Factions
+                </CardTitle>
+                <CardDescription>
+                  Select factions that are hostile or opposed to this faction
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {availableFactions.map((faction) => (
+                    <div key={faction._id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`enemy-${faction._id}`}
+                        checked={formData.enemyFactionIds.includes(faction._id)}
+                        onCheckedChange={(checked) => handleMultiSelectChange("enemyFactionIds", faction._id, checked as boolean)}
+                      />
+                      <Label 
+                        htmlFor={`enemy-${faction._id}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {faction.name}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                {availableFactions.length === 0 && (
+                  <div className="text-center py-8">
+                    <Sword className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No other factions available to mark as enemies.</p>
                   </div>
-                ) : (
-                  <p className="form-help-text">No other factions available to set as enemies.</p>
                 )}
-              </div>
-            </div>
-          </div>
-        </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
-        <div className="form-actions">
-          <button type="submit" className="btn-primary" disabled={isLoading}>
+        {/* Form Actions */}
+        <div className="flex justify-end gap-4 pt-6 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={isLoading}
+          >
             {isLoading ? "Saving..." : (editingFactionId ? "Save Changes" : "Create Faction")}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

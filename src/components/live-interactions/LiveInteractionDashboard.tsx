@@ -5,6 +5,13 @@ import { Id } from '../../../convex/_generated/dataModel';
 import { DiceRoller } from './DiceRoller';
 import { CombatStateManager } from './CombatStateManager';
 import { InteractionTemplates } from './InteractionTemplates';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 import './LiveInteractionDashboard.css';
 
 interface LiveInteractionDashboardProps {
@@ -19,7 +26,6 @@ export const LiveInteractionDashboard: React.FC<LiveInteractionDashboardProps> =
 }) => {
   const [selectedInteractionId, setSelectedInteractionId] = useState<Id<"interactions"> | null>(null);
   const [activeTab, setActiveTab] = useState<'main' | 'combat' | 'dice' | 'templates'>('main');
-
 
   // Queries
   const activeInteraction = useQuery(api.interactions.getActiveInteractionByCampaign, { campaignId });
@@ -82,15 +88,20 @@ export const LiveInteractionDashboard: React.FC<LiveInteractionDashboardProps> =
   if (!activeInteraction) {
     return (
       <div className="live-interaction-dashboard">
-        <div className="no-active-interaction">
-          <h2>No Active Interaction</h2>
-          <p>There is currently no active live interaction for this campaign.</p>
-          {isDM && (
-            <button className="btn-primary">
-              Start New Interaction
-            </button>
-          )}
-        </div>
+        <Card>
+          <CardContent className="text-center py-12">
+            <div className="text-4xl mb-4">🎭</div>
+            <h2 className="text-2xl font-bold mb-2">No Active Interaction</h2>
+            <p className="text-muted-foreground mb-6">
+              There is currently no active live interaction for this campaign.
+            </p>
+            {isDM && (
+              <Button>
+                Start New Interaction
+              </Button>
+            )}
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -99,213 +110,250 @@ export const LiveInteractionDashboard: React.FC<LiveInteractionDashboardProps> =
   const isCurrentTurnPlayer = currentParticipant?.entityType === 'playerCharacter';
 
   return (
-    <div className="live-interaction-dashboard">
-      <div className="dashboard-header">
-        <h2>Live Interaction: {activeInteraction.name}</h2>
-        <div className="interaction-status">
-          Status: <span className={`status-${activeInteraction.status?.toLowerCase()}`}>
-            {activeInteraction.status?.replace(/_/g, ' ')}
-          </span>
-        </div>
-      </div>
-
-      {/* Advanced Features Tabs */}
-      <div className="advanced-features-tabs">
-        <button
-          className={`tab-button ${activeTab === 'main' ? 'active' : ''}`}
-          onClick={() => setActiveTab('main')}
-        >
-          📊 Main Dashboard
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'combat' ? 'active' : ''}`}
-          onClick={() => setActiveTab('combat')}
-        >
-          ⚔️ Combat State
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'dice' ? 'active' : ''}`}
-          onClick={() => setActiveTab('dice')}
-        >
-          🎲 Dice Roller
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'templates' ? 'active' : ''}`}
-          onClick={() => setActiveTab('templates')}
-        >
-          📋 Templates
-        </button>
-      </div>
-
-      <div className="dashboard-content">
-        {/* Main Dashboard Tab */}
-        {activeTab === 'main' && (
-          <div className="main-panel">
-            {/* Initiative Order */}
-            <div className="initiative-panel">
-              <h3>Initiative Order</h3>
-              <div className="initiative-list">
-                {initiativeOrder?.initiativeOrder.map((participant, index) => (
-                  <div
-                    key={`${participant.entityId}-${index}`}
-                    className={`initiative-item ${index === initiativeOrder.currentIndex ? 'current-turn' : ''}`}
-                  >
-                    <div className="initiative-number">{index + 1}</div>
-                    <div className="participant-info">
-                      <div className="participant-name">
-                        {participant.entityType === 'playerCharacter' && 
-                          interactionWithParticipants?.participants.playerCharacters?.find(
-                            pc => pc?._id === participant.entityId
-                          )?.name || 'Unknown Player'}
-                        {participant.entityType === 'npc' && 
-                          interactionWithParticipants?.participants.npcs?.find(
-                            npc => npc?._id === participant.entityId
-                          )?.name || 'Unknown NPC'}
-                        {participant.entityType === 'monster' && 
-                          interactionWithParticipants?.participants.monsters?.find(
-                            monster => monster?._id === participant.entityId
-                          )?.name || 'Unknown Monster'}
-                      </div>
-                      <div className="participant-type">{participant.entityType}</div>
-                    </div>
-                    <div className="initiative-roll">{participant.initiativeRoll}</div>
-                  </div>
-                ))}
+    <div className="live-interaction-dashboard space-y-6">
+      {/* Dashboard Header */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl">Live Interaction: {activeInteraction.name}</CardTitle>
+              <div className="flex items-center space-x-2 mt-2">
+                <span className="text-sm text-muted-foreground">Status:</span>
+                <Badge variant={
+                  activeInteraction.status === 'ACTIVE' ? 'default' :
+                  activeInteraction.status === 'PAUSED' ? 'secondary' :
+                  activeInteraction.status === 'COMPLETED' ? 'outline' : 'destructive'
+                }>
+                  {activeInteraction.status?.replace(/_/g, ' ')}
+                </Badge>
               </div>
             </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Advanced Features Tabs */}
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="main">📊 Main Dashboard</TabsTrigger>
+          <TabsTrigger value="combat">⚔️ Combat State</TabsTrigger>
+          <TabsTrigger value="dice">🎲 Dice Roller</TabsTrigger>
+          <TabsTrigger value="templates">📋 Templates</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="main" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Initiative Order */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Initiative Order</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {initiativeOrder?.initiativeOrder.map((participant, index) => (
+                    <div
+                      key={`${participant.entityId}-${index}`}
+                      className={cn(
+                        "flex items-center space-x-3 p-3 rounded-lg border",
+                        index === initiativeOrder.currentIndex && "bg-primary/10 border-primary"
+                      )}
+                    >
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted font-bold text-sm">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium">
+                          {participant.entityType === 'playerCharacter' && 
+                            interactionWithParticipants?.participants.playerCharacters?.find(
+                              pc => pc?._id === participant.entityId
+                            )?.name || 'Unknown Player'}
+                          {participant.entityType === 'npc' && 
+                            interactionWithParticipants?.participants.npcs?.find(
+                              npc => npc?._id === participant.entityId
+                            )?.name || 'Unknown NPC'}
+                          {participant.entityType === 'monster' && 
+                            interactionWithParticipants?.participants.monsters?.find(
+                              monster => monster?._id === participant.entityId
+                            )?.name || 'Unknown Monster'}
+                        </div>
+                        <div className="text-sm text-muted-foreground capitalize">
+                          {participant.entityType}
+                        </div>
+                      </div>
+                      <Badge variant="outline">{participant.initiativeRoll}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Current Turn Display */}
-            <div className="current-turn-panel">
-              <h3>Current Turn</h3>
-              {currentParticipant ? (
-                <div className="current-participant">
-                  <div className="participant-name">
-                    {currentParticipant.entityType === 'playerCharacter' && 
-                      interactionWithParticipants?.participants.playerCharacters?.find(
-                        pc => pc?._id === currentParticipant.entityId
-                      )?.name || 'Unknown Player'}
-                    {currentParticipant.entityType === 'npc' && 
-                      interactionWithParticipants?.participants.npcs?.find(
-                        npc => npc?._id === currentParticipant.entityId
-                      )?.name || 'Unknown NPC'}
-                    {currentParticipant.entityType === 'monster' && 
-                      interactionWithParticipants?.participants.monsters?.find(
-                        monster => monster?._id === currentParticipant.entityId
-                      )?.name || 'Unknown Monster'}
+            <Card>
+              <CardHeader>
+                <CardTitle>Current Turn</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {currentParticipant ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="h-12 w-12">
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {currentParticipant.entityType === 'playerCharacter' ? 'PC' : 
+                           currentParticipant.entityType === 'npc' ? 'NPC' : 'M'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">
+                          {currentParticipant.entityType === 'playerCharacter' && 
+                            interactionWithParticipants?.participants.playerCharacters?.find(
+                              pc => pc?._id === currentParticipant.entityId
+                            )?.name || 'Unknown Player'}
+                          {currentParticipant.entityType === 'npc' && 
+                            interactionWithParticipants?.participants.npcs?.find(
+                              npc => npc?._id === currentParticipant.entityId
+                            )?.name || 'Unknown NPC'}
+                          {currentParticipant.entityType === 'monster' && 
+                            interactionWithParticipants?.participants.monsters?.find(
+                              monster => monster?._id === currentParticipant.entityId
+                            )?.name || 'Unknown Monster'}
+                        </div>
+                        <div className="text-sm text-muted-foreground capitalize">
+                          {currentParticipant.entityType}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-sm">
+                      <strong>Initiative:</strong> {currentParticipant.initiativeRoll}
+                    </div>
                   </div>
-                  <div className="participant-type">{currentParticipant.entityType}</div>
-                  <div className="initiative-roll">Initiative: {currentParticipant.initiativeRoll}</div>
-                </div>
-              ) : (
-                <div className="no-current-turn">No current turn</div>
-              )}
-            </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No current turn
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-            {/* Action Queue */}
-            <div className="action-queue-panel">
-              <h3>Pending Actions ({pendingActions?.length || 0})</h3>
-              <div className="action-list">
+          {/* Action Queue */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Actions ({pendingActions?.length || 0})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
                 {pendingActions?.map((action) => (
-                  <div key={action._id} className="action-item">
-                    <div className="action-header">
-                      <span className="action-type">{action.actionType}</span>
-                      <span className="action-time">
+                  <div key={action._id} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge variant="outline">{action.actionType}</Badge>
+                      <span className="text-sm text-muted-foreground">
                         {new Date(action.submittedAt).toLocaleTimeString()}
                       </span>
                     </div>
-                    <div className="action-description">{action.actionDescription}</div>
+                    <div className="text-sm">{action.actionDescription}</div>
                   </div>
                 ))}
                 {(!pendingActions || pendingActions.length === 0) && (
-                  <div className="no-pending-actions">No pending actions</div>
+                  <div className="text-center py-8 text-muted-foreground">
+                    No pending actions
+                  </div>
                 )}
               </div>
-            </div>
-          </div>
-        )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        {/* Combat State Tab */}
-        {activeTab === 'combat' && selectedInteractionId && (
-          <div className="combat-panel">
-            <CombatStateManager interactionId={selectedInteractionId} />
-          </div>
-        )}
-
-        {/* Dice Roller Tab */}
-        {activeTab === 'dice' && (
-          <div className="dice-panel">
-            <DiceRoller
-              mode="combat"
-              interactionId={selectedInteractionId || undefined}
-              onRollComplete={(result) => {
-                console.log('Dice roll result:', result);
-                // TODO: Integrate with combat state
-              }}
-            />
-          </div>
-        )}
-
-        {/* Templates Tab */}
-        {activeTab === 'templates' && (
-          <div className="templates-panel">
-            <InteractionTemplates
-              campaignId={campaignId}
-              onTemplateSelect={(template) => {
-                console.log('Template selected:', template);
-                // TODO: Apply template to current interaction
-              }}
-            />
-          </div>
-        )}
-
-        {/* Control Panel - Always visible */}
-        <div className="control-panel">
-          <h3>Controls</h3>
-          
-          {isDM && (
-            <>
-              <button 
-                className="btn-primary"
-                onClick={handleAdvanceTurn}
-                disabled={!selectedInteractionId}
-              >
-                Advance Turn
-              </button>
-              
-              <button 
-                className="btn-success"
-                onClick={handleCompleteInteraction}
-                disabled={!selectedInteractionId}
-              >
-                Complete Interaction
-              </button>
-              
-              <button 
-                className="btn-danger"
-                onClick={handleCancelInteraction}
-                disabled={!selectedInteractionId}
-              >
-                Cancel Interaction
-              </button>
-            </>
+        <TabsContent value="combat" className="space-y-6">
+          {selectedInteractionId && (
+            <Card>
+              <CardContent className="p-6">
+                <CombatStateManager interactionId={selectedInteractionId} />
+              </CardContent>
+            </Card>
           )}
+        </TabsContent>
 
-          {!isDM && isCurrentTurnPlayer && (
-            <div className="player-turn-notice">
-              <p>It's your turn!</p>
-              <button className="btn-primary">
-                Submit Action
-              </button>
-            </div>
-          )}
+        <TabsContent value="dice" className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              <DiceRoller
+                mode="combat"
+                interactionId={selectedInteractionId || undefined}
+                onRollComplete={(result) => {
+                  console.log('Dice roll result:', result);
+                  // TODO: Integrate with combat state
+                }}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          {!isDM && !isCurrentTurnPlayer && (
-            <div className="waiting-notice">
-              <p>Waiting for current player's turn...</p>
-            </div>
-          )}
-        </div>
-      </div>
+        <TabsContent value="templates" className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              <InteractionTemplates
+                campaignId={campaignId}
+                onTemplateSelect={(template) => {
+                  console.log('Template selected:', template);
+                  // TODO: Apply template to current interaction
+                }}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Control Panel - Always visible */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Controls</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {isDM && (
+              <div className="flex flex-wrap gap-2">
+                <Button 
+                  onClick={handleAdvanceTurn}
+                  disabled={!selectedInteractionId}
+                >
+                  Advance Turn
+                </Button>
+                
+                <Button 
+                  variant="default"
+                  onClick={handleCompleteInteraction}
+                  disabled={!selectedInteractionId}
+                >
+                  Complete Interaction
+                </Button>
+                
+                <Button 
+                  variant="destructive"
+                  onClick={handleCancelInteraction}
+                  disabled={!selectedInteractionId}
+                >
+                  Cancel Interaction
+                </Button>
+              </div>
+            )}
+
+            {!isDM && isCurrentTurnPlayer && (
+              <div className="text-center p-4 bg-primary/10 rounded-lg">
+                <p className="font-medium mb-2">It's your turn!</p>
+                <Button>
+                  Submit Action
+                </Button>
+              </div>
+            )}
+
+            {!isDM && !isCurrentTurnPlayer && (
+              <div className="text-center p-4 bg-muted rounded-lg">
+                <p className="text-muted-foreground">Waiting for current player's turn...</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }; 

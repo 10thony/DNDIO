@@ -16,6 +16,15 @@ import {
   calculateArmorClass,
   getProficiencyBonus
 } from "../types/dndRules";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import "./CharacterForm.css";
 
 interface CharacterFormProps {
@@ -29,7 +38,9 @@ const CharacterForm: React.FC<CharacterFormProps> = ({ onSuccess, defaultCharact
   const returnTo = searchParams.get('returnTo');
   const { user } = useUser();
   const createCharacter = useMutation(api.characters.createPlayerCharacter);
+  const loadSampleActions = useMutation(api.actions.loadSampleActionsFromJson);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingActions, setIsLoadingActions] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedActions, setSelectedActions] = useState<Id<"actions">[]>([]);
   const [racialBonusesApplied, setRacialBonusesApplied] = useState(false);
@@ -67,6 +78,19 @@ const CharacterForm: React.FC<CharacterFormProps> = ({ onSuccess, defaultCharact
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Reset racial bonuses applied state when race changes
+    if (name === "race") {
+      setRacialBonusesApplied(false);
+      setAppliedRace("");
+    }
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -206,97 +230,85 @@ const CharacterForm: React.FC<CharacterFormProps> = ({ onSuccess, defaultCharact
       setError("Character name is required");
       return false;
     }
-    if (!formData.class) {
-      setError("Character class is required");
+    if (!formData.race) {
+      setError("Race is required");
       return false;
     }
-    if (!formData.race) {
-      setError("Character race is required");
+    if (!formData.class) {
+      setError("Class is required");
       return false;
     }
     if (!formData.background) {
-      setError("Character background is required");
+      setError("Background is required");
       return false;
     }
-    if (selectedActions.length === 0) {
-      setError("At least one action must be selected");
+
+    // Validate ability scores
+    const scores = Object.values(formData.abilityScores);
+    if (scores.some(score => score < 1 || score > 20)) {
+      setError("Ability scores must be between 1 and 20");
       return false;
     }
+
+    setError(null);
     return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-
+    
     if (!validateForm()) {
       return;
     }
 
-    if (!userRecord?._id) {
-      setError("User information not found. Please try again.");
+    if (!userRecord) {
+      setError("User not found. Please try again.");
       return;
     }
 
     setIsLoading(true);
+    setError(null);
 
     try {
       const finalAbilityScores = calculateFinalAbilityScores();
-      const classSkills = getClassSkills(formData.class);
-      const backgroundSkills = getBackgroundSkills(formData.background);
-      const allSkills = [...new Set([...classSkills, ...backgroundSkills])];
-
+      
       const characterData = {
         name: formData.name.trim(),
-        race: formData.race,
         class: formData.class,
+        race: formData.race,
         background: formData.background,
         alignment: formData.alignment || undefined,
-        abilityScores: {
-          strength: Number(finalAbilityScores.strength),
-          dexterity: Number(finalAbilityScores.dexterity),
-          constitution: Number(finalAbilityScores.constitution),
-          intelligence: Number(finalAbilityScores.intelligence),
-          wisdom: Number(finalAbilityScores.wisdom),
-          charisma: Number(finalAbilityScores.charisma),
-        },
-        skills: allSkills,
-        savingThrows: getClassSavingThrows(formData.class),
-        proficiencies: [], // Could be expanded based on race/class
-        level: Number(1),
-        experiencePoints: Number(0), // Starting XP for new characters
-        hitPoints: Number(calculateHitPoints(
-          formData.class,
-          finalAbilityScores.constitution
-        )),
-        armorClass: Number(calculateArmorClass(finalAbilityScores.dexterity)),
-        proficiencyBonus: Number(getProficiencyBonus(1)),
-        actions: selectedActions,
         characterType: formData.characterType,
-        factionId: formData.factionId ? (formData.factionId as Id<"factions">) : undefined,
-        clerkId: user!.id,
+        abilityScores: finalAbilityScores,
+        clerkId: user?.id || "",
+        factionId: formData.factionId || undefined,
+        actions: selectedActions,
+        level: 1,
+        experiencePoints: 0,
+        hitPoints: calculateHitPoints(formData.class, finalAbilityScores.constitution),
+        armorClass: calculateArmorClass(finalAbilityScores.dexterity),
+        proficiencyBonus: getProficiencyBonus(1),
+        savingThrows: getClassSavingThrows(formData.class),
+        skills: [
+          ...new Set([
+            ...getClassSkills(formData.class),
+            ...getBackgroundSkills(formData.background),
+          ]),
+        ],
+        proficiencies: [], // Add empty proficiencies array
       };
 
-      console.log("Character data being sent:", characterData);
       await createCharacter(characterData);
-      
-      // Call onSuccess callback if provided
+
       if (onSuccess) {
         onSuccess();
+      } else if (returnTo) {
+        navigate(returnTo);
       } else {
-        // Default navigation behavior
-        if (returnTo === 'campaign-form') {
-          navigate("/campaigns/new");
-        } else {
-          if (formData.characterType === "NonPlayerCharacter") {
-            navigate("/npcs");
-          } else {
-            navigate("/characters");
-          }
-        }
+        navigate("/characters");
       }
-    } catch (error) {
-      console.error("Error creating character:", error);
+    } catch (err) {
+      console.error("Error creating character:", err);
       setError("Failed to create character. Please try again.");
     } finally {
       setIsLoading(false);
@@ -304,49 +316,65 @@ const CharacterForm: React.FC<CharacterFormProps> = ({ onSuccess, defaultCharact
   };
 
   const handleCancel = () => {
-    if (returnTo === 'campaign-form') {
-      navigate("/campaigns/new");
+    if (returnTo) {
+      navigate(returnTo);
     } else {
-      if (formData.characterType === "NonPlayerCharacter") {
-        navigate("/npcs");
-      } else {
-        navigate("/characters");
-      }
+      navigate("/characters");
     }
   };
 
-  // Helper for color and feedback
+  const handleLoadSampleActions = async () => {
+    if (!user?.id) {
+      setError("Please sign in to load sample actions");
+      return;
+    }
+
+    setIsLoadingActions(true);
+    setError(null);
+    
+    try {
+      await loadSampleActions({ clerkId: user.id });
+      // The query will automatically refetch after the mutation
+    } catch (err) {
+      console.error("Error loading sample actions:", err);
+      setError("Failed to load sample actions. Please try again.");
+    } finally {
+      setIsLoadingActions(false);
+    }
+  };
+
   const getProgressBarColor = (total: number) => {
-    if (total >= 72 && total <= 78) return "green";
-    if ((total >= 70 && total < 72) || (total > 78 && total <= 80)) return "yellow";
-    return "red";
+    if (total >= 70 && total <= 80) return "bg-green-500";
+    if (total >= 60 && total <= 85) return "bg-blue-500";
+    if (total > 85) return "bg-yellow-500";
+    if (total < 60) return "bg-red-500";
+    return "bg-gray-500";
   };
 
   const getMethodDescription = (method: string) => {
     switch (method) {
       case "Standard Array (72-78)":
-        return "Standard Array: Total ability scores between 72 and 78.";
+        return "Standard array of ability scores (15, 14, 13, 12, 10, 8)";
       case "Point Buy (27 points)":
-        return "Point Buy: Custom allocation, usually totaling 27 points.";
+        return "Point buy system with 27 points to distribute";
       case "Rolled (High)":
-        return "Rolled: High total, likely from rolling dice.";
+        return "Rolled ability scores above typical range";
       case "Rolled (Low)":
-        return "Rolled: Low total, likely from rolling dice.";
+        return "Rolled ability scores below typical range";
       default:
-        return "Custom or unusual method.";
+        return "Custom ability score method";
     }
   };
 
   const getWarning = (total: number) => {
-    if (total < 72)
-      return "Total is below the standard range. Consider re-rolling or using Standard Array.";
-    if (total > 78)
-      return "Total is above the standard range. This may be unusually high.";
+    if (total > 85) return "Very high ability scores - consider re-rolling";
+    if (total < 60) return "Very low ability scores - consider re-rolling";
     return null;
   };
 
   const AbilityScoresFeedback: React.FC<{ totalPoints: number; method: string }> = ({ totalPoints, method }) => {
-    const min = 60, max = 85; // For progress bar scaling
+    const min = 60;
+    const max = 85;
     const percent = Math.min(100, Math.max(0, ((totalPoints - min) / (max - min)) * 100));
     const color = getProgressBarColor(totalPoints);
     const warning = getWarning(totalPoints);
@@ -358,9 +386,9 @@ const CharacterForm: React.FC<CharacterFormProps> = ({ onSuccess, defaultCharact
           <div className={`progress-bar-fill ${color}`} style={{ width: `${percent}%` }} />
           <span className="points-label">
             <strong>{totalPoints} points</strong>
-            <span className={`method-badge ${color}`} title={methodDescription}>
+            <Badge variant="secondary" className="ml-2" title={methodDescription}>
               {method}
-            </span>
+            </Badge>
           </span>
         </div>
         {warning && (
@@ -385,225 +413,225 @@ const CharacterForm: React.FC<CharacterFormProps> = ({ onSuccess, defaultCharact
         Create New {defaultCharacterType === "NonPlayerCharacter" ? "NPC" : "Character"}
       </h2>
 
-      {error && <div className="form-error">{error}</div>}
-
-      <form onSubmit={handleSubmit}>
-        {/* Basic Info Section */}
-        <div className="form-section">
-          <div className="form-section-title">Basic Information</div>
-          <div className="form-row">
-            <div className="form-col">
-              <label htmlFor="name" className="form-label">Character Name *</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                className="form-input"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div className="form-col">
-              <label htmlFor="race" className="form-label">Race *</label>
-              <select
-                id="race"
-                name="race"
-                className="form-select"
-                value={formData.race}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="">Select Race</option>
-                {RACES.map((race: string) => (
-                  <option key={race} value={race}>{race}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-col">
-              <label htmlFor="class" className="form-label">Class *</label>
-              <select
-                id="class"
-                name="class"
-                className="form-select"
-                value={formData.class}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="">Select Class</option>
-                {CLASSES.map((cls: string) => (
-                  <option key={cls} value={cls}>{cls}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-col">
-              <label htmlFor="background" className="form-label">Background *</label>
-              <select
-                id="background"
-                name="background"
-                className="form-select"
-                value={formData.background}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="">Select Background</option>
-                {BACKGROUNDS.map((background: string) => (
-                  <option key={background} value={background}>{background}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-col">
-              <label htmlFor="alignment" className="form-label">Alignment</label>
-              <select
-                id="alignment"
-                name="alignment"
-                className="form-select"
-                value={formData.alignment}
-                onChange={handleInputChange}
-              >
-                <option value="">Select Alignment (Optional)</option>
-                {ALIGNMENTS.map((alignment: string) => (
-                  <option key={alignment} value={alignment}>{alignment}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-col">
-              <label htmlFor="characterType" className="form-label">Character Type *</label>
-              <select
-                id="characterType"
-                name="characterType"
-                className="form-select"
-                value={formData.characterType}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="PlayerCharacter">Player Character</option>
-                <option value="NonPlayerCharacter">Non-Player Character</option>
-              </select>
-            </div>
-          </div>
+      {error && (
+        <div className="form-error bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-md mb-4">
+          {error}
         </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Basic Info Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Basic Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Character Name *</Label>
+                <Input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="race">Race *</Label>
+                <Select value={formData.race} onValueChange={(value) => handleSelectChange("race", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Race" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RACES.map((race: string) => (
+                      <SelectItem key={race} value={race}>{race}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="class">Class *</Label>
+                <Select value={formData.class} onValueChange={(value) => handleSelectChange("class", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CLASSES.map((cls: string) => (
+                      <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="background">Background *</Label>
+                <Select value={formData.background} onValueChange={(value) => handleSelectChange("background", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Background" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BACKGROUNDS.map((background: string) => (
+                      <SelectItem key={background} value={background}>{background}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="alignment">Alignment</Label>
+                <Select value={formData.alignment} onValueChange={(value) => handleSelectChange("alignment", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Alignment (Optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ALIGNMENTS.map((alignment: string) => (
+                      <SelectItem key={alignment} value={alignment}>{alignment}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="characterType">Character Type *</Label>
+                <Select value={formData.characterType} onValueChange={(value) => handleSelectChange("characterType", value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PlayerCharacter">Player Character</SelectItem>
+                    <SelectItem value="NonPlayerCharacter">Non-Player Character</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Ability Scores Section */}
-        <div className="form-section">
-          <div className="form-section-title">Ability Scores</div>
-          {racialBonusesApplied && appliedRace && (
-            <div className="racial-bonus-indicator">
-              <span className="bonus-applied-badge">
-                ✓ {appliedRace} Racial Bonuses Applied: {getRacialBonusDescription(appliedRace)}
-              </span>
-            </div>
-          )}
-          <div className="ability-scores-controls">
-            <button
-              type="button"
-              onClick={handleRollAllAbilityScores}
-              className="roll-all-button"
-            >
-              Roll All (4d6 drop lowest)
-            </button>
-            {formData.race && (
-              <button
-                type="button"
-                onClick={handleApplyRacialBonuses}
-                className={`racial-bonus-button ${racialBonusesApplied && appliedRace === formData.race ? 'applied' : ''}`}
-                disabled={racialBonusesApplied && appliedRace === formData.race}
-                title={racialBonusesApplied && appliedRace === formData.race 
-                  ? `${appliedRace} bonuses already applied` 
-                  : `Apply ${formData.race} racial bonuses: ${getRacialBonusDescription(formData.race)}`}
-              >
-                {racialBonusesApplied && appliedRace === formData.race 
-                  ? `✓ ${formData.race} Bonuses Applied` 
-                  : `Apply ${formData.race} Bonuses`}
-              </button>
+        <Card>
+          <CardHeader>
+            <CardTitle>Ability Scores</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {racialBonusesApplied && appliedRace && (
+              <div className="racial-bonus-indicator">
+                <Badge variant="default" className="bg-green-100 text-green-800">
+                  ✓ {appliedRace} Racial Bonuses Applied: {getRacialBonusDescription(appliedRace)}
+                </Badge>
+              </div>
             )}
-          </div>
-          <div className="racial-bonus-help form-helper">
-            <small>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleRollAllAbilityScores}
+              >
+                Roll All (4d6 drop lowest)
+              </Button>
+              {formData.race && (
+                <Button
+                  type="button"
+                  variant={racialBonusesApplied && appliedRace === formData.race ? "default" : "outline"}
+                  onClick={handleApplyRacialBonuses}
+                  disabled={racialBonusesApplied && appliedRace === formData.race}
+                  title={racialBonusesApplied && appliedRace === formData.race 
+                    ? `${appliedRace} bonuses already applied` 
+                    : `Apply ${formData.race} racial bonuses: ${getRacialBonusDescription(formData.race)}`}
+                >
+                  {racialBonusesApplied && appliedRace === formData.race 
+                    ? `✓ ${formData.race} Bonuses Applied` 
+                    : `Apply ${formData.race} Bonuses`}
+                </Button>
+              )}
+            </div>
+            <div className="text-sm text-muted-foreground">
               💡 <strong>Racial Bonuses:</strong> Each race provides specific ability score bonuses. 
               You can only apply racial bonuses once per character. 
               Manual changes to ability scores will reset the bonus status.
-            </small>
-          </div>
-          <div className="ability-scores-grid">
-            {Object.entries(formData.abilityScores).map(([ability, score]) => {
-              const finalValue = finalAbilityScores[ability as keyof AbilityScores];
-              const modifier = getAbilityModifier(finalValue);
-              const racialBonus = finalValue - score;
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {Object.entries(formData.abilityScores).map(([ability, score]) => {
+                const finalValue = finalAbilityScores[ability as keyof AbilityScores];
+                const modifier = getAbilityModifier(finalValue);
+                const racialBonus = finalValue - score;
 
-              return (
-                <div key={ability} className="ability-score">
-                  <label htmlFor={ability} className="form-label">{ability}</label>
-                  <div className="ability-score-input-group">
-                    <input
-                      type="number"
-                      id={ability}
-                      className="form-input"
-                      value={score}
-                      onChange={(e) =>
-                        handleAbilityScoreChange(ability, parseInt(e.target.value) || 10)
-                      }
-                      min="1"
-                      max="20"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRollAbilityScore(ability)}
-                      className="roll-button"
-                      title="Roll 4d6, drop lowest"
-                    >
-                      🎲
-                    </button>
+                return (
+                  <div key={ability} className="space-y-2">
+                    <Label htmlFor={ability} className="capitalize">{ability}</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        id={ability}
+                        value={score}
+                        onChange={(e) =>
+                          handleAbilityScoreChange(ability, parseInt(e.target.value) || 10)
+                        }
+                        min="1"
+                        max="20"
+                        className="w-16"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRollAbilityScore(ability)}
+                        title="Roll 4d6, drop lowest"
+                      >
+                        🎲
+                      </Button>
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium">
+                        {finalValue}
+                        {racialBonus > 0 && (
+                          <span className="text-green-600"> (+{racialBonus})</span>
+                        )}
+                      </span>
+                      <span className="text-muted-foreground ml-2">
+                        {modifier >= 0 ? "+" : ""}{modifier}
+                      </span>
+                    </div>
                   </div>
-                  <div className="ability-score-display">
-                    <span className="final-score">
-                      {finalValue}
-                      {racialBonus > 0 && (
-                        <span className="racial-bonus"> (+{racialBonus})</span>
-                      )}
-                    </span>
-                    <span className="modifier">
-                      {modifier >= 0 ? "+" : ""}{modifier}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <AbilityScoresFeedback totalPoints={calculateTotalPoints()} method={getAbilityScoreMethod()} />
-        </div>
+                );
+              })}
+            </div>
+            <AbilityScoresFeedback totalPoints={calculateTotalPoints()} method={getAbilityScoreMethod()} />
+          </CardContent>
+        </Card>
 
         {/* Character Preview */}
         {formData.race && formData.class && formData.background && (
-          <div className="form-section">
-            <div className="form-section-title">Character Preview - {formData.characterType === "PlayerCharacter" ? "Player Character" : "NPC"}</div>
-            <div className="character-preview">
-              <div className="preview-stats">
-                <div className="stat">
+          <Card>
+            <CardHeader>
+              <CardTitle>Character Preview - {formData.characterType === "PlayerCharacter" ? "Player Character" : "NPC"}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-sm">
                   <strong>Hit Points:</strong>{" "}
                   {calculateHitPoints(formData.class, finalAbilityScores.constitution)}
                 </div>
-                <div className="stat">
+                <div className="text-sm">
                   <strong>Armor Class:</strong>{" "}
                   {calculateArmorClass(finalAbilityScores.dexterity)}
                 </div>
-                <div className="stat">
+                <div className="text-sm">
                   <strong>Proficiency Bonus:</strong> +{getProficiencyBonus(1)}
                 </div>
                 {formData.characterType === "PlayerCharacter" && (
-                  <div className="stat">
+                  <div className="text-sm">
                     <strong>Starting Experience Points:</strong> 0
                   </div>
                 )}
               </div>
-              <div className="preview-proficiencies">
-                <div>
+              <Separator />
+              <div className="space-y-2">
+                <div className="text-sm">
                   <strong>Saving Throws:</strong>{" "}
                   {getClassSavingThrows(formData.class).join(", ")}
                 </div>
-                <div>
+                <div className="text-sm">
                   <strong>Skills:</strong>{" "}
                   {[
                     ...new Set([
@@ -613,48 +641,65 @@ const CharacterForm: React.FC<CharacterFormProps> = ({ onSuccess, defaultCharact
                   ].join(", ")}
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Actions Section */}
         {formData.class && (
-          <div className="form-section">
-            <div className="form-section-title">Available Actions</div>
-            <div className="actions-grid">
-              {availableActions?.map((action) => (
-                <div key={action._id} className="action-card">
-                  <label className="action-label">
-                    <input
-                      type="checkbox"
-                      checked={selectedActions.includes(action._id)}
-                      onChange={() => handleActionToggle(action._id)}
-                    />
-                    <div className="action-content">
-                      <h4>{action.name}</h4>
-                      <p>{action.description}</p>
-                      <div className="action-meta">
-                        <span className="action-type">{action.type}</span>
-                        <span className="action-cost">{action.actionCost}</span>
+          <Card>
+            <CardHeader>
+              <CardTitle>Available Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {availableActions && availableActions.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {availableActions.map((action) => (
+                    <div key={action._id} className="flex items-start space-x-3 p-4 border rounded-lg">
+                      <Checkbox
+                        checked={selectedActions.includes(action._id)}
+                        onCheckedChange={() => handleActionToggle(action._id)}
+                      />
+                      <div className="flex-1 space-y-2">
+                        <h4 className="font-medium">{action.name}</h4>
+                        <p className="text-sm text-muted-foreground">{action.description}</p>
+                        <div className="flex gap-2">
+                          <Badge variant="outline">{action.type}</Badge>
+                          <Badge variant="secondary">{action.actionCost}</Badge>
+                        </div>
                       </div>
                     </div>
-                  </label>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No actions available for {formData.class} class.</p>
+                  <p className="text-sm mt-2 mb-4">
+                    Load sample actions to get started with common D&D actions.
+                  </p>
+                  <Button
+                    onClick={handleLoadSampleActions}
+                    disabled={isLoadingActions}
+                    variant="outline"
+                  >
+                    {isLoadingActions ? "Loading Actions..." : "Load Sample Actions"}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
 
-        <div className="form-actions">
-          <button type="button" onClick={handleCancel} className="btn-secondary">
+        <div className="flex justify-end gap-4">
+          <Button type="button" variant="outline" onClick={handleCancel}>
             Cancel
-          </button>
-          <button type="submit" className="btn-primary" disabled={isLoading}>
+          </Button>
+          <Button type="submit" disabled={isLoading}>
             {isLoading 
               ? `Creating ${formData.characterType === "PlayerCharacter" ? "Character" : "NPC"}...` 
               : `Create ${formData.characterType === "PlayerCharacter" ? "Character" : "NPC"}`
             }
-          </button>
+          </Button>
         </div>
       </form>
     </div>

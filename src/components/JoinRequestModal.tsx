@@ -3,6 +3,12 @@ import { useMutation, useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../convex/_generated/api";
 import Modal from "./Modal";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 import "./JoinRequestModal.css";
 
 interface JoinRequestModalProps {
@@ -101,85 +107,100 @@ const JoinRequestModal: React.FC<JoinRequestModalProps> = ({
       isOpen={isOpen}
       onClose={handleClose}
       title={`Request to Join: ${campaignName}`}
+      description="Choose which character you'd like to play in this campaign."
     >
       <div className="join-request-modal">
-        <form onSubmit={handleSubmit} className="join-request-form">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="form-section">
-            <h3>Select Your Character</h3>
-            <p className="form-description">
-              Choose which character you'd like to play in this campaign.
-            </p>
-            
             {userCharacters && userCharacters.length > 0 ? (
-              <div className="character-selection">
+              <div className="space-y-3">
                 {userCharacters.map((character) => (
-                  <div
+                  <Card
                     key={character._id}
-                    className={`character-option ${
-                      selectedCharacterId === character._id ? "selected" : ""
-                    }`}
+                    className={cn(
+                      "cursor-pointer transition-all hover:shadow-md",
+                      selectedCharacterId === character._id && "ring-2 ring-primary"
+                    )}
                     onClick={() => setSelectedCharacterId(character._id)}
                   >
-                    <div className="character-info">
-                      <h4>{character.name}</h4>
-                      <p className="character-details">
-                        Level {character.level} {character.race} {character.class}
-                      </p>
-                      <p className="character-stats">
-                        HP: {character.hitPoints} | AC: {character.armorClass}
-                      </p>
-                    </div>
-                    <div className="character-selector">
-                      <input
-                        type="radio"
-                        name="character"
-                        value={character._id}
-                        checked={selectedCharacterId === character._id}
-                        onChange={() => setSelectedCharacterId(character._id)}
-                      />
-                    </div>
-                  </div>
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarFallback className="bg-primary text-primary-foreground">
+                            {character.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <h4 className="font-medium">{character.name}</h4>
+                            <Badge variant="outline">
+                              Level {character.level}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Badge variant="secondary">{character.race}</Badge>
+                            <Badge variant="secondary">{character.class}</Badge>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            HP: {character.hitPoints} | AC: {character.armorClass}
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            name="character"
+                            value={character._id}
+                            checked={selectedCharacterId === character._id}
+                            onChange={() => setSelectedCharacterId(character._id)}
+                            className="h-4 w-4 text-primary focus:ring-primary"
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             ) : (
-              <div className="no-characters">
-                <p>You don't have any characters yet.</p>
-                <button
+              <div className="text-center py-8">
+                <div className="text-4xl mb-4">👤</div>
+                <h3 className="text-lg font-medium mb-2">No Characters Available</h3>
+                <p className="text-muted-foreground mb-4">
+                  You don't have any characters yet.
+                </p>
+                <Button
                   type="button"
-                  className="create-character-button"
                   onClick={() => {
                     // Navigate to character creation with return parameter
                     window.location.href = "/characters?create=true&returnTo=join-request";
                   }}
                 >
                   Create a Character
-                </button>
+                </Button>
               </div>
             )}
           </div>
 
           {error && (
-            <div className="error-message">
+            <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-md">
               {error}
             </div>
           )}
 
-          <div className="form-actions">
-            <button
+          <div className="flex justify-end space-x-2">
+            <Button
               type="button"
+              variant="outline"
               onClick={handleClose}
-              className="cancel-button"
               disabled={isLoading}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              className="submit-button"
               disabled={isLoading || !selectedCharacterId}
             >
               {isLoading ? "Sending Request..." : "Send Join Request"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

@@ -1,0 +1,24 @@
+MapPreview Dark Mode Wrapper Updates
+===================================
+
+The following components were updated to ensure the wrapper around MapPreview uses a dark mode aware background (bg-white dark:bg-gray-800) for visual consistency:
+
+1. src/components/maps/MapsList.tsx
+   - Updated the wrapper div around MapPreview in each map card to:
+     `bg-white dark:bg-gray-800 rounded p-2 w-full max-w-full`
+
+2. src/components/LocationDetails.tsx
+   - Updated the wrapper div around MapPreview in the map section to:
+     `flex justify-center items-center p-4 bg-white dark:bg-gray-800 rounded`
+
+3. src/components/LocationForm.tsx
+   - Updated the wrapper div around MapPreview in the map preview section to:
+     `border rounded-md p-4 bg-white dark:bg-gray-800`
+
+4. src/components/maps/MapCreator.tsx
+   - Updated the preview wrapper in create mode to:
+     `bg-white dark:bg-gray-800 p-4 rounded-lg w-full max-w-full overflow-auto flex justify-center`
+   - Updated the preview wrapper in edit mode to:
+     `overflow-auto border rounded-lg bg-white dark:bg-gray-800`
+
+All wrappers now provide a consistent background in both light and dark mode for the MapPreview component. 

@@ -1,3 +1,4 @@
+// MapsList map cards and previews are now responsive and dark mode aware, with overflow handling and max-width for better usability.
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Link, useNavigate } from 'react-router-dom';
@@ -34,12 +35,12 @@ export const MapsList = ({ userId }: MapsListProps) => {
           <div
             key={map._id}
             onClick={() => handleMapClick(map._id)}
-            className="block p-4 border rounded hover:shadow-lg transition-shadow cursor-pointer bg-white dark:bg-gray-800"
+            className="block p-4 border rounded hover:shadow-lg transition-shadow cursor-pointer bg-white dark:bg-gray-800 max-w-xs w-full mx-auto map-card-responsive"
           >
             <h3 className="text-xl font-semibold mb-2">{map.name}</h3>
             
-            <div className="mb-3 flex justify-center">
-              <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded">
+            <div className="mb-3 flex justify-center w-full overflow-x-auto">
+              <div className="bg-white dark:bg-gray-800 rounded p-2 w-full max-w-full">
                 <MapPreview map={map} cellSize={12} />
               </div>
             </div>

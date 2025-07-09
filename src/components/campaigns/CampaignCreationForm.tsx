@@ -5,7 +5,34 @@ import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useUser } from "@clerk/clerk-react";
 import { CampaignValidationState, CampaignCreationRequirements } from "../../schemas/campaign";
-import "./CampaignCreationForm.css";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Badge } from "../ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Progress } from "../ui/progress";
+import { Alert, AlertDescription } from "../ui/alert";
+import { Checkbox } from "../ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Separator } from "../ui/separator";
+import { 
+  AlertCircle, 
+  CheckCircle, 
+  ArrowLeft, 
+  Plus, 
+  X, 
+  Edit, 
+  Eye, 
+  Calendar,
+  Users,
+  MapPin,
+  Sword,
+  BookOpen,
+  Target,
+  Crown
+} from "lucide-react";
 
 const CampaignCreationForm: React.FC = () => {
   const navigate = useNavigate();
@@ -116,6 +143,11 @@ const CampaignCreationForm: React.FC = () => {
   const validationState = getValidationState();
   const isFormComplete = Object.values(validationState).every(Boolean);
 
+  // Calculate completion percentage
+  const completedRequirements = Object.values(validationState).filter(Boolean).length;
+  const totalRequirements = Object.keys(validationState).length;
+  const completionPercentage = (completedRequirements / totalRequirements) * 100;
+
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -201,68 +233,54 @@ const CampaignCreationForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm() || !user) return;
+    if (!validateForm()) {
+      return;
+    }
 
     setIsSubmitting(true);
+
     try {
       // Ensure user exists in Convex
-      let convexUserId: Id<"users">;
-      if (convexUser) {
-        convexUserId = convexUser._id;
-      } else {
-        // Create user in Convex if they don't exist
-        const newUserId = await createOrUpdateUser({
+      if (!convexUser && user) {
+        await createOrUpdateUser({
           clerkId: user.id,
           email: user.emailAddresses[0]?.emailAddress || "",
-          firstName: user.firstName || undefined,
-          lastName: user.lastName || undefined,
-          imageUrl: user.imageUrl || undefined,
+          firstName: user.firstName || "",
+          lastName: user.lastName || "",
         });
-        if (!newUserId) {
-          throw new Error("Failed to create user in Convex");
-        }
-        convexUserId = newUserId;
       }
 
-      // Create the campaign first
+      // Create campaign
       const campaignId = await createCampaign({
         name: formData.name,
-        creatorId: convexUserId as Id<"users">, // Type assertion needed due to string/Id mismatch
-        description: formData.description || undefined,
-        worldSetting: formData.worldSetting || undefined,
+        description: formData.description,
+        worldSetting: formData.worldSetting,
         isPublic: formData.isPublic,
-        dmId: user.id, // Set the current user as DM
-        players: [], // Start with empty players array
-        participantPlayerCharacterIds: selectedPlayerCharacters.length > 0 ? selectedPlayerCharacters as Id<"playerCharacters">[] : undefined,
-        participantUserIds: undefined,
-        tags: undefined,
-        npcIds: selectedNPCs.length > 0 ? selectedNPCs as Id<"npcs">[] : undefined,
-        questIds: selectedQuests.length > 0 ? selectedQuests as Id<"quests">[] : undefined,
-        locationIds: selectedLocations.length > 0 ? selectedLocations as Id<"locations">[] : undefined,
-        monsterIds: selectedBossMonsters.length > 0 ? selectedBossMonsters as Id<"monsters">[] : undefined,
+        playerCharacterIds: selectedPlayerCharacters,
+        npcIds: selectedNPCs,
+        questIds: selectedQuests,
+        locationIds: selectedLocations,
+        bossMonsterIds: selectedBossMonsters,
+        clerkId: user!.id,
       });
 
-      // Create timeline events after campaign is created
+      // Create timeline events and add them to campaign
       for (const event of timelineEvents) {
         const timelineEventId = await createTimelineEvent({
-          campaignId,
           title: event.title,
           description: event.description,
           date: event.date,
-          type: event.type as any,
+          type: event.type,
           clerkId: user!.id,
         });
-        
-        // Add timeline event to campaign
+
         await addTimelineEventToCampaign({
           campaignId,
-          timelineEventId: timelineEventId as Id<"timelineEvents">, // Type assertion needed
+          timelineEventId,
         });
       }
 
-      // All selected entities are now included in the campaign creation
-      // No additional mutations needed since they're passed directly to createCampaign
-      
+      // Navigate to campaign detail page
       navigate(`/campaigns/${campaignId}`);
     } catch (error) {
       console.error("Error creating campaign:", error);
@@ -276,7 +294,6 @@ const CampaignCreationForm: React.FC = () => {
     navigate("/campaigns");
   };
 
-  // Navigation functions for creating new entities
   const navigateToCreateCharacter = () => {
     navigate("/characters/new?returnTo=campaign-form");
   };
@@ -290,685 +307,780 @@ const CampaignCreationForm: React.FC = () => {
   };
 
   const navigateToCreateLocation = () => {
-    navigate("/locations/new?returnTo=campaign-form&refresh=true");
+    navigate("/locations/new?returnTo=campaign-form");
   };
 
   const navigateToCreateMonster = () => {
     navigate("/monsters/new?returnTo=campaign-form");
   };
 
-  // Navigation functions for editing entities
   const navigateToEditCharacter = (characterId: string) => {
-    navigate(`/characters/${characterId}/edit`);
+    navigate(`/characters/${characterId}/edit?returnTo=campaign-form`);
   };
 
   const navigateToEditNPC = (npcId: string) => {
-    navigate(`/npcs/${npcId}/edit`);
+    navigate(`/npcs/${npcId}/edit?returnTo=campaign-form`);
   };
 
   const navigateToEditQuest = (questId: string) => {
-    navigate(`/quests/${questId}/edit`);
+    navigate(`/quests/${questId}/edit?returnTo=campaign-form`);
   };
 
   const navigateToEditLocation = (locationId: string) => {
-    navigate(`/locations/${locationId}/edit`);
+    navigate(`/locations/${locationId}/edit?returnTo=campaign-form`);
   };
 
   const navigateToEditMonster = (monsterId: string) => {
-    navigate(`/monsters/${monsterId}/edit`);
+    navigate(`/monsters/${monsterId}/edit?returnTo=campaign-form`);
   };
 
-  // Navigation functions for viewing entities
   const navigateToViewCharacter = (characterId: string) => {
-    navigate(`/characters/${characterId}`);
+    navigate(`/characters/${characterId}?returnTo=campaign-form`);
   };
 
   const navigateToViewNPC = (npcId: string) => {
-    navigate(`/npcs/${npcId}`);
+    navigate(`/npcs/${npcId}?returnTo=campaign-form`);
   };
 
   const navigateToViewQuest = (questId: string) => {
-    navigate(`/quests/${questId}`);
+    navigate(`/quests/${questId}?returnTo=campaign-form`);
   };
 
   const navigateToViewLocation = (locationId: string) => {
-    navigate(`/locations/${locationId}`);
+    navigate(`/locations/${locationId}?returnTo=campaign-form`);
   };
 
   const navigateToViewMonster = (monsterId: string) => {
-    navigate(`/monsters/${monsterId}`);
+    navigate(`/monsters/${monsterId}?returnTo=campaign-form`);
   };
 
-  return (
-    <div className="campaign-creation-container">
-      <div className="creation-header">
-        <div className="header-content">
-          <h2 className="creation-title">Create New Campaign</h2>
-          <p className="creation-subtitle">
-            Set up your D&D campaign with all required elements
-          </p>
+  const toggleSelection = (id: string, selectedIds: string[], setSelectedIds: React.Dispatch<React.SetStateAction<string[]>>) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
+    } else {
+      setSelectedIds(prev => [...prev, id]);
+    }
+  };
+
+  const renderSelectionCard = (
+    item: any,
+    isSelected: boolean,
+    onToggle: () => void,
+    onView: () => void,
+    onEdit: () => void,
+    titleKey: string = 'name',
+    subtitleKey?: string,
+    badgeText?: string
+  ) => (
+    <Card 
+      key={item._id} 
+      className={`cursor-pointer transition-all hover:shadow-md ${
+        isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
+      }`}
+      onClick={onToggle}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <Checkbox 
+                checked={isSelected} 
+                onChange={onToggle}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <h4 className="font-semibold">{item[titleKey]}</h4>
+              {badgeText && (
+                <Badge variant="secondary" className="text-xs">
+                  {badgeText}
+                </Badge>
+              )}
+            </div>
+            {subtitleKey && item[subtitleKey] && (
+              <p className="text-sm text-muted-foreground mb-2">
+                {item[subtitleKey]}
+              </p>
+            )}
+          </div>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onView();
+              }}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <button className="back-button" onClick={handleCancel}>
-          ← Back to Campaigns
-        </button>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={handleCancel}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Campaigns
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Create New Campaign</h1>
+            <p className="text-muted-foreground">
+              Build your campaign by adding essential elements
+            </p>
+          </div>
+        </div>
       </div>
 
+      {/* Progress Bar */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Campaign Completion</span>
+              <span>{completedRequirements}/{totalRequirements} requirements met</span>
+            </div>
+            <Progress value={completionPercentage} className="w-full" />
+            <p className="text-xs text-muted-foreground">
+              {isFormComplete ? "Ready to create campaign!" : "Complete all requirements to create your campaign"}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Error Messages */}
       {errors.length > 0 && (
-        <div className="form-errors">
-          {errors.map((error, index) => (
-            <div key={index} className="error-message">{error}</div>
-          ))}
-        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <div className="font-semibold mb-2">Please fix the following errors:</div>
+            <ul className="list-disc list-inside space-y-1">
+              {errors.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="creation-form">
-        <div className="sections-grid">
-          {/* Basic Information Section */}
-          <div className="form-section">
-            <h3 className="section-title">📋 Basic Information</h3>
-            
-            <div className="form-row">
-              <div className="form-col">
-                <label className="form-label">Campaign Name *</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  placeholder="Enter campaign name"
-                  required
-                />
-              </div>
-              <div className="form-col">
-                <label className="form-label">Visibility</label>
-                <div className="toggle-container">
-                  <label className="toggle-label">
-                    <input
-                      type="checkbox"
-                      className="toggle-input"
-                      checked={formData.isPublic}
-                      onChange={(e) => handleInputChange("isPublic", e.target.checked)}
-                    />
-                    <span className="toggle-slider"></span>
-                    <span className="toggle-text">
-                      {formData.isPublic ? "Public" : "Private"}
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Tabs defaultValue="basic" className="w-full">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="basic" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Basic Info
+            </TabsTrigger>
+            <TabsTrigger value="timeline" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Timeline
+            </TabsTrigger>
+            <TabsTrigger value="characters" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Characters
+            </TabsTrigger>
+            <TabsTrigger value="quests" className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Quests
+            </TabsTrigger>
+            <TabsTrigger value="locations" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Locations
+            </TabsTrigger>
+            <TabsTrigger value="monsters" className="flex items-center gap-2">
+              <Sword className="h-4 w-4" />
+              Boss Monsters
+            </TabsTrigger>
+          </TabsList>
 
-            <div className="form-row">
-              <div className="form-col">
-                <label className="form-label">Description</label>
-                <textarea
-                  className="form-textarea"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
-                  placeholder="Enter campaign description"
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-col">
-                <label className="form-label">World Setting</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={formData.worldSetting}
-                  onChange={(e) => handleInputChange("worldSetting", e.target.value)}
-                  placeholder="Enter world setting (e.g., Forgotten Realms, Homebrew)"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Timeline Events Section */}
-          <div className="form-section">
-            <h3 className="section-title">📅 Timeline Events ({timelineEvents.length}/{requirements.timelineEventsRequired})</h3>
-            <p className="section-description">Create at least {requirements.timelineEventsRequired} timeline events for your campaign.</p>
-            
-            {timelineEvents.map((event, index) => (
-              <div key={index} className="timeline-event-item">
-                <div className="event-header">
-                  <span className="event-title">{event.title}</span>
-                  <div className="event-actions">
-                    <button 
-                      type="button"
-                      className="edit-button"
-                      onClick={() => editTimelineEvent(index)}
-                    >
-                      ✏️ Edit
-                    </button>
-                    <button 
-                      type="button"
-                      className="remove-button"
-                      onClick={() => removeTimelineEvent(index)}
-                    >
-                      ❌ Remove
-                    </button>
-                  </div>
-                </div>
-                <div className="event-details">
-                  <span className="event-type">{event.type}</span>
-                  <span className="event-date">{new Date(event.date).toLocaleDateString()}</span>
-                </div>
-                <div className="event-description">{event.description}</div>
-              </div>
-            ))}
-
-            {!isAddingTimelineEvent && timelineEvents.length < requirements.timelineEventsRequired && (
-              <button 
-                type="button"
-                className="add-button"
-                onClick={() => setIsAddingTimelineEvent(true)}
-              >
-                ➕ Add Timeline Event
-              </button>
-            )}
-
-            {isAddingTimelineEvent && (
-              <div className="timeline-event-form">
-                <div className="form-row">
-                  <div className="form-col">
-                    <label className="form-label">Event Title *</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={newTimelineEvent.title}
-                      onChange={(e) => handleTimelineEventChange("title", e.target.value)}
-                      placeholder="Enter event title"
-                    />
-                  </div>
-                  <div className="form-col">
-                    <label className="form-label">Event Type</label>
-                    <select
-                      className="form-select"
-                      value={newTimelineEvent.type}
-                      onChange={(e) => handleTimelineEventChange("type", e.target.value)}
-                    >
-                      <option value="Custom">Custom</option>
-                      <option value="Battle">Battle</option>
-                      <option value="Alliance">Alliance</option>
-                      <option value="Discovery">Discovery</option>
-                      <option value="Disaster">Disaster</option>
-                      <option value="Political">Political</option>
-                      <option value="Cultural">Cultural</option>
-                    </select>
-                  </div>
+          {/* Basic Information Tab */}
+          <TabsContent value="basic" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Campaign Information</CardTitle>
+                <CardDescription>
+                  Basic details about your campaign
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Campaign Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    placeholder="Enter campaign name"
+                  />
                 </div>
 
-                <div className="form-row">
-                  <div className="form-col">
-                    <label className="form-label">Date</label>
-                    <input
-                      type="date"
-                      className="form-input"
-                      value={new Date(newTimelineEvent.date).toISOString().split('T')[0]}
-                      onChange={(e) => handleTimelineEventChange("date", new Date(e.target.value).getTime())}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange("description", e.target.value)}
+                    placeholder="Enter campaign description"
+                    rows={3}
+                  />
                 </div>
 
-                <div className="form-row">
-                  <div className="form-col">
-                    <label className="form-label">Description *</label>
-                    <textarea
-                      className="form-textarea"
-                      value={newTimelineEvent.description}
-                      onChange={(e) => handleTimelineEventChange("description", e.target.value)}
-                      placeholder="Enter event description"
-                      rows={3}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="worldSetting">World Setting</Label>
+                  <Input
+                    id="worldSetting"
+                    value={formData.worldSetting}
+                    onChange={(e) => handleInputChange("worldSetting", e.target.value)}
+                    placeholder="e.g., Forgotten Realms, Homebrew"
+                  />
                 </div>
 
-                <div className="form-actions">
-                  <button 
-                    type="button"
-                    className="save-button"
-                    onClick={addTimelineEvent}
-                  >
-                    💾 Add Event
-                  </button>
-                  <button 
-                    type="button"
-                    className="cancel-button"
-                    onClick={() => {
-                      setIsAddingTimelineEvent(false);
-                      setNewTimelineEvent({
-                        title: "",
-                        description: "",
-                        date: new Date().getTime(),
-                        type: "Custom",
-                      });
-                    }}
-                  >
-                    ❌ Cancel
-                  </button>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="isPublic"
+                    checked={formData.isPublic}
+                    onCheckedChange={(checked) => handleInputChange("isPublic", checked)}
+                  />
+                  <Label htmlFor="isPublic">Make campaign public</Label>
                 </div>
-              </div>
-            )}
-          </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          {/* Player Characters Section */}
-          <div className="form-section">
-            <h3 className="section-title">👤 Player Characters ({selectedPlayerCharacters.length}/{requirements.playerCharactersRequired})</h3>
-            <p className="section-description">Select at least {requirements.playerCharactersRequired} player character for your campaign.</p>
-            
-            <div className="section-actions">
-              <button 
-                type="button"
-                className="create-button"
-                onClick={navigateToCreateCharacter}
-              >
-                ➕ Create New Character
-              </button>
-            </div>
-            
-            {playerCharacters && playerCharacters.length > 0 ? (
-              <div className="selection-grid">
-                {playerCharacters.map((character) => (
-                  <div 
-                    key={character._id}
-                    className={`selection-item ${selectedPlayerCharacters.includes(character._id) ? 'selected' : ''}`}
-                  >
-                    <div 
-                      className="item-content"
-                      onClick={() => {
-                        if (selectedPlayerCharacters.includes(character._id)) {
-                          setSelectedPlayerCharacters(prev => prev.filter(id => id !== character._id));
-                        } else {
-                          setSelectedPlayerCharacters(prev => [...prev, character._id]);
-                        }
-                      }}
-                    >
-                      <div className="item-name">{character.name}</div>
-                      <div className="item-details">
-                        Level {character.level} {character.race} {character.class}
-                      </div>
-                    </div>
-                    <div className="item-actions">
-                      <button 
-                        type="button"
-                        className="view-button"
-                        onClick={() => navigateToViewCharacter(character._id)}
-                      >
-                        👁️ View
-                      </button>
-                      <button 
-                        type="button"
-                        className="edit-button"
-                        onClick={() => navigateToEditCharacter(character._id)}
-                      >
-                        ✏️ Edit
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <p>No player characters found. Create some characters first!</p>
-                <button 
-                  type="button"
-                  className="create-button"
-                  onClick={navigateToCreateCharacter}
-                >
-                  Create Character
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* NPCs Section */}
-          <div className="form-section">
-            <h3 className="section-title">🎭 NPCs ({selectedNPCs.length}/{requirements.npcsRequired})</h3>
-            <p className="section-description">Select at least {requirements.npcsRequired} NPC for your campaign.</p>
-            
-            <div className="section-actions">
-              <button 
-                type="button"
-                className="create-button"
-                onClick={navigateToCreateNPC}
-              >
-                ➕ Create New NPC
-              </button>
-            </div>
-            
-            {npcs && npcs.length > 0 ? (
-              <div className="selection-grid">
-                {npcs.map((npc) => (
-                  <div 
-                    key={npc._id}
-                    className={`selection-item ${selectedNPCs.includes(npc._id) ? 'selected' : ''}`}
-                  >
-                    <div 
-                      className="item-content"
-                      onClick={() => {
-                        if (selectedNPCs.includes(npc._id)) {
-                          setSelectedNPCs(prev => prev.filter(id => id !== npc._id));
-                        } else {
-                          setSelectedNPCs(prev => [...prev, npc._id]);
-                        }
-                      }}
-                    >
-                      <div className="item-name">{npc.name}</div>
-                      <div className="item-details">
-                        {npc.race} • {npc.alignment || 'Unknown'}
-                      </div>
-                    </div>
-                    <div className="item-actions">
-                      <button 
-                        type="button"
-                        className="view-button"
-                        onClick={() => navigateToViewNPC(npc._id)}
-                      >
-                        👁️ View
-                      </button>
-                      <button 
-                        type="button"
-                        className="edit-button"
-                        onClick={() => navigateToEditNPC(npc._id)}
-                      >
-                        ✏️ Edit
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <p>No NPCs found. Create some NPCs first!</p>
-                <button 
-                  type="button"
-                  className="create-button"
-                  onClick={navigateToCreateNPC}
-                >
-                  Create NPC
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Quests Section */}
-          <div className="form-section">
-            <h3 className="section-title">📜 Quests ({selectedQuests.length}/{requirements.questsRequired})</h3>
-            <p className="section-description">Select at least {requirements.questsRequired} quest for your campaign.</p>
-            
-            <div className="section-actions">
-              <button 
-                type="button"
-                className="create-button"
-                onClick={navigateToCreateQuest}
-              >
-                ➕ Create New Quest
-              </button>
-            </div>
-            
-            {quests && quests.length > 0 ? (
-              <div className="selection-grid">
-                {quests.map((quest) => (
-                  <div 
-                    key={quest._id}
-                    className={`selection-item ${selectedQuests.includes(quest._id) ? 'selected' : ''}`}
-                  >
-                    <div 
-                      className="item-content"
-                      onClick={() => {
-                        if (selectedQuests.includes(quest._id)) {
-                          setSelectedQuests(prev => prev.filter(id => id !== quest._id));
-                        } else {
-                          setSelectedQuests(prev => [...prev, quest._id]);
-                        }
-                      }}
-                    >
-                      <div className="item-name">{quest.name}</div>
-                      <div className="item-details">
-                        {quest.description?.substring(0, 50)}...
-                      </div>
-                    </div>
-                    <div className="item-actions">
-                      <button 
-                        type="button"
-                        className="view-button"
-                        onClick={() => navigateToViewQuest(quest._id)}
-                      >
-                        👁️ View
-                      </button>
-                      <button 
-                        type="button"
-                        className="edit-button"
-                        onClick={() => navigateToEditQuest(quest._id)}
-                      >
-                        ✏️ Edit
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <p>No quests found. Create some quests first!</p>
-                <button 
-                  type="button"
-                  className="create-button"
-                  onClick={navigateToCreateQuest}
-                >
-                  Create Quest
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Locations Section */}
-          <div className="form-section">
-            <h3 className="section-title">🗺️ Locations ({selectedLocations.length}/{requirements.locationsRequired})</h3>
-            <p className="section-description">Select at least {requirements.locationsRequired} location for your campaign.</p>
-            
-            <div className="section-actions">
-              <button 
-                type="button"
-                className="create-button"
-                onClick={navigateToCreateLocation}
-              >
-                ➕ Create New Location
-              </button>
-            </div>
-            
-            {locations && locations.length > 0 ? (
-              <div className="selection-grid">
-                {locations.map((location) => (
-                  <div 
-                    key={location._id}
-                    className={`selection-item ${selectedLocations.includes(location._id) ? 'selected' : ''}`}
-                  >
-                    <div 
-                      className="item-content"
-                      onClick={() => {
-                        if (selectedLocations.includes(location._id)) {
-                          setSelectedLocations(prev => prev.filter(id => id !== location._id));
-                        } else {
-                          setSelectedLocations(prev => [...prev, location._id]);
-                        }
-                      }}
-                    >
-                      <div className="item-name">{location.name}</div>
-                      <div className="item-details">
-                        {location.type} • {location.description?.substring(0, 30)}...
-                      </div>
-                    </div>
-                    <div className="item-actions">
-                      <button 
-                        type="button"
-                        className="view-button"
-                        onClick={() => navigateToViewLocation(location._id)}
-                      >
-                        👁️ View
-                      </button>
-                      <button 
-                        type="button"
-                        className="edit-button"
-                        onClick={() => navigateToEditLocation(location._id)}
-                      >
-                        ✏️ Edit
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <p>No locations found. Create some locations first!</p>
-                <button 
-                  type="button"
-                  className="create-button"
-                  onClick={navigateToCreateLocation}
-                >
-                  Create Location
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Boss Monsters Section */}
-          <div className="form-section">
-            <h3 className="section-title">🐉 Boss Monsters ({monsters ? monsters.filter(m => {
-              const cr = parseFloat(m.challengeRating);
-              return selectedBossMonsters.includes(m._id) && !isNaN(cr) && cr >= 10;
-            }).length : 0}/{requirements.bossMonstersRequired})</h3>
-            <p className="section-description">Select at least {requirements.bossMonstersRequired} boss monster (CR 10 or higher) for your campaign.</p>
-            
-            <div className="section-actions">
-              <button 
-                type="button"
-                className="create-button"
-                onClick={navigateToCreateMonster}
-              >
-                ➕ Create New Monster
-              </button>
-            </div>
-            
-            {monsters && monsters.length > 0 ? (
-              <div className="selection-grid">
-                {monsters
-                  .filter(monster => {
-                    const cr = parseFloat(monster.challengeRating);
-                    return !isNaN(cr) && cr >= 10;
-                  })
-                  .map((monster) => (
-                    <div 
-                      key={monster._id}
-                      className={`selection-item ${selectedBossMonsters.includes(monster._id) ? 'selected' : ''}`}
-                    >
-                      <div 
-                        className="item-content"
-                        onClick={() => {
-                          if (selectedBossMonsters.includes(monster._id)) {
-                            setSelectedBossMonsters(prev => prev.filter(id => id !== monster._id));
-                          } else {
-                            setSelectedBossMonsters(prev => [...prev, monster._id]);
-                          }
-                        }}
-                      >
-                        <div className="item-name">{monster.name}</div>
-                        <div className="item-details">
-                          CR {monster.challengeRating} • {monster.type}
+          {/* Timeline Events Tab */}
+          <TabsContent value="timeline" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Timeline Events ({timelineEvents.length}/{requirements.timelineEventsRequired})
+                </CardTitle>
+                <CardDescription>
+                  Create at least {requirements.timelineEventsRequired} timeline events for your campaign
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {timelineEvents.map((event, index) => (
+                  <Card key={index} className="border-l-4 border-l-primary">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-semibold">{event.title}</h4>
+                            <Badge variant="outline">{event.type}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {new Date(event.date).toLocaleDateString()}
+                          </p>
+                          <p className="text-sm">{event.description}</p>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editTimelineEvent(index)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeTimelineEvent(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="item-actions">
-                        <button 
-                          type="button"
-                          className="view-button"
-                          onClick={() => navigateToViewMonster(monster._id)}
-                        >
-                          👁️ View
-                        </button>
-                        <button 
-                          type="button"
-                          className="edit-button"
-                          onClick={() => navigateToEditMonster(monster._id)}
-                        >
-                          ✏️ Edit
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <p>No boss monsters found. Create some high-level monsters first!</p>
-                <button 
-                  type="button"
-                  className="create-button"
-                  onClick={navigateToCreateMonster}
-                >
-                  Create Monster
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+                    </CardContent>
+                  </Card>
+                ))}
 
-        <div className="form-actions">
-          <button
+                {!isAddingTimelineEvent && timelineEvents.length < requirements.timelineEventsRequired && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsAddingTimelineEvent(true)}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Timeline Event
+                  </Button>
+                )}
+
+                {isAddingTimelineEvent && (
+                  <Card className="border-2 border-dashed">
+                    <CardContent className="p-4 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="eventTitle">Event Title *</Label>
+                          <Input
+                            id="eventTitle"
+                            value={newTimelineEvent.title}
+                            onChange={(e) => handleTimelineEventChange("title", e.target.value)}
+                            placeholder="Enter event title"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="eventType">Event Type</Label>
+                          <Select value={newTimelineEvent.type} onValueChange={(value) => handleTimelineEventChange("type", value)}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Custom">Custom</SelectItem>
+                              <SelectItem value="Battle">Battle</SelectItem>
+                              <SelectItem value="Alliance">Alliance</SelectItem>
+                              <SelectItem value="Discovery">Discovery</SelectItem>
+                              <SelectItem value="Disaster">Disaster</SelectItem>
+                              <SelectItem value="Political">Political</SelectItem>
+                              <SelectItem value="Cultural">Cultural</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="eventDate">Date</Label>
+                        <Input
+                          id="eventDate"
+                          type="date"
+                          value={new Date(newTimelineEvent.date).toISOString().split('T')[0]}
+                          onChange={(e) => handleTimelineEventChange("date", new Date(e.target.value).getTime())}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="eventDescription">Description *</Label>
+                        <Textarea
+                          id="eventDescription"
+                          value={newTimelineEvent.description}
+                          onChange={(e) => handleTimelineEventChange("description", e.target.value)}
+                          placeholder="Enter event description"
+                          rows={3}
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button type="button" onClick={addTimelineEvent}>
+                          Add Event
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setIsAddingTimelineEvent(false);
+                            setNewTimelineEvent({
+                              title: "",
+                              description: "",
+                              date: new Date().getTime(),
+                              type: "Custom",
+                            });
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Player Characters Tab */}
+          <TabsContent value="characters" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Player Characters ({selectedPlayerCharacters.length}/{requirements.playerCharactersRequired})
+                </CardTitle>
+                <CardDescription>
+                  Select at least {requirements.playerCharactersRequired} player character for your campaign
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={navigateToCreateCharacter}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New Character
+                </Button>
+
+                {playerCharacters && playerCharacters.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {playerCharacters.map((character) =>
+                      renderSelectionCard(
+                        character,
+                        selectedPlayerCharacters.includes(character._id),
+                        () => toggleSelection(character._id, selectedPlayerCharacters, setSelectedPlayerCharacters),
+                        () => navigateToViewCharacter(character._id),
+                        () => navigateToEditCharacter(character._id),
+                        'name',
+                        `Level ${character.level} ${character.race} ${character.class}`,
+                        `Level ${character.level}`
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">No characters found. Create some characters first!</p>
+                    <Button onClick={navigateToCreateCharacter}>
+                      Create Character
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="h-5 w-5" />
+                  NPCs ({selectedNPCs.length}/{requirements.npcsRequired})
+                </CardTitle>
+                <CardDescription>
+                  Select at least {requirements.npcsRequired} NPC for your campaign
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={navigateToCreateNPC}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New NPC
+                </Button>
+
+                {npcs && npcs.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {npcs.map((npc) =>
+                      renderSelectionCard(
+                        npc,
+                        selectedNPCs.includes(npc._id),
+                        () => toggleSelection(npc._id, selectedNPCs, setSelectedNPCs),
+                        () => navigateToViewNPC(npc._id),
+                        () => navigateToEditNPC(npc._id),
+                        'name',
+                        `Level ${npc.level} ${npc.race} ${npc.class}`,
+                        `Level ${npc.level}`
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">No NPCs found. Create some NPCs first!</p>
+                    <Button onClick={navigateToCreateNPC}>
+                      Create NPC
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Quests Tab */}
+          <TabsContent value="quests" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  Quests ({selectedQuests.length}/{requirements.questsRequired})
+                </CardTitle>
+                <CardDescription>
+                  Select at least {requirements.questsRequired} quest for your campaign
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={navigateToCreateQuest}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New Quest
+                </Button>
+
+                {quests && quests.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {quests.map((quest) =>
+                      renderSelectionCard(
+                        quest,
+                        selectedQuests.includes(quest._id),
+                        () => toggleSelection(quest._id, selectedQuests, setSelectedQuests),
+                        () => navigateToViewQuest(quest._id),
+                        () => navigateToEditQuest(quest._id),
+                        'title',
+                        quest.description?.substring(0, 50) + '...',
+                        quest.status
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">No quests found. Create some quests first!</p>
+                    <Button onClick={navigateToCreateQuest}>
+                      Create Quest
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Locations Tab */}
+          <TabsContent value="locations" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Locations ({selectedLocations.length}/{requirements.locationsRequired})
+                </CardTitle>
+                <CardDescription>
+                  Select at least {requirements.locationsRequired} location for your campaign
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={navigateToCreateLocation}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New Location
+                </Button>
+
+                {locations && locations.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {locations.map((location) =>
+                      renderSelectionCard(
+                        location,
+                        selectedLocations.includes(location._id),
+                        () => toggleSelection(location._id, selectedLocations, setSelectedLocations),
+                        () => navigateToViewLocation(location._id),
+                        () => navigateToEditLocation(location._id),
+                        'name',
+                        `${location.type} • ${location.description?.substring(0, 30)}...`,
+                        location.type
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">No locations found. Create some locations first!</p>
+                    <Button onClick={navigateToCreateLocation}>
+                      Create Location
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Boss Monsters Tab */}
+          <TabsContent value="monsters" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sword className="h-5 w-5" />
+                  Boss Monsters ({monsters ? monsters.filter(m => {
+                    const cr = parseFloat(m.challengeRating);
+                    return selectedBossMonsters.includes(m._id) && !isNaN(cr) && cr >= 10;
+                  }).length : 0}/{requirements.bossMonstersRequired})
+                </CardTitle>
+                <CardDescription>
+                  Select at least {requirements.bossMonstersRequired} boss monster (CR 10 or higher) for your campaign
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={navigateToCreateMonster}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New Monster
+                </Button>
+
+                {monsters && monsters.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {monsters
+                      .filter(monster => {
+                        const cr = parseFloat(monster.challengeRating);
+                        return !isNaN(cr) && cr >= 10;
+                      })
+                      .map((monster) =>
+                        renderSelectionCard(
+                          monster,
+                          selectedBossMonsters.includes(monster._id),
+                          () => toggleSelection(monster._id, selectedBossMonsters, setSelectedBossMonsters),
+                          () => navigateToViewMonster(monster._id),
+                          () => navigateToEditMonster(monster._id),
+                          'name',
+                          `${monster.type}`,
+                          `CR ${monster.challengeRating}`
+                        )
+                      )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">No boss monsters found. Create some high-level monsters first!</p>
+                    <Button onClick={navigateToCreateMonster}>
+                      Create Monster
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Form Actions */}
+        <div className="flex justify-end gap-4 pt-6 border-t">
+          <Button
             type="button"
-            className="cancel-button"
+            variant="outline"
             onClick={handleCancel}
             disabled={isSubmitting}
           >
             Cancel
-          </button>
+          </Button>
           
-          <button
+          <Button
             type="submit"
-            className={`create-button ${isFormComplete ? 'enabled' : 'disabled'}`}
             disabled={isSubmitting || !isFormComplete}
           >
             {isSubmitting ? "Creating..." : isFormComplete ? "Create Campaign" : "Complete Requirements"}
-          </button>
+          </Button>
         </div>
       </form>
 
       {/* Requirements Summary */}
-      <div className="requirements-summary">
-        <h4>Campaign Requirements:</h4>
-        <div className="requirements-grid">
-          <div className={`requirement ${validationState.hasName ? 'complete' : 'incomplete'}`}>
-            <span className="requirement-icon">{validationState.hasName ? '✅' : '❌'}</span>
-            <span className="requirement-text">Campaign name</span>
+      <Card>
+        <CardHeader>
+          <CardTitle>Campaign Requirements</CardTitle>
+          <CardDescription>
+            All requirements must be met to create your campaign
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`flex items-center gap-2 p-3 rounded-lg ${
+              validationState.hasName ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+            }`}>
+              {validationState.hasName ? (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              )}
+              <span className={validationState.hasName ? 'text-green-800' : 'text-red-800'}>
+                Campaign name
+              </span>
+            </div>
+            
+            <div className={`flex items-center gap-2 p-3 rounded-lg ${
+              validationState.hasTimelineEvents ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+            }`}>
+              {validationState.hasTimelineEvents ? (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              )}
+              <span className={validationState.hasTimelineEvents ? 'text-green-800' : 'text-red-800'}>
+                Timeline events ({timelineEvents.length}/{requirements.timelineEventsRequired})
+              </span>
+            </div>
+            
+            <div className={`flex items-center gap-2 p-3 rounded-lg ${
+              validationState.hasPlayerCharacters ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+            }`}>
+              {validationState.hasPlayerCharacters ? (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              )}
+              <span className={validationState.hasPlayerCharacters ? 'text-green-800' : 'text-red-800'}>
+                Player characters ({selectedPlayerCharacters.length}/{requirements.playerCharactersRequired})
+              </span>
+            </div>
+            
+            <div className={`flex items-center gap-2 p-3 rounded-lg ${
+              validationState.hasNPCs ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+            }`}>
+              {validationState.hasNPCs ? (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              )}
+              <span className={validationState.hasNPCs ? 'text-green-800' : 'text-red-800'}>
+                NPCs ({selectedNPCs.length}/{requirements.npcsRequired})
+              </span>
+            </div>
+            
+            <div className={`flex items-center gap-2 p-3 rounded-lg ${
+              validationState.hasQuests ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+            }`}>
+              {validationState.hasQuests ? (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              )}
+              <span className={validationState.hasQuests ? 'text-green-800' : 'text-red-800'}>
+                Quests ({selectedQuests.length}/{requirements.questsRequired})
+              </span>
+            </div>
+            
+            <div className={`flex items-center gap-2 p-3 rounded-lg ${
+              validationState.hasLocations ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+            }`}>
+              {validationState.hasLocations ? (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              )}
+              <span className={validationState.hasLocations ? 'text-green-800' : 'text-red-800'}>
+                Locations ({selectedLocations.length}/{requirements.locationsRequired})
+              </span>
+            </div>
+            
+            <div className={`flex items-center gap-2 p-3 rounded-lg ${
+              validationState.hasBossMonsters ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+            }`}>
+              {validationState.hasBossMonsters ? (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              )}
+              <span className={validationState.hasBossMonsters ? 'text-green-800' : 'text-red-800'}>
+                Boss monsters ({monsters ? monsters.filter(m => {
+                  const cr = parseFloat(m.challengeRating);
+                  return selectedBossMonsters.includes(m._id) && !isNaN(cr) && cr >= 10;
+                }).length : 0}/{requirements.bossMonstersRequired})
+              </span>
+            </div>
           </div>
-          <div className={`requirement ${validationState.hasTimelineEvents ? 'complete' : 'incomplete'}`}>
-            <span className="requirement-icon">{validationState.hasTimelineEvents ? '✅' : '❌'}</span>
-            <span className="requirement-text">Timeline events ({timelineEvents.length}/{requirements.timelineEventsRequired})</span>
-          </div>
-          <div className={`requirement ${validationState.hasPlayerCharacters ? 'complete' : 'incomplete'}`}>
-            <span className="requirement-icon">{validationState.hasPlayerCharacters ? '✅' : '❌'}</span>
-            <span className="requirement-text">Player characters ({selectedPlayerCharacters.length}/{requirements.playerCharactersRequired})</span>
-          </div>
-          <div className={`requirement ${validationState.hasNPCs ? 'complete' : 'incomplete'}`}>
-            <span className="requirement-icon">{validationState.hasNPCs ? '✅' : '❌'}</span>
-            <span className="requirement-text">NPCs ({selectedNPCs.length}/{requirements.npcsRequired})</span>
-          </div>
-          <div className={`requirement ${validationState.hasQuests ? 'complete' : 'incomplete'}`}>
-            <span className="requirement-icon">{validationState.hasQuests ? '✅' : '❌'}</span>
-            <span className="requirement-text">Quests ({selectedQuests.length}/{requirements.questsRequired})</span>
-          </div>
-          <div className={`requirement ${validationState.hasLocations ? 'complete' : 'incomplete'}`}>
-            <span className="requirement-icon">{validationState.hasLocations ? '✅' : '❌'}</span>
-            <span className="requirement-text">Locations ({selectedLocations.length}/{requirements.locationsRequired})</span>
-          </div>
-          <div className={`requirement ${validationState.hasBossMonsters ? 'complete' : 'incomplete'}`}>
-            <span className="requirement-icon">{validationState.hasBossMonsters ? '✅' : '❌'}</span>
-            <span className="requirement-text">Boss monsters ({monsters ? monsters.filter(m => {
-              const cr = parseFloat(m.challengeRating);
-              return selectedBossMonsters.includes(m._id) && !isNaN(cr) && cr >= 10;
-            }).length : 0}/{requirements.bossMonstersRequired})</span>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

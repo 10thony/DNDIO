@@ -1,10 +1,14 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import InteractionCreationForm from "./InteractionCreationForm";
 import { useUser } from "@clerk/clerk-react";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Separator } from "./ui/separator";
 import "./InteractionList.css";
 
 const InteractionList: React.FC = () => {
@@ -19,7 +23,8 @@ const InteractionList: React.FC = () => {
   const generateSampleInteractions = useMutation(api.interactions.generateSampleInteractions);
 
   const handleDelete = async (id: Id<"interactions">, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click
+    e.preventDefault();
+    e.stopPropagation();
     if (window.confirm("Are you sure you want to delete this interaction? This action cannot be undone.")) {
       setIsDeleting(id);
       try {
@@ -34,12 +39,9 @@ const InteractionList: React.FC = () => {
   };
 
   const handleEdit = (id: Id<"interactions">, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click
+    e.preventDefault();
+    e.stopPropagation();
     setEditingInteraction(id);
-  };
-
-  const handleCardClick = (id: Id<"interactions">) => {
-    navigate(`/interactions/${id}`);
   };
 
   const handleCancel = () => {
@@ -100,13 +102,13 @@ const InteractionList: React.FC = () => {
             Manage and organize all interactions between characters, NPCs, and quests
           </p>
         </div>
-        <button
-          className="create-button"
+        <Button
           onClick={() => setIsCreating(true)}
+          className="create-button"
         >
           <span className="button-icon">+</span>
           Create New Interaction
-        </button>
+        </Button>
       </div>
 
       {interactions.length === 0 ? (
@@ -115,20 +117,20 @@ const InteractionList: React.FC = () => {
           <h3>No Interactions Yet</h3>
           <p>Get started by creating your first interaction for your campaign.</p>
           <div className="empty-state-actions">
-            <button
-              className="create-button"
+            <Button
               onClick={() => setIsCreating(true)}
+              className="create-button"
             >
               Create Your First Interaction
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleGenerateSampleData}
               disabled={isGenerating}
-              className="btn btn-secondary"
-              style={{ marginLeft: '10px' }}
+              variant="outline"
+              className="generate-button"
             >
               {isGenerating ? "Generating..." : "Generate Sample Data"}
-            </button>
+            </Button>
           </div>
           <div className="admin-note">
             <p><em>You can generate sample interactions to get started quickly.</em></p>
@@ -137,65 +139,82 @@ const InteractionList: React.FC = () => {
       ) : (
         <div className="interactions-grid">
           {interactions.map((interaction) => (
-            <div 
-              key={interaction._id} 
-              className="interaction-card"
-              onClick={() => handleCardClick(interaction._id)}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="interaction-header">
-                <div className="interaction-title-section">
-                  <h3 className="interaction-name">{interaction.name}</h3>
-                  <div className="interaction-type-badge">Interaction</div>
-                </div>
-              </div>
-              
-              {interaction.description && (
-                <p className="interaction-description">
-                  {interaction.description.length > 150 
-                    ? `${interaction.description.substring(0, 150)}...` 
-                    : interaction.description
-                  }
-                </p>
-              )}
-              
-              <div className="interaction-details">
-                <div className="interaction-meta">
-                  {interaction.relatedQuestId && (
-                    <span className="quest-link">📜 Linked to Quest</span>
-                  )}
-                  {interaction.questTaskId && (
-                    <span className="quest-link">✅ Linked to Task</span>
-                  )}
-                </div>
-                
-                <div className="participants-info">
-                  <span className="participants-count">
-                    👥 {interaction.playerCharacterIds?.length || 0} Characters
-                  </span>
-                  <span className="participants-count">
-                    🎭 {interaction.npcIds?.length || 0} NPCs
-                  </span>
-                </div>
-              </div>
-              
-              <div className="interaction-actions">
-                <button
-                  className="edit-button"
-                  onClick={(e) => handleEdit(interaction._id, e)}
-                  title="Edit this interaction"
-                >
-                  ✏️ Edit
-                </button>
-                <button
-                  className="delete-button"
-                  onClick={(e) => handleDelete(interaction._id, e)}
-                  disabled={isDeleting === interaction._id}
-                  title="Delete this interaction"
-                >
-                  {isDeleting === interaction._id ? "🗑️ Deleting..." : "🗑️ Delete"}
-                </button>
-              </div>
+            <div key={interaction._id} className="interaction-card-link-wrapper">
+              <Link
+                to={`/interactions/${interaction._id}`}
+                className="interaction-card-link"
+                aria-label={`View details for ${interaction.name}`}
+              >
+                <Card className="clickable-card interaction-card">
+                  <CardHeader className="interaction-header">
+                    <div className="interaction-title-section">
+                      <CardTitle className="interaction-name">{interaction.name}</CardTitle>
+                      <Badge variant="secondary" className="interaction-type-badge">
+                        Interaction
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="interaction-content">
+                    {interaction.description && (
+                      <p className="interaction-description">
+                        {interaction.description.length > 150 
+                          ? `${interaction.description.substring(0, 150)}...` 
+                          : interaction.description
+                        }
+                      </p>
+                    )}
+                    
+                    <Separator className="my-2" />
+                    
+                    <div className="interaction-details">
+                      <div className="interaction-meta">
+                        {interaction.relatedQuestId && (
+                          <Badge variant="outline" className="quest-link">
+                            📜 Linked to Quest
+                          </Badge>
+                        )}
+                        {interaction.questTaskId && (
+                          <Badge variant="outline" className="quest-link">
+                            ✅ Linked to Task
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <div className="participants-info">
+                        <Badge variant="outline" className="participants-count">
+                          👥 {interaction.playerCharacterIds?.length || 0} Characters
+                        </Badge>
+                        <Badge variant="outline" className="participants-count">
+                          🎭 {interaction.npcIds?.length || 0} NPCs
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                  
+                  <div className="interaction-actions">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => handleEdit(interaction._id, e)}
+                      title="Edit this interaction"
+                      className="edit-button"
+                    >
+                      ✏️ Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => handleDelete(interaction._id, e)}
+                      disabled={isDeleting === interaction._id}
+                      title="Delete this interaction"
+                      className="delete-button"
+                    >
+                      {isDeleting === interaction._id ? "🗑️ Deleting..." : "🗑️ Delete"}
+                    </Button>
+                  </div>
+                </Card>
+              </Link>
             </div>
           ))}
         </div>

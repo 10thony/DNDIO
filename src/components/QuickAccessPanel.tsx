@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useUser } from '@clerk/clerk-react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import './QuickAccessPanel.css';
 
 interface QuickAccessItem {
@@ -200,8 +206,8 @@ export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
           id: `npc-${npc._id}`,
           type: 'npc',
           title: npc.name,
-          subtitle: npc.role,
-          icon: '👥',
+          subtitle: npc.role || 'NPC',
+          icon: '👤',
           path: `/npcs/${npc._id}`,
           timestamp: npc.updatedAt || npc.createdAt,
           metadata: { npc }
@@ -209,42 +215,30 @@ export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
       }
     });
 
-    // Sort by relevance and recency
-    results.sort((a, b) => {
-      const aExactMatch = a.title.toLowerCase() === lowerQuery;
-      const bExactMatch = b.title.toLowerCase() === lowerQuery;
-      
-      if (aExactMatch && !bExactMatch) return -1;
-      if (!aExactMatch && bExactMatch) return 1;
-      
-      return b.timestamp - a.timestamp;
-    });
-
-    setSearchResults(results.slice(0, 10)); // Limit to 10 results
+    setSearchResults(results);
     setIsSearching(false);
   };
 
-  // Quick actions
   const quickActions = [
     {
       id: 'new-interaction',
       title: 'New Interaction',
-      icon: '➕',
-      path: '/interactions/create',
+      icon: '⚡',
+      path: '/interactions/new',
       type: 'action' as const
     },
     {
       id: 'new-campaign',
       title: 'New Campaign',
       icon: '📚',
-      path: '/campaigns/create',
+      path: '/campaigns/new',
       type: 'action' as const
     },
     {
-      id: 'live-interactions',
-      title: 'Live Interactions',
-      icon: '⚡',
-      path: '/live-interactions',
+      id: 'new-character',
+      title: 'New Character',
+      icon: '👤',
+      path: '/characters/new',
       type: 'action' as const
     },
     {
@@ -261,24 +255,24 @@ export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
     setIsExpanded(false);
   };
 
-  const getStatusColor = (status: string): string => {
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
       case 'PENDING_INITIATIVE':
-        return 'yellow';
+        return 'secondary';
       case 'INITIATIVE_ROLLED':
-        return 'blue';
+        return 'outline';
       case 'WAITING_FOR_PLAYER_TURN':
-        return 'green';
+        return 'default';
       case 'PROCESSING_PLAYER_ACTION':
-        return 'purple';
+        return 'secondary';
       case 'DM_REVIEW':
-        return 'orange';
+        return 'outline';
       case 'COMPLETED':
-        return 'green';
+        return 'default';
       case 'CANCELLED':
-        return 'red';
+        return 'destructive';
       default:
-        return 'gray';
+        return 'secondary';
     }
   };
 
@@ -298,160 +292,189 @@ export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
   return (
     <>
       {/* Floating Action Button */}
-      <button
-        className={`quick-access-fab ${isVisible ? 'visible' : ''}`}
+      <Button
+        variant="default"
+        size="lg"
+        className={cn(
+          "quick-access-fab",
+          isVisible && "visible",
+          "rounded-full w-14 h-14 shadow-lg"
+        )}
         onClick={() => setIsExpanded(!isExpanded)}
         title="Quick Access"
       >
-        <span className="fab-icon">⚡</span>
-      </button>
+        <span className="fab-icon text-xl">⚡</span>
+      </Button>
 
       {/* Expanded Panel */}
       {isExpanded && (
-        <div className="quick-access-panel">
-          <div className="panel-header">
-            <h3>Quick Access</h3>
-            <button 
-              className="close-button"
-              onClick={() => setIsExpanded(false)}
-            >
-              ×
-            </button>
-          </div>
+        <Card className="quick-access-panel">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Quick Access</CardTitle>
+              <Button 
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(false)}
+                className="h-8 w-8 p-0"
+              >
+                ×
+              </Button>
+            </div>
+          </CardHeader>
 
-          {/* Search */}
-          {enableSearch && (
-            <div className="search-section">
-              <div className="search-input-wrapper">
-                <input
+          <CardContent className="space-y-4">
+            {/* Search */}
+            {enableSearch && (
+              <div className="search-section">
+                <Input
                   type="text"
                   placeholder="Search interactions, campaigns, characters..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="search-input"
                 />
-                {isSearching && <div className="search-spinner"></div>}
-              </div>
-            </div>
-          )}
-
-          {/* Quick Actions */}
-          <div className="quick-actions-section">
-            <h4>Quick Actions</h4>
-            <div className="quick-actions-grid">
-              {quickActions.map(action => (
-                <button
-                  key={action.id}
-                  className="quick-action-button"
-                  onClick={() => handleQuickAction(action)}
-                >
-                  <span className="action-icon">{action.icon}</span>
-                  <span className="action-title">{action.title}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Search Results */}
-          {searchQuery && (
-            <div className="search-results-section">
-              <h4>Search Results ({searchResults.length})</h4>
-              <div className="search-results-list">
-                {searchResults.map(item => (
-                  <button
-                    key={item.id}
-                    className="search-result-item"
-                    onClick={() => handleItemClick(item)}
-                  >
-                    <span className="result-icon">{item.icon}</span>
-                    <div className="result-content">
-                      <div className="result-title">{item.title}</div>
-                      {item.subtitle && (
-                        <div className="result-subtitle">{item.subtitle}</div>
-                      )}
-                    </div>
-                    {item.status && (
-                      <span className={`result-status status-${getStatusColor(item.status)}`}>
-                        {item.status.replace(/_/g, ' ')}
-                      </span>
-                    )}
-                  </button>
-                ))}
-                {searchResults.length === 0 && !isSearching && (
-                  <div className="no-results">
-                    No results found for "{searchQuery}"
+                {isSearching && (
+                  <div className="flex justify-center mt-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Recent Items */}
-          {!searchQuery && recentItems.length > 0 && (
-            <div className="recent-items-section">
-              <h4>Recent Items</h4>
-              <div className="recent-items-list">
-                {recentItems.map(item => (
-                  <button
-                    key={item.id}
-                    className="recent-item"
-                    onClick={() => handleItemClick(item)}
+            {/* Quick Actions */}
+            <div className="quick-actions-section">
+              <h4 className="text-sm font-medium mb-2">Quick Actions</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {quickActions.map(action => (
+                  <Button
+                    key={action.id}
+                    variant="outline"
+                    className="quick-action-button h-auto p-3 flex flex-col items-center gap-1"
+                    onClick={() => handleQuickAction(action)}
                   >
-                    <span className="item-icon">{item.icon}</span>
-                    <div className="item-content">
-                      <div className="item-title">{item.title}</div>
-                      {item.subtitle && (
-                        <div className="item-subtitle">{item.subtitle}</div>
-                      )}
-                      <div className="item-time">{formatTimestamp(item.timestamp)}</div>
-                    </div>
-                    {item.status && (
-                      <span className={`item-status status-${getStatusColor(item.status)}`}>
-                        {item.status.replace(/_/g, ' ')}
-                      </span>
-                    )}
-                  </button>
+                    <span className="action-icon text-lg">{action.icon}</span>
+                    <span className="action-title text-xs">{action.title}</span>
+                  </Button>
                 ))}
               </div>
             </div>
-          )}
 
-          {/* Active Interactions */}
-          {!searchQuery && activeInteractions && activeInteractions.length > 0 && (
-            <div className="active-interactions-section">
-              <h4>Active Interactions ({activeInteractions.length})</h4>
-              <div className="active-interactions-list">
-                {activeInteractions.slice(0, 3).map(interaction => (
-                  <button
-                    key={interaction._id}
-                    className="active-interaction-item"
-                    onClick={() => handleItemClick({
-                      id: `interaction-${interaction._id}`,
-                      type: 'interaction',
-                      title: interaction.name,
-                      subtitle: `Campaign: ${interaction.campaignId || 'Standalone'}`,
-                      icon: '⚡',
-                      path: `/interactions/${interaction._id}`,
-                      status: interaction.status,
-                      timestamp: interaction.updatedAt || interaction.createdAt,
-                      metadata: { interaction }
-                    })}
-                  >
-                    <span className="interaction-icon">⚡</span>
-                    <div className="interaction-content">
-                      <div className="interaction-title">{interaction.name}</div>
-                      <div className="interaction-status">
-                        <span className={`status-badge status-${getStatusColor(interaction.status)}`}>
-                          {interaction.status.replace(/_/g, ' ')}
-                        </span>
+            {/* Search Results */}
+            {searchQuery && (
+              <div className="search-results-section">
+                <h4 className="text-sm font-medium mb-2">
+                  Search Results ({searchResults.length})
+                </h4>
+                <div className="space-y-2">
+                  {searchResults.map(item => (
+                    <Button
+                      key={item.id}
+                      variant="ghost"
+                      className="search-result-item w-full justify-start h-auto p-3"
+                      onClick={() => handleItemClick(item)}
+                    >
+                      <span className="result-icon mr-2">{item.icon}</span>
+                      <div className="result-content flex-1 text-left">
+                        <div className="result-title font-medium">{item.title}</div>
+                        {item.subtitle && (
+                          <div className="result-subtitle text-xs text-muted-foreground">
+                            {item.subtitle}
+                          </div>
+                        )}
                       </div>
+                      {item.status && (
+                        <Badge variant={getStatusVariant(item.status)} className="ml-2">
+                          {item.status.replace(/_/g, ' ')}
+                        </Badge>
+                      )}
+                    </Button>
+                  ))}
+                  {searchResults.length === 0 && !isSearching && (
+                    <div className="text-center text-sm text-muted-foreground py-4">
+                      No results found for "{searchQuery}"
                     </div>
-                  </button>
-                ))}
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+
+            {/* Recent Items */}
+            {!searchQuery && recentItems.length > 0 && (
+              <div className="recent-items-section">
+                <h4 className="text-sm font-medium mb-2">Recent Items</h4>
+                <div className="space-y-2">
+                  {recentItems.map(item => (
+                    <Button
+                      key={item.id}
+                      variant="ghost"
+                      className="recent-item w-full justify-start h-auto p-3"
+                      onClick={() => handleItemClick(item)}
+                    >
+                      <span className="item-icon mr-2">{item.icon}</span>
+                      <div className="item-content flex-1 text-left">
+                        <div className="item-title font-medium">{item.title}</div>
+                        {item.subtitle && (
+                          <div className="item-subtitle text-xs text-muted-foreground">
+                            {item.subtitle}
+                          </div>
+                        )}
+                        <div className="item-time text-xs text-muted-foreground">
+                          {formatTimestamp(item.timestamp)}
+                        </div>
+                      </div>
+                      {item.status && (
+                        <Badge variant={getStatusVariant(item.status)} className="ml-2">
+                          {item.status.replace(/_/g, ' ')}
+                        </Badge>
+                      )}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Active Interactions */}
+            {!searchQuery && activeInteractions && activeInteractions.length > 0 && (
+              <div className="active-interactions-section">
+                <Separator className="my-4" />
+                <h4 className="text-sm font-medium mb-2">
+                  Active Interactions ({activeInteractions.length})
+                </h4>
+                <div className="space-y-2">
+                  {activeInteractions.slice(0, 3).map(interaction => (
+                    <Button
+                      key={interaction._id}
+                      variant="ghost"
+                      className="active-interaction-item w-full justify-start h-auto p-3"
+                      onClick={() => handleItemClick({
+                        id: `interaction-${interaction._id}`,
+                        type: 'interaction',
+                        title: interaction.name,
+                        subtitle: `Campaign: ${interaction.campaignId || 'Standalone'}`,
+                        icon: '⚡',
+                        path: `/interactions/${interaction._id}`,
+                        status: interaction.status,
+                        timestamp: interaction.updatedAt || interaction.createdAt,
+                        metadata: { interaction }
+                      })}
+                    >
+                      <span className="interaction-icon mr-2">⚡</span>
+                      <div className="interaction-content flex-1 text-left">
+                        <div className="interaction-title font-medium">{interaction.name}</div>
+                        <div className="interaction-status">
+                          <Badge variant={getStatusVariant(interaction.status)}>
+                            {interaction.status.replace(/_/g, ' ')}
+                          </Badge>
+                        </div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </>
   );

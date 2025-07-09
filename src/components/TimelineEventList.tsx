@@ -1,11 +1,15 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import TimelineEventCreationForm from "./TimelineEventCreationForm";
 import { useRoleAccess } from "../hooks/useRoleAccess";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Separator } from "./ui/separator";
 import "./TimelineEventList.css";
 
 const TimelineEventList: React.FC = () => {
@@ -26,7 +30,8 @@ const TimelineEventList: React.FC = () => {
   );
 
   const handleDelete = async (id: Id<"timelineEvents">, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click
+    e.preventDefault();
+    e.stopPropagation();
     if (window.confirm("Are you sure you want to delete this timeline event? This action cannot be undone.")) {
       setIsDeleting(id);
       try {
@@ -41,12 +46,9 @@ const TimelineEventList: React.FC = () => {
   };
 
   const handleEdit = (id: Id<"timelineEvents">, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click
+    e.preventDefault();
+    e.stopPropagation();
     setEditingTimelineEvent(id);
-  };
-
-  const handleCardClick = (id: Id<"timelineEvents">) => {
-    navigate(`/timeline-events/${id}`);
   };
 
   const handleCancel = () => {
@@ -111,13 +113,13 @@ const TimelineEventList: React.FC = () => {
             Manage and organize important events in your campaign timeline
           </p>
         </div>
-        <button
-          className="create-button"
+        <Button
           onClick={() => setIsCreating(true)}
+          className="create-button"
         >
           <span className="button-icon">+</span>
           Create New Timeline Event
-        </button>
+        </Button>
       </div>
 
       {timelineEvents.length === 0 ? (
@@ -126,86 +128,102 @@ const TimelineEventList: React.FC = () => {
           <h3>No Timeline Events Yet</h3>
           <p>Get started by creating your first timeline event for your campaign.</p>
           <div className="empty-state-actions">
-            <button
-              className="create-button"
+            <Button
               onClick={() => setIsCreating(true)}
+              className="create-button"
             >
               Create Your First Timeline Event
-            </button>
+            </Button>
             {isAdmin && (
-              <button
-                className="populate-sample-button"
+              <Button
                 onClick={handlePopulateSampleData}
                 disabled={isPopulating}
+                variant="outline"
+                className="populate-sample-button"
               >
                 {isPopulating ? "🔄 Adding Sample Data..." : "📚 Add Sample Timeline Events"}
-              </button>
+              </Button>
             )}
           </div>
         </div>
       ) : (
         <div className="timeline-events-grid">
           {timelineEvents.map((timelineEvent) => (
-            <div 
-              key={timelineEvent._id} 
-              className="timeline-event-card"
-              onClick={() => handleCardClick(timelineEvent._id)}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="timeline-event-header">
-                <div className="timeline-event-title-section">
-                  <h3 className="timeline-event-name">{timelineEvent.title}</h3>
-                  <div className="timeline-event-type-badge">{timelineEvent.type || "Custom"}</div>
-                </div>
-              </div>
-              
-              <p className="timeline-event-description">
-                {timelineEvent.description.length > 150 
-                  ? `${timelineEvent.description.substring(0, 150)}...` 
-                  : timelineEvent.description
-                }
-              </p>
-              
-              <div className="timeline-event-details">
-                <div className="timeline-event-meta">
-                  <span className="event-date">
-                    📅 {new Date(timelineEvent.date).toLocaleDateString()}
-                  </span>
-                  {timelineEvent.relatedQuestIds && timelineEvent.relatedQuestIds.length > 0 && (
-                    <span className="quest-link">📜 {timelineEvent.relatedQuestIds.length} Quests</span>
-                  )}
-                </div>
-                
-                <div className="related-entities-info">
-                  <span className="related-count">
-                    🗺️ {timelineEvent.relatedLocationIds?.length || 0} Locations
-                  </span>
-                  <span className="related-count">
-                    🎭 {timelineEvent.relatedNpcIds?.length || 0} NPCs
-                  </span>
-                  <span className="related-count">
-                    🏛️ {timelineEvent.relatedFactionIds?.length || 0} Factions
-                  </span>
-                </div>
-              </div>
-              
-              <div className="timeline-event-actions">
-                <button
-                  className="edit-button"
-                  onClick={(e) => handleEdit(timelineEvent._id, e)}
-                  title="Edit this timeline event"
-                >
-                  ✏️ Edit
-                </button>
-                <button
-                  className="delete-button"
-                  onClick={(e) => handleDelete(timelineEvent._id, e)}
-                  disabled={isDeleting === timelineEvent._id}
-                  title="Delete this timeline event"
-                >
-                  {isDeleting === timelineEvent._id ? "🗑️ Deleting..." : "🗑️ Delete"}
-                </button>
-              </div>
+            <div key={timelineEvent._id} className="timeline-event-card-link-wrapper">
+              <Link
+                to={`/timeline-events/${timelineEvent._id}`}
+                className="timeline-event-card-link"
+                aria-label={`View details for ${timelineEvent.title}`}
+              >
+                <Card className="clickable-card timeline-event-card">
+                  <CardHeader className="timeline-event-header">
+                    <div className="timeline-event-title-section">
+                      <CardTitle className="timeline-event-name">{timelineEvent.title}</CardTitle>
+                      <Badge variant="secondary" className="timeline-event-type-badge">
+                        {timelineEvent.type || "Custom"}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="timeline-event-content">
+                    <p className="timeline-event-description">
+                      {timelineEvent.description.length > 150 
+                        ? `${timelineEvent.description.substring(0, 150)}...` 
+                        : timelineEvent.description
+                      }
+                    </p>
+                    
+                    <Separator className="my-2" />
+                    
+                    <div className="timeline-event-details">
+                      <div className="timeline-event-meta">
+                        <Badge variant="outline" className="event-date">
+                          📅 {new Date(timelineEvent.date).toLocaleDateString()}
+                        </Badge>
+                        {timelineEvent.relatedQuestIds && timelineEvent.relatedQuestIds.length > 0 && (
+                          <Badge variant="outline" className="quest-link">
+                            📜 {timelineEvent.relatedQuestIds.length} Quests
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <div className="related-entities-info">
+                        <Badge variant="outline" className="related-count">
+                          🗺️ {timelineEvent.relatedLocationIds?.length || 0} Locations
+                        </Badge>
+                        <Badge variant="outline" className="related-count">
+                          🎭 {timelineEvent.relatedNpcIds?.length || 0} NPCs
+                        </Badge>
+                        <Badge variant="outline" className="related-count">
+                          🏛️ {timelineEvent.relatedFactionIds?.length || 0} Factions
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                  
+                  <div className="timeline-event-actions">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => handleEdit(timelineEvent._id, e)}
+                      title="Edit this timeline event"
+                      className="edit-button"
+                    >
+                      ✏️ Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => handleDelete(timelineEvent._id, e)}
+                      disabled={isDeleting === timelineEvent._id}
+                      title="Delete this timeline event"
+                      className="delete-button"
+                    >
+                      {isDeleting === timelineEvent._id ? "🗑️ Deleting..." : "🗑️ Delete"}
+                    </Button>
+                  </div>
+                </Card>
+              </Link>
             </div>
           ))}
         </div>

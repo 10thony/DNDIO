@@ -3,7 +3,28 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { useUser } from "@clerk/clerk-react";
-import "./InteractionCreationForm.css";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Alert, AlertDescription } from "./ui/alert";
+import { Checkbox } from "./ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Separator } from "./ui/separator";
+import { 
+  AlertCircle, 
+  ArrowLeft, 
+  Users,
+  MapPin,
+  Target,
+  Package,
+  Gift,
+  Sword,
+  Crown
+} from "lucide-react";
 
 interface InteractionCreationFormProps {
   onSubmitSuccess: () => void;
@@ -144,184 +165,256 @@ const InteractionCreationForm: React.FC<InteractionCreationFormProps> = ({
   ) || [];
 
   return (
-    <div className="interaction-form">
-      <div className="form-header">
-        <h2 className="form-section-title">
-          {editingInteractionId ? "Edit Interaction" : "Create New Interaction"}
-        </h2>
-        <button className="back-button" onClick={onCancel}>
-          ← Back
-        </button>
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Interactions
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">
+              {editingInteractionId ? "Edit Interaction" : "Create New Interaction"}
+            </h1>
+            <p className="text-muted-foreground">
+              {editingInteractionId ? "Update interaction details" : "Define a new interaction between characters"}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="form-section">
-          <h3 className="form-section-title">Basic Information</h3>
-          
-          <div className="form-row">
-            <div className="form-col">
-              <label className="form-label" htmlFor="name">
-                Interaction Name *
-              </label>
-              <input
-                type="text"
-                id="name"
-                className="form-input"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                placeholder="Enter interaction name"
-              />
-              {errors.name && <div className="form-error">{errors.name}</div>}
-            </div>
-          </div>
+      {/* Error Messages */}
+      {errors.general && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{errors.general}</AlertDescription>
+        </Alert>
+      )}
 
-          <div className="form-row">
-            <div className="form-col full-width">
-              <label className="form-label" htmlFor="description">
-                Description
-              </label>
-              <textarea
-                id="description"
-                className="form-textarea"
-                value={formData.description}
-                onChange={(e) => handleInputChange("description", e.target.value)}
-                placeholder="Describe the interaction..."
-              />
-            </div>
-          </div>
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Tabs defaultValue="basic" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="basic" className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Basic Info
+            </TabsTrigger>
+            <TabsTrigger value="participants" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Participants
+            </TabsTrigger>
+            <TabsTrigger value="context" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Context
+            </TabsTrigger>
+            <TabsTrigger value="rewards" className="flex items-center gap-2">
+              <Gift className="h-4 w-4" />
+              Rewards
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="form-section">
-          <h3 className="form-section-title">Quest Association</h3>
-          
-          <div className="form-row">
-            <div className="form-col">
-              <label className="form-label" htmlFor="questId">
-                Associated Quest
-              </label>
-              <select
-                id="questId"
-                className="form-select"
-                value={formData.questId}
-                onChange={(e) => handleInputChange("questId", e.target.value)}
-              >
-                <option value="">Select a quest (optional)</option>
-                {quests?.map((quest) => (
-                  <option key={quest._id} value={quest._id}>
-                    {quest.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <TabsContent value="basic" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  Basic Information
+                </CardTitle>
+                <CardDescription>
+                  Core details about the interaction
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Interaction Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    placeholder="Enter interaction name"
+                    className={errors.name ? "border-destructive" : ""}
+                  />
+                  {errors.name && (
+                    <p className="text-sm text-destructive">{errors.name}</p>
+                  )}
+                </div>
 
-            <div className="form-col">
-              <label className="form-label" htmlFor="questTaskId">
-                Associated Quest Task
-              </label>
-              <select
-                id="questTaskId"
-                className="form-select"
-                value={formData.questTaskId}
-                onChange={(e) => handleInputChange("questTaskId", e.target.value)}
-                disabled={!formData.questId}
-              >
-                <option value="">Select a task (optional)</option>
-                {filteredQuestTasks.map((task) => (
-                  <option key={task._id} value={task._id}>
-                    {task.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange("description", e.target.value)}
+                    placeholder="Describe the interaction..."
+                    rows={4}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <div className="form-section">
-          <h3 className="form-section-title">Participants</h3>
-          
-          <div className="form-row">
-            <div className="form-col">
-              <label className="form-label">Player Characters</label>
-              <div className="participants-grid">
-                {playerCharacters?.map((character: any) => (
-                  <label key={character._id} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      className="checkbox-input"
-                      checked={formData.playerCharacterIds.includes(character._id)}
-                      onChange={() => handleCharacterToggle(character._id)}
-                    />
-                    <span className="checkbox-text">{character.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+          <TabsContent value="participants" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Participants
+                </CardTitle>
+                <CardDescription>
+                  Select characters, NPCs, and monsters involved in this interaction
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Player Characters */}
+                <div className="space-y-3">
+                  <Label>Player Characters</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {playerCharacters?.map((character) => (
+                      <div key={character._id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`char-${character._id}`}
+                          checked={formData.playerCharacterIds.includes(character._id)}
+                          onCheckedChange={() => handleCharacterToggle(character._id)}
+                        />
+                        <Label htmlFor={`char-${character._id}`} className="text-sm cursor-pointer">
+                          {character.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-            <div className="form-col">
-              <label className="form-label">NPCs</label>
-              <div className="participants-grid">
-                {npcs?.map((npc) => (
-                  <label key={npc._id} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      className="checkbox-input"
-                      checked={formData.npcIds.includes(npc._id)}
-                      onChange={() => handleNpcToggle(npc._id)}
-                    />
-                    <span className="checkbox-text">{npc.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
+                <Separator />
 
-          <div className="form-row">
-            <div className="form-col">
-              <label className="form-label">Monsters</label>
-              <div className="participants-grid">
-                {monsters?.map((monster) => (
-                  <label key={monster._id} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      className="checkbox-input"
-                      checked={formData.monsterIds.includes(monster._id)}
-                      onChange={() => handleMonsterToggle(monster._id)}
-                    />
-                    <span className="checkbox-text">
-                      {monster.name} ({monster.size} {monster.type}, CR {monster.challengeRating})
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+                {/* NPCs */}
+                <div className="space-y-3">
+                  <Label>NPCs</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {npcs?.map((npc) => (
+                      <div key={npc._id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`npc-${npc._id}`}
+                          checked={formData.npcIds.includes(npc._id)}
+                          onCheckedChange={() => handleNpcToggle(npc._id)}
+                        />
+                        <Label htmlFor={`npc-${npc._id}`} className="text-sm cursor-pointer">
+                          {npc.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-        {errors.general && <div className="form-error">{errors.general}</div>}
+                <Separator />
 
-        <div className="form-actions">
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
+                {/* Monsters */}
+                <div className="space-y-3">
+                  <Label>Monsters</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {monsters?.map((monster) => (
+                      <div key={monster._id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`monster-${monster._id}`}
+                          checked={formData.monsterIds.includes(monster._id)}
+                          onCheckedChange={() => handleMonsterToggle(monster._id)}
+                        />
+                        <Label htmlFor={`monster-${monster._id}`} className="text-sm cursor-pointer">
+                          {monster.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="context" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Quest Context
+                </CardTitle>
+                <CardDescription>
+                  Associate this interaction with quests and tasks
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="questId">Associated Quest</Label>
+                  <Select
+                    value={formData.questId}
+                    onValueChange={(value) => handleInputChange("questId", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a quest (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No quest</SelectItem>
+                      {quests?.map((quest) => (
+                        <SelectItem key={quest._id} value={quest._id}>
+                          {quest.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="questTaskId">Associated Quest Task</Label>
+                  <Select
+                    value={formData.questTaskId}
+                    onValueChange={(value) => handleInputChange("questTaskId", value)}
+                    disabled={!formData.questId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={formData.questId ? "Select a task (optional)" : "Select a quest first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No task</SelectItem>
+                      {filteredQuestTasks.map((task) => (
+                        <SelectItem key={task._id} value={task._id}>
+                          {task.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="rewards" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Gift className="h-5 w-5" />
+                  Rewards
+                </CardTitle>
+                <CardDescription>
+                  Configure rewards for completing this interaction
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-center py-8 text-muted-foreground">
+                  <Gift className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Reward configuration coming soon...</p>
+                  <p className="text-sm">This feature will allow you to set XP, gold, and item rewards.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Form Actions */}
+        <div className="flex justify-end gap-4">
+          <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={isSubmitting}
-          >
-            {isSubmitting
-              ? editingInteractionId
-                ? "Updating..."
-                : "Creating..."
-              : editingInteractionId
-              ? "Update Interaction"
-              : "Create Interaction"
-            }
-          </button>
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : (editingInteractionId ? "Update Interaction" : "Create Interaction")}
+          </Button>
         </div>
       </form>
     </div>

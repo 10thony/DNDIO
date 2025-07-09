@@ -154,45 +154,75 @@
   gap: 1.5rem;
 }
 
-.faction-card {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.75rem;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+/* Clickable card pattern */
+.faction-card-link-wrapper {
+  display: contents;
+}
+
+.faction-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  height: 100%;
+}
+
+.clickable-card {
+  height: 100%;
+  cursor: pointer;
   transition: all 0.2s ease;
+  border: 1px solid #e5e7eb;
+  background: white;
   @apply transition-colors duration-200;
 }
 
-.dark .faction-card {
+.dark .clickable-card {
   background: #1f2937;
   border-color: #374151;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.faction-card:hover {
+.clickable-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: #3b82f6;
 }
 
-.dark .faction-card:hover {
+.dark .clickable-card:hover {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  border-color: #60a5fa;
+}
+
+.clickable-card:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.dark .clickable-card:focus {
+  outline-color: #60a5fa;
+}
+
+.faction-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .faction-header {
+  padding: 1.5rem 1.5rem 0.5rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 1rem;
   gap: 1rem;
 }
 
 .faction-title-section {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .faction-name {
-  margin: 0 0 0.5rem 0;
+  margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
   line-height: 1.3;
@@ -207,16 +237,16 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  align-items: center;
 }
 
 .leader-count, .ally-count {
-  padding: 0.25rem 0.5rem;
-  background: #f3f4f6;
-  color: #374151;
-  border-radius: 0.375rem;
   font-size: 0.75rem;
   font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  background: #f3f4f6;
+  color: #374151;
   @apply transition-colors duration-200;
 }
 
@@ -225,12 +255,19 @@
   color: #d1d5db;
 }
 
+.faction-content {
+  flex: 1;
+  padding: 0.5rem 1.5rem 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
 .faction-description {
-  color: #6b7280;
-  font-size: 0.875rem;
+  margin: 0;
+  font-size: 0.95rem;
   line-height: 1.5;
-  margin-bottom: 1rem;
-  @apply transition-colors duration-200;
+  @apply text-gray-600 transition-colors duration-200;
 }
 
 .dark .faction-description {
@@ -238,7 +275,7 @@
 }
 
 .faction-goals {
-  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
 }
 
 .faction-goals strong {
@@ -255,7 +292,7 @@
 }
 
 .faction-goals li {
-  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
   @apply text-gray-600 transition-colors duration-200;
 }
 
@@ -264,88 +301,74 @@
 }
 
 .faction-actions {
+  padding: 0 1.5rem 1.5rem 1.5rem;
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  justify-content: flex-end;
 }
 
-.view-button,
 .edit-button,
 .delete-button {
-  flex: 1;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 0.375rem;
   font-size: 0.875rem;
   font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  border: 1px solid;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.25rem;
 }
 
-.view-button {
-  background: #dbeafe;
-  color: #1e40af;
-  @apply transition-colors duration-200;
-}
-
-.dark .view-button {
-  background: #1e3a8a;
-  color: #93c5fd;
-}
-
-.view-button:hover:not(:disabled) {
-  background: #bfdbfe;
-  transform: translateY(-1px);
-}
-
-.dark .view-button:hover:not(:disabled) {
-  background: #1e40af;
-}
-
 .edit-button {
-  background: #e5e7eb;
-  color: #374151;
+  background: #f8fafc;
+  color: #475569;
+  border-color: #cbd5e1;
   @apply transition-colors duration-200;
 }
 
 .dark .edit-button {
-  background: #374151;
-  color: #d1d5db;
+  background: #334155;
+  color: #cbd5e1;
+  border-color: #475569;
 }
 
 .edit-button:hover:not(:disabled) {
-  background: #d1d5db;
+  background: #e2e8f0;
+  border-color: #94a3b8;
   transform: translateY(-1px);
 }
 
 .dark .edit-button:hover:not(:disabled) {
-  background: #4b5563;
+  background: #475569;
+  border-color: #64748b;
 }
 
 .delete-button {
-  background: #fee2e2;
+  background: #fef2f2;
   color: #dc2626;
+  border-color: #fecaca;
   @apply transition-colors duration-200;
 }
 
 .dark .delete-button {
-  background: #7f1d1d;
-  color: #f87171;
+  background: #450a0a;
+  color: #fca5a5;
+  border-color: #7f1d1d;
 }
 
 .delete-button:hover:not(:disabled) {
-  background: #fecaca;
+  background: #fee2e2;
+  border-color: #fca5a5;
   transform: translateY(-1px);
 }
 
 .dark .delete-button:hover:not(:disabled) {
-  background: #991b1b;
+  background: #7f1d1d;
+  border-color: #b91c1c;
 }
 
-.view-button:disabled,
 .edit-button:disabled,
 .delete-button:disabled {
   opacity: 0.6;
@@ -357,23 +380,22 @@
   .factions-container {
     padding: 1rem;
   }
-  
+
   .factions-header {
     flex-direction: column;
-    align-items: stretch;
     gap: 1rem;
   }
-  
+
   .factions-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .faction-header {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .faction-actions {
-    flex-direction: column;
+    justify-content: stretch;
   }
 } 

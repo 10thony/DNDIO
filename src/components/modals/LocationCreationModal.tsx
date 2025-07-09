@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useRoleAccess } from "../../hooks/useRoleAccess";
+import { MapCard } from "../maps/MapCard";
 import "./LocationCreationModal.css";
 
 interface LocationCreationModalProps {
@@ -17,6 +18,7 @@ interface LocationFormData {
   name: string;
   description: string;
   type: "City" | "Town" | "Village" | "Dungeon" | "Forest" | "Mountain" | "Desert" | "Swamp" | "Castle" | "Temple" | "Tavern" | "Shop" | "Other";
+  mapId?: Id<"maps">;
 }
 
 const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
@@ -27,12 +29,14 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
   const { user } = useUser();
   const { isAdmin } = useRoleAccess();
   const navigate = useNavigate();
-  const createLocation = useMutation(api.locations.createLocation);
+  const createLocation = useMutation(api.locations.create);
+  const maps = useQuery(api.maps.getUserMaps, user?.id ? { clerkId: user.id } : "skip") || [];
   
   const [formData, setFormData] = useState<LocationFormData>({
     name: "",
     description: "",
     type: "Other",
+    mapId: undefined,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,6 +89,12 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
         name: formData.name.trim(),
         description: formData.description.trim(),
         type: formData.type,
+        notableNpcIds: [],
+        linkedLocations: [],
+        interactionsAtLocation: [],
+        imageUrls: [],
+        secrets: "",
+        mapId: formData.mapId,
         clerkId: user.id,
       };
 
@@ -114,6 +124,7 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
       name: "",
       description: "",
       type: "Other",
+      mapId: undefined,
     });
     setErrors({});
     setIsSubmitting(false);
@@ -188,6 +199,41 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
                   <option value="Other">Other</option>
                 </select>
               </div>
+            </div>
+
+            {/* Maps Section */}
+            <div className="form-section-title">Available Maps</div>
+            <div className="form-group">
+              <label>Select a map (optional)</label>
+              {maps.length > 0 ? (
+                <div className="maps-grid">
+                  {maps.map((map) => (
+                    <MapCard
+                      key={map._id}
+                      map={map}
+                      isSelected={formData.mapId === map._id}
+                      onSelect={(mapId) => setFormData({
+                        ...formData,
+                        mapId: formData.mapId === mapId ? undefined : mapId
+                      })}
+                      compact={true}
+                      className="modal-map-card"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="no-maps-message">
+                  <p>No maps created yet. Create a map to associate with locations.</p>
+                  <a 
+                    href="/maps/new" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="create-map-link"
+                  >
+                    Create New Map
+                  </a>
+                </div>
+              )}
             </div>
           </div>
 

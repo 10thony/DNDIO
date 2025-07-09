@@ -174,9 +174,9 @@ const CampaignList: React.FC = () => {
         <>
           <div className="campaigns-list">
             {currentCampaigns.map((campaign: any) => (
-              <div key={campaign._id} className="campaign-card">
+              <div key={campaign._id} className="campaign-card bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm transition-all duration-200 hover:shadow-lg">
                 <div 
-                  className="campaign-header"
+                  className="campaign-header flex justify-between items-center p-5 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
                   onClick={() => toggleCampaignExpansion(campaign._id)}
                 >
                   <div className="campaign-title-section">
@@ -219,43 +219,45 @@ const CampaignList: React.FC = () => {
                 </div>
 
                 {expandedCampaigns.has(campaign._id) && (
-                  <div className="campaign-details">
+                  <div className="campaign-details p-5 bg-gray-50 dark:bg-gray-800 transition-all duration-300">
                     {campaign.description && (
-                      <p className="campaign-description">{campaign.description}</p>
+                      <p className="campaign-description text-gray-700 dark:text-gray-300 mb-4 leading-relaxed transition-colors duration-200">
+                        {campaign.description}
+                      </p>
                     )}
                     
                     <div className="campaign-stats">
-                      <div className="stat-item">
+                      <div className="stat-item flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600">
                         <span className="stat-label">Player Characters:</span>
                         <span className="stat-value">
                           {campaign.participantPlayerCharacterIds?.length || 0}
                         </span>
                       </div>
-                      <div className="stat-item">
+                      <div className="stat-item flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600">
                         <span className="stat-label">NPCs:</span>
                         <span className="stat-value">
                           {campaign.npcIds?.length || 0}
                         </span>
                       </div>
-                      <div className="stat-item">
+                      <div className="stat-item flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600">
                         <span className="stat-label">Quests:</span>
                         <span className="stat-value">
                           {campaign.questIds?.length || 0}
                         </span>
                       </div>
-                      <div className="stat-item">
+                      <div className="stat-item flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600">
                         <span className="stat-label">Locations:</span>
                         <span className="stat-value">
                           {campaign.locationIds?.length || 0}
                         </span>
                       </div>
-                      <div className="stat-item">
+                      <div className="stat-item flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600">
                         <span className="stat-label">Boss Monsters:</span>
                         <span className="stat-value">
                           {getBossMonsterCount(campaign)}
                         </span>
                       </div>
-                      <div className="stat-item">
+                      <div className="stat-item flex justify-between items-center p-3 bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600">
                         <span className="stat-label">Timeline Events:</span>
                         <span className="stat-value">
                           {campaign.timelineEventIds?.length || 0}

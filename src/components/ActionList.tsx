@@ -4,6 +4,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { PlayerCharacterAction } from '../types/dndRules';
 import Action from './Action';
+import { Button } from './ui/button';
 
 interface ActionListProps {
   actions: PlayerCharacterAction[];
@@ -54,16 +55,15 @@ const ActionList: React.FC<ActionListProps> = ({ actions }) => {
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2 mb-4">
         {actionTypes.map(type => (
-          <button
+          <Button
             key={type.value}
             onClick={() => setFilter(type.value)}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors
-              ${filter === type.value 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            variant={filter === type.value ? "default" : "outline"}
+            size="sm"
+            className="rounded-full"
           >
             {type.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -79,13 +79,13 @@ const ActionList: React.FC<ActionListProps> = ({ actions }) => {
             No actions found for the selected filter.
           </div>
           {userRole === 'admin' && (
-            <button
+            <Button
               onClick={handleLoadSampleData}
               disabled={isLoadingSample}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-3"
             >
               {isLoadingSample ? 'Loading Sample Data...' : 'Load Sample Actions Data'}
-            </button>
+            </Button>
           )}
         </div>
       )}

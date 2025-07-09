@@ -3,7 +3,25 @@ import type { Item, ItemType, ItemRarity } from "../types/item";
 import { useMutation } from "convex/react";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../convex/_generated/api";
-import "./ItemCreationForm.css";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Alert, AlertDescription } from "./ui/alert";
+import { Checkbox } from "./ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Separator } from "./ui/separator";
+import { 
+  AlertCircle, 
+  ArrowLeft, 
+  Package,
+  Coins,
+  Weight,
+  Sparkles,
+  Info
+} from "lucide-react";
 
 interface ItemCreationFormProps {
   onSubmitSuccess: (itemId: string) => void;
@@ -130,156 +148,251 @@ const ItemCreationForm: React.FC<ItemCreationFormProps> = ({
     }
   };
 
+  const getRarityColor = (rarity: ItemRarity) => {
+    switch (rarity) {
+      case "Common": return "bg-gray-100 text-gray-800";
+      case "Uncommon": return "bg-green-100 text-green-800";
+      case "Rare": return "bg-blue-100 text-blue-800";
+      case "Very Rare": return "bg-purple-100 text-purple-800";
+      case "Legendary": return "bg-orange-100 text-orange-800";
+      case "Artifact": return "bg-red-100 text-red-800";
+      case "Unique": return "bg-yellow-100 text-yellow-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
   return (
-    <form className="item-creation-form" onSubmit={handleSubmit}>
-      <h2>Create New Item</h2>
-
-      {error && <div className="form-error">{error}</div>}
-
-      <div className="form-group">
-        <label htmlFor="name">Item Name:</label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={formData.name || ""}
-          onChange={handleChange}
-          required
-          aria-describedby="name-tooltip"
-        />
-        <div id="name-tooltip" className="tooltip">
-          Enter the name of the item (e.g., "Sword of Life Stealing").
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Items
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Create New Item</h1>
+            <p className="text-muted-foreground">
+              Define a new magical or mundane item for your campaign
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="form-group">
-        <label htmlFor="type">Type:</label>
-        <select
-          id="type"
-          name="type"
-          value={formData.type || ""}
-          onChange={handleChange}
-          required
-          aria-describedby="type-tooltip"
-        >
-          {itemTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-        <div id="type-tooltip" className="tooltip">
-          Select the category of the item (e.g., Weapon, Armor).
-        </div>
-      </div>
+      {/* Error Messages */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-      <div className="form-group">
-        <label htmlFor="rarity">Rarity:</label>
-        <select
-          id="rarity"
-          name="rarity"
-          value={formData.rarity || ""}
-          onChange={handleChange}
-          required
-          aria-describedby="rarity-tooltip"
-        >
-          {itemRarities.map((rarity) => (
-            <option key={rarity} value={rarity}>
-              {rarity}
-            </option>
-          ))}
-        </select>
-        <div id="rarity-tooltip" className="tooltip">
-          Choose the rarity level of the item (e.g., Common, Legendary).
-        </div>
-      </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Basic Information
+            </CardTitle>
+            <CardDescription>
+              Core details about the item
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Item Name *</Label>
+              <Input
+                id="name"
+                name="name"
+                value={formData.name || ""}
+                onChange={handleChange}
+                placeholder="Enter the name of the item (e.g., 'Sword of Life Stealing')"
+                required
+              />
+              <p className="text-sm text-muted-foreground">
+                Enter the name of the item (e.g., "Sword of Life Stealing").
+              </p>
+            </div>
 
-      <div className="form-group">
-        <label htmlFor="description">Description:</label>
-        <textarea
-          id="description"
-          name="description"
-          value={formData.description || ""}
-          onChange={handleChange}
-          required
-          aria-describedby="description-tooltip"
-        ></textarea>
-        <div id="description-tooltip" className="tooltip">
-          Provide a detailed description of the item and its appearance.
-        </div>
-      </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="type">Type *</Label>
+                <Select 
+                  value={formData.type || ""} 
+                  onValueChange={(value) => setFormData({ ...formData, type: value as ItemType })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select item type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {itemTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  Select the category of the item (e.g., Weapon, Armor).
+                </p>
+              </div>
 
-      <div className="form-group">
-        <label htmlFor="effects">Effects/Rules:</label>
-        <textarea
-          id="effects"
-          name="effects"
-          value={formData.effects || ""}
-          onChange={handleChange}
-          aria-describedby="effects-tooltip"
-        ></textarea>
-        <div id="effects-tooltip" className="tooltip">
-          Describe any magical effects, special properties, or rules associated
-          with the item.
-        </div>
-      </div>
+              <div className="space-y-2">
+                <Label htmlFor="rarity">Rarity *</Label>
+                <Select 
+                  value={formData.rarity || ""} 
+                  onValueChange={(value) => setFormData({ ...formData, rarity: value as ItemRarity })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select rarity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {itemRarities.map((rarity) => (
+                      <SelectItem key={rarity} value={rarity}>
+                        <div className="flex items-center gap-2">
+                          <span>{rarity}</span>
+                          <Badge variant="outline" className={getRarityColor(rarity)}>
+                            {rarity}
+                          </Badge>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  Choose the rarity level of the item (e.g., Common, Legendary).
+                </p>
+              </div>
+            </div>
 
-      <div className="form-group">
-        <label htmlFor="weight">Weight (lbs):</label>
-        <input
-          type="number"
-          id="weight"
-          name="weight"
-          value={formData.weight || ""}
-          onChange={handleChange}
-          step="0.1"
-          aria-describedby="weight-tooltip"
-        />
-        <div id="weight-tooltip" className="tooltip">
-          Enter the item's weight in pounds.
-        </div>
-      </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={formData.description || ""}
+                onChange={handleChange}
+                placeholder="Provide a detailed description of the item..."
+                rows={4}
+                required
+              />
+              <p className="text-sm text-muted-foreground">
+                Describe the item's appearance, history, and basic properties.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-      <div className="form-group">
-        <label htmlFor="cost">Cost (cp):</label>
-        <input
-          type="number"
-          id="cost"
-          name="cost"
-          value={formData.cost || ""}
-          onChange={handleChange}
-          aria-describedby="cost-tooltip"
-        />
-        <div id="cost-tooltip" className="tooltip">
-          Enter the item's cost in copper pieces.
-        </div>
-      </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              Effects & Properties
+            </CardTitle>
+            <CardDescription>
+              Magical effects and special properties of the item
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="effects">Magical Effects</Label>
+              <Textarea
+                id="effects"
+                name="effects"
+                value={formData.effects || ""}
+                onChange={handleChange}
+                placeholder="Describe any magical effects, abilities, or special properties..."
+                rows={4}
+              />
+              <p className="text-sm text-muted-foreground">
+                Describe any magical effects, abilities, or special properties the item possesses.
+              </p>
+            </div>
 
-      <div className="form-group checkbox-group">
-        <input
-          type="checkbox"
-          id="attunement"
-          name="attunement"
-          checked={formData.attunement || false}
-          onChange={handleChange}
-          aria-describedby="attunement-tooltip"
-        />
-        <label htmlFor="attunement">Requires Attunement?</label>
-        <div id="attunement-tooltip" className="tooltip">
-          Check if the item requires attunement.
-         flue from the Item creation form.
-        </div>
-      </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="attunement"
+                name="attunement"
+                checked={formData.attunement || false}
+                onCheckedChange={(checked) => setFormData({ ...formData, attunement: checked as boolean })}
+              />
+              <Label htmlFor="attunement" className="text-sm font-normal">
+                Requires Attunement
+              </Label>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Check if this item requires attunement to use its magical properties.
+            </p>
+          </CardContent>
+        </Card>
 
-      <div className="form-actions">
-        <button type="button" onClick={onCancel} disabled={loading}>
-          Cancel
-        </button>
-        <button type="submit" disabled={loading}>
-          {loading ? "Creating..." : "Create Item"}
-        </button>
-      </div>
-    </form>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5" />
+              Physical Properties
+            </CardTitle>
+            <CardDescription>
+              Weight, cost, and other physical characteristics
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="weight">Weight (lbs)</Label>
+                <Input
+                  id="weight"
+                  name="weight"
+                  type="number"
+                  value={formData.weight || ""}
+                  onChange={handleChange}
+                  placeholder="0.0"
+                  step="0.1"
+                  min="0"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Weight in pounds (e.g., 3.5 for a sword).
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cost">Cost (gp)</Label>
+                <Input
+                  id="cost"
+                  name="cost"
+                  type="number"
+                  value={formData.cost || ""}
+                  onChange={handleChange}
+                  placeholder="0"
+                  min="0"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Cost in gold pieces (e.g., 1500 for a rare item).
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Form Actions */}
+        <div className="flex justify-end gap-4 pt-6 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? "Creating Item..." : "Create Item"}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 };
 

@@ -4,7 +4,27 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import "./QuestCreationForm.css";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Alert, AlertDescription } from "./ui/alert";
+import { Checkbox } from "./ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Separator } from "./ui/separator";
+import { 
+  AlertCircle, 
+  ArrowLeft, 
+  BookOpen,
+  MapPin,
+  Users,
+  Package,
+  Gift,
+  Target
+} from "lucide-react";
 
 interface QuestFormData {
   name: string;
@@ -189,218 +209,330 @@ const QuestForm: React.FC<QuestFormProps> = ({
   };
 
   if (!user) {
-    return <div className="loading">Loading user...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading user...</p>
+        </div>
+      </div>
+    );
   }
 
   const isEditing = !!editingQuestId;
 
   return (
-    <div className="quest-creation-form">
-      <div className="form-header">
-        <h1>{isEditing ? "Edit Quest" : "Create New Quest"}</h1>
-        <button className="cancel-btn" onClick={handleCancel}>
-          {returnTo === 'campaign-form' ? "Back to Campaign Form" : "Cancel"}
-        </button>
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={handleCancel}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {returnTo === 'campaign-form' ? "Back to Campaign Form" : "Back to Quests"}
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">
+              {isEditing ? "Edit Quest" : "Create New Quest"}
+            </h1>
+            <p className="text-muted-foreground">
+              {isEditing ? "Update quest details" : "Define a new quest with objectives and rewards"}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="form">
-        {/* Basic Information */}
-        <div className="form-section">
-          <h2>Basic Information</h2>
+      {/* Error Messages */}
+      {errors.submit && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{errors.submit}</AlertDescription>
+        </Alert>
+      )}
 
-          <div className="form-group">
-            <label htmlFor="name">Quest Name *</label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              className={errors.name ? "error" : ""}
-              placeholder="Enter quest name"
-            />
-            {errors.name && <span className="error-message">{errors.name}</span>}
-          </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Tabs defaultValue="basic" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="basic" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Basic Info
+            </TabsTrigger>
+            <TabsTrigger value="participants" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Participants
+            </TabsTrigger>
+            <TabsTrigger value="requirements" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Requirements
+            </TabsTrigger>
+            <TabsTrigger value="rewards" className="flex items-center gap-2">
+              <Gift className="h-4 w-4" />
+              Rewards
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="form-group">
-            <label htmlFor="description">Description</label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Enter quest description"
-              rows={4}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="status">Status</label>
-            <select
-              id="status"
-              name="status"
-              value={formData.status}
-              onChange={handleInputChange}
-            >
-              <option value="NotStarted">Not Started</option>
-              <option value="InProgress">In Progress</option>
-              <option value="Completed">Completed</option>
-              <option value="Failed">Failed</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="locationId">Location</label>
-            <select
-              id="locationId"
-              name="locationId"
-              value={formData.locationId || ""}
-              onChange={handleInputChange}
-            >
-              <option value="">Select a location (optional)</option>
-              {locations?.map((location) => (
-                <option key={location._id} value={location._id}>
-                  {location.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Requirements */}
-        <div className="form-section">
-          <h2>Requirements</h2>
-
-          <div className="form-group">
-            <label>Required Items</label>
-            <div className="multi-select">
-              {items?.map((item) => (
-                <label key={item._id} className="checkbox-item">
-                  <input
-                    type="checkbox"
-                    checked={formData.requiredItemIds.includes(item._id)}
-                    onChange={() => handleMultiSelectChange("requiredItemIds", item._id)}
+          <TabsContent value="basic" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" />
+                  Basic Information
+                </CardTitle>
+                <CardDescription>
+                  Core details about the quest
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Quest Name *</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Enter quest name"
+                    className={errors.name ? "border-destructive" : ""}
                   />
-                  {item.name}
-                </label>
-              ))}
-            </div>
-          </div>
+                  {errors.name && (
+                    <p className="text-sm text-destructive">{errors.name}</p>
+                  )}
+                </div>
 
-          <div className="form-group">
-            <label>Involved NPCs</label>
-            <div className="multi-select">
-              {npcs?.map((npc) => (
-                <label key={npc._id} className="checkbox-item">
-                  <input
-                    type="checkbox"
-                    checked={formData.involvedNpcIds.includes(npc._id)}
-                    onChange={() => handleMultiSelectChange("involvedNpcIds", npc._id)}
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    placeholder="Describe the quest..."
+                    rows={4}
                   />
-                  {npc.name}
-                </label>
-              ))}
-            </div>
-          </div>
+                </div>
 
-          <div className="form-group">
-            <label>Participants</label>
-            <div className="multi-select">
-              {characters?.map((character) => (
-                <label key={character._id} className="checkbox-item">
-                  <input
-                    type="checkbox"
-                    checked={formData.participantIds.includes(character._id)}
-                    onChange={() => handleMultiSelectChange("participantIds", character._id)}
-                  />
-                  {character.name}
-                </label>
-              ))}
-            </div>
-          </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NotStarted">Not Started</SelectItem>
+                        <SelectItem value="InProgress">In Progress</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
+                        <SelectItem value="Failed">Failed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-          <div className="form-group">
-            <label>Interactions</label>
-            <div className="multi-select">
-              {interactions?.map((interaction) => (
-                <label key={interaction._id} className="checkbox-item">
-                  <input
-                    type="checkbox"
-                    checked={formData.interactions.includes(interaction._id)}
-                    onChange={() => handleMultiSelectChange("interactions", interaction._id)}
-                  />
-                  {interaction.name}
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="locationId">Location</Label>
+                    <Select
+                      value={formData.locationId || ""}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, locationId: value || undefined }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a location (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No location</SelectItem>
+                        {locations?.map((location) => (
+                          <SelectItem key={location._id} value={location._id}>
+                            {location.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Rewards */}
-        <div className="form-section">
-          <h2>Rewards</h2>
+          <TabsContent value="participants" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Participants
+                </CardTitle>
+                <CardDescription>
+                  Select characters, NPCs, and interactions involved in this quest
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Player Characters */}
+                <div className="space-y-3">
+                  <Label>Player Characters</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {characters?.map((character) => (
+                      <div key={character._id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`char-${character._id}`}
+                          checked={formData.participantIds.includes(character._id)}
+                          onCheckedChange={() => handleMultiSelectChange("participantIds", character._id)}
+                        />
+                        <Label htmlFor={`char-${character._id}`} className="text-sm cursor-pointer">
+                          {character.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-          <div className="form-group">
-            <label htmlFor="xp">Experience Points</label>
-            <input
-              type="number"
-              id="xp"
-              name="xp"
-              value={formData.rewards.xp || ""}
-              onChange={(e) => handleRewardChange("xp", e.target.value === "" ? undefined : Number(e.target.value))}
-              placeholder="Enter XP reward"
-              min="0"
-            />
-          </div>
+                <Separator />
 
-          <div className="form-group">
-            <label htmlFor="gold">Gold</label>
-            <input
-              type="number"
-              id="gold"
-              name="gold"
-              value={formData.rewards.gold || ""}
-              onChange={(e) => handleRewardChange("gold", e.target.value === "" ? undefined : Number(e.target.value))}
-              placeholder="Enter gold reward"
-              min="0"
-            />
-          </div>
+                {/* NPCs */}
+                <div className="space-y-3">
+                  <Label>Involved NPCs</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {npcs?.map((npc) => (
+                      <div key={npc._id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`npc-${npc._id}`}
+                          checked={formData.involvedNpcIds.includes(npc._id)}
+                          onCheckedChange={() => handleMultiSelectChange("involvedNpcIds", npc._id)}
+                        />
+                        <Label htmlFor={`npc-${npc._id}`} className="text-sm cursor-pointer">
+                          {npc.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-          <div className="form-group">
-            <label>Item Rewards</label>
-            <div className="multi-select">
-              {items?.map((item) => (
-                <label key={item._id} className="checkbox-item">
-                  <input
-                    type="checkbox"
-                    checked={formData.rewards.itemIds?.includes(item._id) || false}
-                    onChange={() => {
-                      const currentItemIds = formData.rewards.itemIds || [];
-                      const newItemIds = currentItemIds.includes(item._id)
-                        ? currentItemIds.filter((id) => id !== item._id)
-                        : [...currentItemIds, item._id];
-                      handleRewardChange("itemIds", newItemIds);
-                    }}
-                  />
-                  {item.name}
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
+                <Separator />
 
-        {errors.submit && (
-          <div className="error-message">{errors.submit}</div>
-        )}
+                {/* Interactions */}
+                <div className="space-y-3">
+                  <Label>Related Interactions</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {interactions?.map((interaction) => (
+                      <div key={interaction._id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`interaction-${interaction._id}`}
+                          checked={formData.interactions.includes(interaction._id)}
+                          onCheckedChange={() => handleMultiSelectChange("interactions", interaction._id)}
+                        />
+                        <Label htmlFor={`interaction-${interaction._id}`} className="text-sm cursor-pointer">
+                          {interaction.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <div className="form-actions">
-          <button
-            type="submit"
-            className="submit-btn"
-            disabled={isSubmitting}
-          >
+          <TabsContent value="requirements" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Requirements
+                </CardTitle>
+                <CardDescription>
+                  Items and conditions required to complete this quest
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <Label>Required Items</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {items?.map((item) => (
+                      <div key={item._id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`item-${item._id}`}
+                          checked={formData.requiredItemIds.includes(item._id)}
+                          onCheckedChange={() => handleMultiSelectChange("requiredItemIds", item._id)}
+                        />
+                        <Label htmlFor={`item-${item._id}`} className="text-sm cursor-pointer">
+                          {item.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="rewards" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Gift className="h-5 w-5" />
+                  Rewards
+                </CardTitle>
+                <CardDescription>
+                  Configure rewards for completing this quest
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="xp">Experience Points</Label>
+                    <Input
+                      id="xp"
+                      type="number"
+                      value={formData.rewards.xp || ""}
+                      onChange={(e) => handleRewardChange("xp", e.target.value ? parseInt(e.target.value) : undefined)}
+                      placeholder="XP reward"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="gold">Gold</Label>
+                    <Input
+                      id="gold"
+                      type="number"
+                      value={formData.rewards.gold || ""}
+                      onChange={(e) => handleRewardChange("gold", e.target.value ? parseInt(e.target.value) : undefined)}
+                      placeholder="Gold reward"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Reward Items</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {items?.map((item) => (
+                      <div key={item._id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`reward-item-${item._id}`}
+                          checked={formData.rewards.itemIds?.includes(item._id) || false}
+                          onCheckedChange={() => {
+                            const currentItems = formData.rewards.itemIds || [];
+                            const newItems = currentItems.includes(item._id)
+                              ? currentItems.filter(id => id !== item._id)
+                              : [...currentItems, item._id];
+                            handleRewardChange("itemIds", newItems);
+                          }}
+                        />
+                        <Label htmlFor={`reward-item-${item._id}`} className="text-sm cursor-pointer">
+                          {item.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Form Actions */}
+        <div className="flex justify-end gap-4">
+          <Button type="button" variant="outline" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Saving..." : (isEditing ? "Update Quest" : "Create Quest")}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

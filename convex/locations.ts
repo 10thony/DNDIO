@@ -118,4 +118,40 @@ export const get = query({
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id);
   },
+});
+
+export const update = mutation({
+  args: {
+    id: v.id("locations"),
+    name: v.optional(v.string()),
+    type: v.optional(v.string()),
+    description: v.optional(v.string()),
+    notableNpcIds: v.optional(v.array(v.id("npcs"))),
+    linkedLocations: v.optional(v.array(v.id("locations"))),
+    interactionsAtLocation: v.optional(v.array(v.id("interactions"))),
+    imageUrls: v.optional(v.array(v.string())),
+    secrets: v.optional(v.string()),
+    mapId: v.optional(v.union(v.id("maps"), v.null())),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...updates } = args;
+    
+    // Only include fields that are provided
+    const updateData: any = {
+      updatedAt: Date.now(),
+    };
+    
+    if (updates.name !== undefined) updateData.name = updates.name;
+    if (updates.type !== undefined) updateData.type = updates.type as LocationType;
+    if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.notableNpcIds !== undefined) updateData.notableNpcIds = updates.notableNpcIds;
+    if (updates.linkedLocations !== undefined) updateData.linkedLocations = updates.linkedLocations;
+    if (updates.interactionsAtLocation !== undefined) updateData.interactionsAtLocation = updates.interactionsAtLocation;
+    if (updates.imageUrls !== undefined) updateData.imageUrls = updates.imageUrls;
+    if (updates.secrets !== undefined) updateData.secrets = updates.secrets;
+    if (updates.mapId !== undefined) updateData.mapId = updates.mapId;
+    
+    await ctx.db.patch(id, updateData);
+    return id;
+  },
 }); 

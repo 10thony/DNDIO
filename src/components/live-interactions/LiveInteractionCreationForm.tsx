@@ -4,7 +4,28 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 import { api } from '../../../convex/_generated/api';
 import { Id } from '../../../convex/_generated/dataModel';
-import './LiveInteractionCreationForm.css';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Alert, AlertDescription } from '../ui/alert';
+import { Checkbox } from '../ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Separator } from '../ui/separator';
+import { 
+  AlertCircle, 
+  ArrowLeft, 
+  Users,
+  MapPin,
+  Target,
+  Package,
+  Gift,
+  Sword,
+  Crown
+} from 'lucide-react';
 
 interface LiveInteractionCreationFormProps {
   campaignId: Id<"campaigns">;
@@ -179,261 +200,352 @@ export const LiveInteractionCreationForm: React.FC<LiveInteractionCreationFormPr
 
   if (!campaign || !playerCharacters || !npcs || !monsters || !locations || !quests || !items) {
     return (
-      <div className="live-interaction-creation-form">
-        <div className="loading">Loading...</div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="live-interaction-creation-form">
-      <div className="form-header">
-        <h2>Create Live Interaction</h2>
-        <p>Set up a new turn-based interaction for your campaign</p>
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={handleCancel}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Campaign
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Create Live Interaction</h1>
+            <p className="text-muted-foreground">
+              Set up a new turn-based interaction for your campaign
+            </p>
+          </div>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="interaction-form">
-        {/* Basic Information */}
-        <div className="form-section">
-          <h3>Basic Information</h3>
-          
-          <div className="form-group">
-            <label htmlFor="name">Interaction Name *</label>
-            <input
-              type="text"
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Enter interaction name"
-              required
-            />
-          </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Tabs defaultValue="basic" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="basic" className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Basic Info
+            </TabsTrigger>
+            <TabsTrigger value="participants" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Participants
+            </TabsTrigger>
+            <TabsTrigger value="context" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Context
+            </TabsTrigger>
+            <TabsTrigger value="rewards" className="flex items-center gap-2">
+              <Gift className="h-4 w-4" />
+              Rewards
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="form-group">
-            <label htmlFor="description">Description</label>
-            <textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Describe the interaction scenario"
-              rows={3}
-            />
-          </div>
-        </div>
+          {/* Basic Information Tab */}
+          <TabsContent value="basic" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Basic Information</CardTitle>
+                <CardDescription>
+                  Core details about the live interaction
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Interaction Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Enter interaction name"
+                    required
+                  />
+                </div>
 
-        {/* Location and Quest Linking */}
-        <div className="form-section">
-          <h3>Location & Quest</h3>
-          
-          <div className="form-group">
-            <label htmlFor="location">Related Location</label>
-            <select
-              id="location"
-              value={formData.relatedLocationId}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                relatedLocationId: e.target.value as Id<"locations"> | '' 
-              }))}
-            >
-              <option value="">Select a location (optional)</option>
-              {campaignLocations.map(location => (
-                <option key={location._id} value={location._id}>
-                  {location.name}
-                </option>
-              ))}
-            </select>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Describe the interaction..."
+                    rows={4}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-          <div className="form-group">
-            <label htmlFor="quest">Related Quest</label>
-            <select
-              id="quest"
-              value={formData.relatedQuestId}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                relatedQuestId: e.target.value as Id<"quests"> | '' 
-              }))}
-            >
-              <option value="">Select a quest (optional)</option>
-              {campaignQuests.map(quest => (
-                <option key={quest._id} value={quest._id}>
-                  {quest.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Participant Selection */}
-        <div className="form-section">
-          <h3>Participants *</h3>
-          <p className="section-description">Select the characters, NPCs, and monsters that will participate in this interaction.</p>
-
-          {/* Player Characters */}
-          <div className="participant-group">
-            <h4>Player Characters ({selectedPlayerCharacters.length} selected)</h4>
-            <div className="participant-list">
-              {campaignPlayerCharacters.length > 0 ? (
-                campaignPlayerCharacters.map(character => (
-                  <div 
-                    key={character._id} 
-                    className={`participant-item ${selectedPlayerCharacters.includes(character._id) ? 'selected' : ''}`}
-                    onClick={() => handlePlayerCharacterToggle(character._id)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedPlayerCharacters.includes(character._id)}
-                      onChange={() => handlePlayerCharacterToggle(character._id)}
-                    />
-                    <div className="participant-info">
-                      <div className="participant-name">{character.name}</div>
-                      <div className="participant-details">
-                        Level {character.level} {character.race} {character.class}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="empty-state">No player characters available in this campaign</div>
-              )}
-            </div>
-          </div>
-
-          {/* NPCs */}
-          <div className="participant-group">
-            <h4>NPCs ({selectedNPCs.length} selected)</h4>
-            <div className="participant-list">
-              {campaignNPCs.length > 0 ? (
-                campaignNPCs.map(npc => (
-                  <div 
-                    key={npc._id} 
-                    className={`participant-item ${selectedNPCs.includes(npc._id) ? 'selected' : ''}`}
-                    onClick={() => handleNPCToggle(npc._id)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedNPCs.includes(npc._id)}
-                      onChange={() => handleNPCToggle(npc._id)}
-                    />
-                    <div className="participant-info">
-                      <div className="participant-name">{npc.name}</div>
-                      <div className="participant-details">
-                        Level {npc.level} {npc.race} {npc.class}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="empty-state">No NPCs available in this campaign</div>
-              )}
-            </div>
-          </div>
-
-          {/* Monsters */}
-          <div className="participant-group">
-            <h4>Monsters ({selectedMonsters.length} selected)</h4>
-            <div className="participant-list">
-              {campaignMonsters.length > 0 ? (
-                campaignMonsters.map(monster => (
-                  <div 
-                    key={monster._id} 
-                    className={`participant-item ${selectedMonsters.includes(monster._id) ? 'selected' : ''}`}
-                    onClick={() => handleMonsterToggle(monster._id)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedMonsters.includes(monster._id)}
-                      onChange={() => handleMonsterToggle(monster._id)}
-                    />
-                    <div className="participant-info">
-                      <div className="participant-name">{monster.name}</div>
-                      <div className="participant-details">
-                        CR {monster.challengeRating} • {monster.type}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="empty-state">No monsters available in this campaign</div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Rewards Configuration */}
-        <div className="form-section">
-          <h3>Rewards</h3>
-          <p className="section-description">Configure rewards that will be distributed when the interaction is completed.</p>
-
-          {/* Reward Items */}
-          <div className="reward-group">
-            <h4>Reward Items ({rewardItems.length} selected)</h4>
-            <div className="reward-list">
-              {items.length > 0 ? (
-                items.map(item => (
-                  <div 
-                    key={item._id} 
-                    className={`reward-item ${rewardItems.includes(item._id) ? 'selected' : ''}`}
-                    onClick={() => handleRewardItemToggle(item._id)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={rewardItems.includes(item._id)}
-                      onChange={() => handleRewardItemToggle(item._id)}
-                    />
-                    <div className="reward-info">
-                      <div className="reward-name">{item.name}</div>
-                      <div className="reward-details">
-                        {item.rarity} • {item.type}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="empty-state">No items available</div>
-              )}
-            </div>
-          </div>
-
-          {/* XP Awards */}
-          {selectedPlayerCharacters.length > 0 && (
-            <div className="reward-group">
-              <h4>Experience Points</h4>
-              <div className="xp-awards">
-                {selectedPlayerCharacters.map(characterId => {
-                  const character = campaignPlayerCharacters.find(c => c._id === characterId);
-                  const xpAward = xpAwards.find(award => award.playerCharacterId === characterId);
-                  
-                  return character ? (
-                    <div key={characterId} className="xp-award-item">
-                      <label htmlFor={`xp-${characterId}`}>
-                        {character.name}:
-                      </label>
-                      <input
-                        type="number"
-                        id={`xp-${characterId}`}
-                        value={xpAward?.xp || 0}
-                        onChange={(e) => handleXpAwardChange(characterId, parseInt(e.target.value) || 0)}
-                        min="0"
-                        placeholder="0"
+          {/* Participants Tab */}
+          <TabsContent value="participants" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Player Characters
+                </CardTitle>
+                <CardDescription>
+                  Select player characters participating in this interaction
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {campaignPlayerCharacters.map((character) => (
+                    <div key={character._id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`character-${character._id}`}
+                        checked={selectedPlayerCharacters.includes(character._id)}
+                        onCheckedChange={() => handlePlayerCharacterToggle(character._id)}
                       />
-                      <span className="xp-label">XP</span>
+                      <Label 
+                        htmlFor={`character-${character._id}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {character.name}
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          Level {character.level}
+                        </Badge>
+                      </Label>
                     </div>
-                  ) : null;
-                })}
-              </div>
-            </div>
-          )}
-        </div>
+                  ))}
+                </div>
+                {campaignPlayerCharacters.length === 0 && (
+                  <div className="text-center py-8">
+                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No player characters available for this campaign</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="h-5 w-5" />
+                  NPCs
+                </CardTitle>
+                <CardDescription>
+                  Select NPCs involved in this interaction
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {campaignNPCs.map((npc) => (
+                    <div key={npc._id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`npc-${npc._id}`}
+                        checked={selectedNPCs.includes(npc._id)}
+                        onCheckedChange={() => handleNPCToggle(npc._id)}
+                      />
+                      <Label 
+                        htmlFor={`npc-${npc._id}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {npc.name}
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          Level {npc.level}
+                        </Badge>
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                {campaignNPCs.length === 0 && (
+                  <div className="text-center py-8">
+                    <Crown className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No NPCs available for this campaign</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sword className="h-5 w-5" />
+                  Monsters
+                </CardTitle>
+                <CardDescription>
+                  Select monsters involved in this interaction
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {campaignMonsters.map((monster) => (
+                    <div key={monster._id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`monster-${monster._id}`}
+                        checked={selectedMonsters.includes(monster._id)}
+                        onCheckedChange={() => handleMonsterToggle(monster._id)}
+                      />
+                      <Label 
+                        htmlFor={`monster-${monster._id}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {monster.name}
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          CR {monster.challengeRating}
+                        </Badge>
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                {campaignMonsters.length === 0 && (
+                  <div className="text-center py-8">
+                    <Sword className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No monsters available for this campaign</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Context Tab */}
+          <TabsContent value="context" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Location & Quest Context
+                </CardTitle>
+                <CardDescription>
+                  Associate this interaction with a location or quest
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="relatedLocationId">Related Location</Label>
+                  <Select 
+                    value={formData.relatedLocationId} 
+                    onValueChange={(value) => setFormData({ ...formData, relatedLocationId: value as Id<"locations"> })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a location (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No location</SelectItem>
+                      {campaignLocations.map((location) => (
+                        <SelectItem key={location._id} value={location._id}>
+                          {location.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="relatedQuestId">Related Quest</Label>
+                  <Select 
+                    value={formData.relatedQuestId} 
+                    onValueChange={(value) => setFormData({ ...formData, relatedQuestId: value as Id<"quests"> })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a quest (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No quest</SelectItem>
+                      {campaignQuests.map((quest) => (
+                        <SelectItem key={quest._id} value={quest._id}>
+                          {quest.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Rewards Tab */}
+          <TabsContent value="rewards" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Reward Items
+                </CardTitle>
+                <CardDescription>
+                  Select items that will be rewarded upon completion
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {items.map((item) => (
+                    <div key={item._id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`reward-item-${item._id}`}
+                        checked={rewardItems.includes(item._id)}
+                        onCheckedChange={() => handleRewardItemToggle(item._id)}
+                      />
+                      <Label 
+                        htmlFor={`reward-item-${item._id}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {item.name}
+                        {item.rarity && (
+                          <Badge variant="outline" className="ml-2 text-xs">
+                            {item.rarity}
+                          </Badge>
+                        )}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Gift className="h-5 w-5" />
+                  Experience Points
+                </CardTitle>
+                <CardDescription>
+                  Award experience points to participating characters
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {campaignPlayerCharacters.map((character) => (
+                    <div key={character._id} className="flex items-center space-x-4">
+                      <Label className="min-w-[120px]">{character.name}</Label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        min="0"
+                        className="w-24"
+                        value={xpAwards.find(a => a.playerCharacterId === character._id)?.xp || ''}
+                        onChange={(e) => handleXpAwardChange(character._id, parseInt(e.target.value) || 0)}
+                      />
+                      <span className="text-sm text-muted-foreground">XP</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Form Actions */}
-        <div className="form-actions">
-          <button type="button" onClick={handleCancel} className="btn-secondary">
+        <div className="flex justify-end gap-4 pt-6 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+          >
             Cancel
-          </button>
-          <button type="submit" className="btn-primary">
+          </Button>
+          <Button
+            type="submit"
+          >
             Create Live Interaction
-          </button>
+          </Button>
         </div>
       </form>
     </div>

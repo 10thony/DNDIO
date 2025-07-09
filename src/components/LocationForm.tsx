@@ -8,7 +8,28 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
 import { useRoleAccess } from "../hooks/useRoleAccess";
 import { MapPreview } from "./maps/MapPreview";
-import "./LocationForm.css";
+import { MapCard } from "./maps/MapCard";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Alert, AlertDescription } from "./ui/alert";
+import { Checkbox } from "./ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Separator } from "./ui/separator";
+import { 
+  AlertCircle, 
+  ArrowLeft, 
+  MapPin,
+  Users,
+  Link as LinkIcon,
+  Eye,
+  Plus,
+  Map
+} from "lucide-react";
 
 interface LocationFormProps {
   onSubmitSuccess?: () => void;
@@ -37,19 +58,42 @@ export default function LocationForm({ onSubmitSuccess, onCancel }: LocationForm
     mapId: undefined as Id<"maps"> | undefined,
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const selectedMap = formData.mapId ? maps.find(m => m._id === formData.mapId) : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!userId) {
-      console.error("No user ID available");
+      setErrors({ general: "No user ID available" });
       return;
     }
+
+    // Validate required fields
+    const newErrors: Record<string, string> = {};
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+    }
+    if (!formData.description.trim()) {
+      newErrors.description = "Description is required";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrors({});
+
     try {
       await createLocation({
         ...formData,
         clerkId: userId,
       });
+      
       // Reset form
       setFormData({
         name: "",
@@ -78,6 +122,9 @@ export default function LocationForm({ onSubmitSuccess, onCancel }: LocationForm
       onSubmitSuccess?.();
     } catch (error) {
       console.error("Error creating location:", error);
+      setErrors({ general: "Failed to create location. Please try again." });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -86,153 +133,248 @@ export default function LocationForm({ onSubmitSuccess, onCancel }: LocationForm
       navigate("/campaigns/new?refresh=true");
     } else if (onCancel) {
       onCancel();
+    } else {
+      navigate("/locations");
     }
   };
 
+  const handleNpcToggle = (npcId: Id<"npcs">) => {
+    setFormData(prev => ({
+      ...prev,
+      notableNpcIds: prev.notableNpcIds.includes(npcId)
+        ? prev.notableNpcIds.filter(id => id !== npcId)
+        : [...prev.notableNpcIds, npcId]
+    }));
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="location-form">
-      <h2 className="location-form-title">Create New Location</h2>
-      
-      <div className="form-section">
-        <h3 className="form-section-title">Basic Information</h3>
-        
-
-
-        <div className="form-group">
-          <label className="form-label">Name</label>
-          <input
-            type="text"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="form-input"
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Type</label>
-          <select
-            value={formData.type}
-            onChange={(e) => setFormData({ ...formData, type: e.target.value as LocationType })}
-            className="form-select"
-            required
-          >
-            {locationTypes.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Description</label>
-          <textarea
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="form-textarea"
-            rows={4}
-            required
-          />
-        </div>
-      </div>
-
-      <div className="form-section">
-        <h3 className="form-section-title">Additional Details</h3>
-        
-        <div className="form-group">
-          <label className="form-label">Notable NPCs</label>
-          <select
-            multiple
-            value={formData.notableNpcIds}
-            onChange={(e) => {
-              const selected = Array.from(e.target.selectedOptions, option => option.value as Id<"npcs">);
-              setFormData({ ...formData, notableNpcIds: selected });
-            }}
-            className="form-select"
-          >
-            {npcs.map((npc: any) => (
-              <option key={npc._id} value={npc._id}>
-                {npc.name}
-              </option>
-            ))}
-          </select>
-          <div className="form-helper">Hold Ctrl/Cmd to select multiple NPCs</div>
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Secrets</label>
-          <textarea
-            value={formData.secrets}
-            onChange={(e) => setFormData({ ...formData, secrets: e.target.value })}
-            className="form-textarea"
-            rows={3}
-            placeholder="Any hidden information or secrets about this location..."
-          />
-        </div>
-      </div>
-
-      <div className="form-section">
-        <h3 className="form-section-title">Map Association</h3>
-        
-        <div className="form-group">
-          <label className="form-label">Map</label>
-          <div className="map-selection-group">
-            <select
-              value={formData.mapId || ""}
-              onChange={(e) => setFormData({ ...formData, mapId: e.target.value ? (e.target.value as Id<"maps">) : undefined })}
-              className="form-select map-select"
-            >
-              <option value="">Select a map (optional)</option>
-              {maps.map((map) => (
-                <option key={map._id} value={map._id}>
-                  {map.name}
-                </option>
-              ))}
-            </select>
-            <Link
-              to="/maps/new?returnTo=location-form"
-              className="create-map-btn"
-            >
-              Create New Map
-            </Link>
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={handleCancel}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Locations
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Create New Location</h1>
+            <p className="text-muted-foreground">
+              Define a new location for your campaign world
+            </p>
           </div>
         </div>
-
-        {selectedMap && (
-          <div className="map-preview-section">
-            <h4 className="form-subsection-title">Selected Map Preview</h4>
-            <div className="map-preview-container">
-              <div className="flex justify-center items-center p-4">
-                <MapPreview map={selectedMap} />
-              </div>
-              <div className="map-info">
-                <p><strong>{selectedMap.name}</strong></p>
-                <p>Dimensions: {selectedMap.width} × {selectedMap.height}</p>
-                <p>Last Updated: {new Date(selectedMap.updatedAt).toLocaleDateString()}</p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      <div className="form-actions">
-        <button
-          type="submit"
-          className="btn-primary"
-        >
-          Create Location
-        </button>
-        {onCancel && (
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="btn-secondary"
-          >
-            {returnTo === 'campaign-form' ? "Back to Campaign Form" : "Cancel"}
-          </button>
-        )}
-      </div>
-    </form>
+      {/* Error Messages */}
+      {errors.general && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{errors.general}</AlertDescription>
+        </Alert>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Tabs defaultValue="basic" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="basic" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Basic Info
+            </TabsTrigger>
+            <TabsTrigger value="details" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Details
+            </TabsTrigger>
+            <TabsTrigger value="map" className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              Map
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="basic" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Basic Information
+                </CardTitle>
+                <CardDescription>
+                  Core details about the location
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Enter location name"
+                    className={errors.name ? "border-destructive" : ""}
+                  />
+                  {errors.name && (
+                    <p className="text-sm text-destructive">{errors.name}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="type">Type *</Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value) => setFormData({ ...formData, type: value as LocationType })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select location type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locationTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description *</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Describe the location..."
+                    rows={4}
+                    className={errors.description ? "border-destructive" : ""}
+                  />
+                  {errors.description && (
+                    <p className="text-sm text-destructive">{errors.description}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="details" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Additional Details
+                </CardTitle>
+                <CardDescription>
+                  Notable NPCs and hidden information
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Notable NPCs</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {npcs.map((npc: any) => (
+                      <div key={npc._id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`npc-${npc._id}`}
+                          checked={formData.notableNpcIds.includes(npc._id)}
+                          onCheckedChange={() => handleNpcToggle(npc._id)}
+                        />
+                        <Label htmlFor={`npc-${npc._id}`} className="text-sm cursor-pointer">
+                          {npc.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Select NPCs that are associated with this location
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label htmlFor="secrets">Secrets</Label>
+                  <Textarea
+                    id="secrets"
+                    value={formData.secrets}
+                    onChange={(e) => setFormData({ ...formData, secrets: e.target.value })}
+                    placeholder="Any hidden information or secrets about this location..."
+                    rows={3}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Hidden information that players might discover
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="map" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Map className="h-5 w-5" />
+                  Available Maps
+                </CardTitle>
+                <CardDescription>
+                  Select a map to associate with this location for visual reference
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {maps.length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {maps.map((map) => (
+                        <MapCard
+                          key={map._id}
+                          map={map}
+                          isSelected={formData.mapId === map._id}
+                          onSelect={(mapId) => setFormData({ 
+                            ...formData, 
+                            mapId: formData.mapId === mapId ? undefined : mapId 
+                          })}
+                        />
+                      ))}
+                    </div>
+                    
+                    {formData.mapId && (
+                      <div className="space-y-2">
+                        <Label>Selected Map Preview</Label>
+                        <div className="border rounded-md p-4 bg-white dark:bg-gray-800">
+                          <MapPreview map={selectedMap!} />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Map className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium mb-2">No maps created yet</p>
+                    <p className="text-sm mb-4">
+                      Create your first map to associate with locations
+                    </p>
+                  </div>
+                )}
+                
+                <div className="flex justify-center">
+                  <Button asChild variant="outline">
+                    <Link to="/maps/new?returnTo=location-form">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create New Map
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Form Actions */}
+        <div className="flex justify-end gap-4">
+          <Button type="button" variant="outline" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Location"}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 } 

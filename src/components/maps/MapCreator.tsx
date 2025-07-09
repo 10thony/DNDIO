@@ -1,3 +1,4 @@
+// MapCreator's preview is now responsive and dark mode aware, with overflow handling and max-width for better usability.
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
@@ -151,8 +152,8 @@ export const MapCreator = ({ userId, mapId, onMapCreated }: MapCreatorProps) => 
           
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Preview</h3>
-            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-              <div className="flex justify-center">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg w-full max-w-full overflow-auto flex justify-center">
+              <div className="flex justify-center w-full">
                 <MapPreview 
                   map={previewMap} 
                   cellSize={30}
@@ -214,7 +215,7 @@ export const MapCreator = ({ userId, mapId, onMapCreated }: MapCreatorProps) => 
         </button>
       </div>
 
-      <div className="overflow-auto border rounded-lg">
+      <div className="overflow-auto border rounded-lg bg-white dark:bg-gray-800">
         <div className="p-4">
           <MapPreview 
             map={map} 
