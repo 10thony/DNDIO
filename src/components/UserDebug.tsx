@@ -7,7 +7,7 @@ import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Separator } from "./ui/separator";
 import { Button } from "./ui/button";
-import { ChevronUp, ChevronDown, User, Shield } from "lucide-react";
+import { ChevronUp, ChevronDown, Shield } from "lucide-react";
 
 export const UserDebug: React.FC = () => {
   const { user, isSignedIn } = useUser();

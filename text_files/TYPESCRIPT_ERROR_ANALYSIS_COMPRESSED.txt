@@ -1,0 +1,48 @@
+# TypeScript Error Analysis - Compressed Context
+
+## Error Summary
+Netlify build failing with 37 TypeScript errors across 15 files. Build script returns exit code 2.
+
+## Primary Error Categories
+
+### 1. Type Incompatibility (TS2322) - 8 errors
+- Function parameter type mismatches between Id<"npcs"> and Id<"playerCharacters">
+- Files affected: InteractionDetail.tsx:906, EnemyNPCsSection.tsx:215, NPCsSection.tsx:214, PlayerCharactersSection.tsx:214
+
+### 2. Unused Declarations (TS6133) - 15 errors
+- Unused imports: useNavigate, User, CharacterType, useState, Eye
+- Unused variables: navigateToDetail, errors, environmentOptions, parentField, childField, value, returnTo, X
+- Files affected: InteractionList.tsx:3, UserDebug.tsx:10, NPCsSection.tsx:36, PlayerCharactersSection.tsx:36, NPCCreationModal.tsx (multiple lines)
+
+### 3. Missing Properties (TS2339) - 12 errors
+- Properties don't exist on user object type: name, race, class, background, alignment, level, hitPoints, armorClass, proficiencyBonus, abilityScores, skills, savingThrows, proficiencies, traits, languages, equipment
+- File affected: NPCCreationModal.tsx:125-142
+
+### 4. Comparison Errors (TS2367) - 2 errors
+- Unintentional comparisons in LiveInteractionDashboard.tsx:122-123
+
+## Root Causes
+
+1. **Type System Mismatch**: NPCCreationModal onSuccess callback expects union type but handlers expect specific types
+2. **Query Return Type Issues**: getCharacterOrNpcById returning wrong object type
+3. **Unused Code**: Legacy imports and variables from refactoring
+4. **Type Assumptions**: Treating character objects as user objects
+
+## Key Files Requiring Changes
+
+1. src/components/InteractionDetail.tsx - Function signature updates
+2. src/components/campaigns/subsections/*.tsx - Handler function updates
+3. src/components/modals/NPCCreationModal.tsx - Type handling and unused code removal
+4. convex/characters.ts - Query return type fixes
+5. src/components/InteractionList.tsx - Remove unused imports
+6. src/components/UserDebug.tsx - Remove unused imports
+7. src/components/live-interactions/LiveInteractionDashboard.tsx - Fix comparison operators
+
+## Implementation Priority
+
+1. **High Priority**: Type incompatibility fixes (blocking deployment)
+2. **Medium Priority**: Missing property errors (core functionality)
+3. **Low Priority**: Unused declarations (code cleanup)
+4. **Low Priority**: Comparison errors (potential bugs)
+
+## Estimated Fix Time: 6-8 hours 

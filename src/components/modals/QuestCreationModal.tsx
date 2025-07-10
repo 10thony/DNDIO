@@ -23,7 +23,7 @@ import {
 } from "../ui/dialog";
 import { 
   AlertCircle, 
-  X, 
+  // X, 
   BookOpen,
   MapPin,
   Users,
@@ -62,7 +62,7 @@ const QuestCreationModal: React.FC<QuestCreationModalProps> = ({
   onClose,
   onQuestCreated,
   campaignId,
-  returnTo
+  // returnTo
 }) => {
   const { user } = useUser();
   

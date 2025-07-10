@@ -8,6 +8,7 @@ import { Zap, Brain, Heart, Eye, Shield, MessageSquare } from "lucide-react";
 
 const AbilityScoresTab: React.FC<CharacterFormProps> = ({
   formData,
+  // setField,
   setNestedField,
   errors,
   isReadOnly = false,

@@ -8,7 +8,8 @@ import { FileText } from "lucide-react";
 const DescriptionTab: React.FC<CharacterFormProps> = ({
   formData,
   setField,
-  errors,
+  // setNestedField,
+  // errors,
   isReadOnly = false,
 }) => {
   const renderDescriptionField = () => {

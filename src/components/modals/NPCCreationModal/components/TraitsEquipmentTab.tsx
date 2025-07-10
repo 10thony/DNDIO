@@ -8,7 +8,8 @@ import { Package, Languages, Sword } from "lucide-react";
 const TraitsEquipmentTab: React.FC<CharacterFormProps> = ({
   formData,
   setField,
-  errors,
+  // setNestedField,
+  // errors,
   isReadOnly = false,
 }) => {
   const languageOptions = [

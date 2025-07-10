@@ -9,6 +9,7 @@ import { Shield, Heart } from "lucide-react";
 const StatsCombatTab: React.FC<CharacterFormProps> = ({
   formData,
   setField,
+  // setNestedField,
   errors,
   isReadOnly = false,
 }) => {

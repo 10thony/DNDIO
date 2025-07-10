@@ -6,7 +6,7 @@ import { Id } from "../../../../convex/_generated/dataModel";
 import { useCollapsibleSection } from "../../../hooks/useCollapsibleSection";
 import { useNavigationState } from "../../../hooks/useNavigationState";
 import EntitySelectionModal from "../../modals/EntitySelectionModal";
-import NPCCreationModal from "../../modals/NPCCreationModal";
+import { NPCCreationModal } from "../../modals/NPCCreationModal";
 import "./EnemyNPCsSection.css";
 
 interface EnemyNPCsSectionProps {
@@ -79,9 +79,15 @@ const EnemyNPCsSection: React.FC<EnemyNPCsSectionProps> = ({
     closeModal();
   };
 
-  const handleNPCCreated = async (npcId: Id<"npcs">) => {
+  const handleNPCCreated = async (characterId: Id<"npcs"> | Id<"playerCharacters">) => {
     if (!user?.id) {
       alert("You must be logged in to perform this action.");
+      return;
+    }
+    
+    // Only handle NPCs, not player characters
+    if (characterId.__tableName !== "npcs") {
+      alert("Only NPCs can be added as enemy NPCs.");
       return;
     }
     
@@ -90,7 +96,7 @@ const EnemyNPCsSection: React.FC<EnemyNPCsSectionProps> = ({
       await updateCampaign({ 
         id: campaignId,
         clerkId: user.id,
-        npcIds: [...currentNpcs, npcId] 
+        npcIds: [...currentNpcs, characterId] 
       });
       onUpdate();
       alert("NPC created and linked successfully!");

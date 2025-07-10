@@ -10,7 +10,7 @@ import { Languages, Sword, Zap, Crown } from "lucide-react";
 const TraitsActionsTab: React.FC<MonsterFormProps> = ({
   formData,
   setField,
-  errors,
+  // errors,
 }) => {
   const addTrait = () => {
     const newTraits = [...formData.traits, { name: "", description: "" }];

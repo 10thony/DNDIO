@@ -10,11 +10,7 @@ import { MapPin, Castle, Mountain, TreePine } from "lucide-react";
 const EnvironmentTab: React.FC<MonsterFormProps> = ({
   formData,
   setField,
-  errors,
 }) => {
-  const environmentOptions = [
-    "Arctic", "Coastal", "Desert", "Forest", "Grassland", "Hill", "Mountain", "Swamp", "Underdark", "Underwater", "Urban"
-  ];
 
   const addLairAction = () => {
     const newLairActions = [...formData.lairActions, { name: "", description: "" }];

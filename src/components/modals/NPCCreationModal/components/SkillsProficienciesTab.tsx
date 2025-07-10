@@ -8,7 +8,8 @@ import { Award, Shield, BookOpen } from "lucide-react";
 const SkillsProficienciesTab: React.FC<CharacterFormProps> = ({
   formData,
   setField,
-  errors,
+  // setNestedField,
+  // errors,
   isReadOnly = false,
 }) => {
   const skillOptions = [

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../../convex/_generated/api";
@@ -15,7 +15,7 @@ import {
   FileText,
   Loader2,
   Save,
-  Eye,
+  // Eye,
   Edit
 } from "lucide-react";
 import { CharacterFormData, CharacterType } from "./NPCCreationModal/types/npcForm";
@@ -121,25 +121,25 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
   // Populate form with character data when viewing existing character
   useEffect(() => {
     if (isOpen && character && isReadOnly) {
-      // Check if character has the expected structure
-      if (character.name && character.race && character.class) {
+      // Type guard to ensure we have a character object with the expected properties
+      if (character && typeof character === 'object' && 'name' in character && 'race' in character && 'class' in character) {
         const characterData: Partial<CharacterFormData> = {
-          name: character.name,
-          race: character.race,
-          class: character.class,
-          background: character.background,
-          alignment: character.alignment || "",
-          level: character.level,
-          hitPoints: character.hitPoints,
-          armorClass: character.armorClass,
-          proficiencyBonus: character.proficiencyBonus,
-          abilityScores: character.abilityScores,
-          skills: character.skills,
-          savingThrows: character.savingThrows,
-          proficiencies: character.proficiencies,
-          traits: character.traits || [],
-          languages: character.languages || [],
-          equipment: character.equipment || [],
+          name: character.name as string,
+          race: character.race as string,
+          class: character.class as string,
+          background: character.background as string,
+          alignment: character.alignment as string || "",
+          level: character.level as number,
+          hitPoints: character.hitPoints as number,
+          armorClass: character.armorClass as number,
+          proficiencyBonus: character.proficiencyBonus as number,
+          abilityScores: character.abilityScores as any,
+          skills: character.skills as string[],
+          savingThrows: character.savingThrows as string[],
+          proficiencies: character.proficiencies as string[],
+          traits: character.traits as string[] || [],
+          languages: character.languages as string[] || [],
+          equipment: character.equipment as string[] || [],
         };
         populateForm(characterData);
         
@@ -246,11 +246,11 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
         <BasicInfoTab
           formData={formData}
           setField={setField}
+          setNestedField={setNestedField}
           errors={errors}
           isReadOnly={isReadOnly}
-          characterType={characterType} setNestedField={function (parentField: keyof CharacterFormData, childField: string, value: any): void {
-            throw new Error("Function not implemented.");
-          } }        />
+          characterType={characterType}
+        />
       ),
     },
     {
@@ -261,11 +261,11 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
         <StatsCombatTab
           formData={formData}
           setField={setField}
+          setNestedField={setNestedField}
           errors={errors}
           isReadOnly={isReadOnly}
-          characterType={characterType} setNestedField={function (parentField: keyof CharacterFormData, childField: string, value: any): void {
-            throw new Error("Function not implemented.");
-          } }        />
+          characterType={characterType}
+        />
       ),
     },
     {
@@ -275,12 +275,12 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
       content: (
         <AbilityScoresTab
           formData={formData}
+          setField={setField}
           setNestedField={setNestedField}
           errors={errors}
           isReadOnly={isReadOnly}
-          characterType={characterType} setField={function (field: keyof CharacterFormData, value: any): void {
-            throw new Error("Function not implemented.");
-          } }        />
+          characterType={characterType}
+        />
       ),
     },
     {
@@ -291,11 +291,11 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
         <SkillsProficienciesTab
           formData={formData}
           setField={setField}
+          setNestedField={setNestedField}
           errors={errors}
           isReadOnly={isReadOnly}
-          characterType={characterType} setNestedField={function (parentField: keyof CharacterFormData, childField: string, value: any): void {
-            throw new Error("Function not implemented.");
-          } }        />
+          characterType={characterType}
+        />
       ),
     },
     {
@@ -306,11 +306,11 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
         <TraitsEquipmentTab
           formData={formData}
           setField={setField}
+          setNestedField={setNestedField}
           errors={errors}
           isReadOnly={isReadOnly}
-          characterType={characterType} setNestedField={function (parentField: keyof CharacterFormData, childField: string, value: any): void {
-            throw new Error("Function not implemented.");
-          } }        />
+          characterType={characterType}
+        />
       ),
     },
     {
@@ -321,11 +321,11 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
         <DescriptionTab
           formData={formData}
           setField={setField}
+          setNestedField={setNestedField}
           errors={errors}
           isReadOnly={isReadOnly}
-          characterType={characterType} setNestedField={function (parentField: keyof CharacterFormData, childField: string, value: any): void {
-            throw new Error("Function not implemented.");
-          } }        />
+          characterType={characterType}
+        />
       ),
     },
   ];

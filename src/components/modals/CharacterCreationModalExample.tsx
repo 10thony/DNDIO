@@ -3,7 +3,7 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Id } from "../../../convex/_generated/dataModel";
 import CharacterCreationModal, { NPCCreationModal } from "./NPCCreationModal";
-import { CharacterFormData, CharacterType } from "./NPCCreationModal/types/npcForm";
+import { CharacterFormData } from "./NPCCreationModal/types/npcForm";
 
 const CharacterCreationModalExample: React.FC = () => {
   const [isNPCCreationOpen, setIsNPCCreationOpen] = useState(false);

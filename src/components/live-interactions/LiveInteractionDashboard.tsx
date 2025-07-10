@@ -119,8 +119,8 @@ export const LiveInteractionDashboard: React.FC<LiveInteractionDashboardProps> =
               <div className="flex items-center space-x-2 mt-2">
                 <span className="text-sm text-muted-foreground">Status:</span>
                 <Badge variant={
-                  activeInteraction.status === 'ACTIVE' ? 'default' :
-                  activeInteraction.status === 'PAUSED' ? 'secondary' :
+                  activeInteraction.status === 'WAITING_FOR_PLAYER_TURN' ? 'default' :
+                  activeInteraction.status === 'DM_REVIEW' ? 'secondary' :
                   activeInteraction.status === 'COMPLETED' ? 'outline' : 'destructive'
                 }>
                   {activeInteraction.status?.replace(/_/g, ' ')}

@@ -10,6 +10,7 @@ import { User, Users, } from "lucide-react";
 const BasicInfoTab: React.FC<CharacterFormProps> = ({
   formData,
   setField,
+  // setNestedField,
   errors,
   isReadOnly = false,
   characterType,

@@ -196,14 +196,14 @@ const InteractionDetail: React.FC<InteractionDetailProps> = ({ interactionId }) 
     closeModal();
   };
 
-  const handleNPCCreated = async (npcId: Id<"npcs">) => {
+  const handleNPCCreated = async (characterId: Id<"npcs"> | Id<"playerCharacters">) => {
     if (!interaction) return;
 
     try {
       const currentNpcs = interaction.npcIds || [];
       await updateInteraction({ 
         id: interactionId, 
-        npcIds: [...currentNpcs, npcId] 
+        npcIds: [...currentNpcs, characterId as Id<"npcs">] 
       });
       alert("NPC created and linked successfully!");
     } catch (error) {

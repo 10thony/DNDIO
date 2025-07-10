@@ -4,7 +4,7 @@ import { useUser } from "@clerk/clerk-react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { useCollapsibleSection } from "../../../hooks/useCollapsibleSection";
-import { useNavigationState } from "../../../hooks/useNavigationState";
+// import { useNavigationState } from "../../../hooks/useNavigationState";
 import EntitySelectionModal from "../../modals/EntitySelectionModal";
 import NPCCreationModal from "../../modals/NPCCreationModal";
 import "./NPCsSection.css";
@@ -33,7 +33,7 @@ const NPCsSection: React.FC<NPCsSectionProps> = ({
     `npcs-${campaignId}`,
     false
   );
-  const { navigateToDetail } = useNavigationState();
+  // const { navigateToDetail } = useNavigationState();
 
   const npcs = useQuery(api.npcs.getAllNpcs);
   const updateCampaign = useMutation(api.campaigns.updateCampaign);
@@ -77,7 +77,7 @@ const NPCsSection: React.FC<NPCsSectionProps> = ({
     closeModal();
   };
 
-  const handleNPCCreated = async (npcId: Id<"npcs">) => {
+  const handleNPCCreated = async (characterId: Id<"npcs"> | Id<"playerCharacters">) => {
     if (!user?.id) {
       alert("You must be logged in to perform this action.");
       return;
@@ -88,7 +88,7 @@ const NPCsSection: React.FC<NPCsSectionProps> = ({
       await updateCampaign({ 
         id: campaignId,
         clerkId: user.id,
-        npcIds: [...currentNpcs, npcId] 
+        npcIds: [...currentNpcs, characterId as Id<"npcs">] 
       });
       onUpdate();
       alert("NPC created and linked successfully!");
