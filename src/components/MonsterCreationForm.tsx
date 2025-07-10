@@ -13,7 +13,6 @@ import { Textarea } from "./ui/textarea";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Alert, AlertDescription } from "./ui/alert";
-import { Separator } from "./ui/separator";
 import { AlertCircle, CheckCircle, ArrowLeft, Plus, X } from "lucide-react";
 
 interface MonsterCreationFormProps {
@@ -218,13 +217,19 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
   };
 
   const handleNestedChange = (parentField: keyof MonsterFormData, childField: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [parentField]: {
-        ...prev[parentField],
-        [childField]: value,
-      },
-    }));
+    setFormData(prev => {
+      const parentValue = prev[parentField];
+      if (typeof parentValue === 'object' && parentValue !== null) {
+        return {
+          ...prev,
+          [parentField]: {
+            ...parentValue,
+            [childField]: value,
+          },
+        };
+      }
+      return prev;
+    });
     
     if (validationAttempted && errors.length > 0) {
       setErrors([]);
@@ -288,7 +293,15 @@ const MonsterCreationForm: React.FC<MonsterCreationFormProps> = ({
           ...formData,
         });
       } else {
-        await createMonster(formData);
+        // Ensure clerkId is a string before submitting
+        const { clerkId, ...monsterDataWithoutClerkId } = formData;
+        if (!user?.id) {
+          throw new Error("User ID is required");
+        }
+        await createMonster({
+          ...monsterDataWithoutClerkId,
+          clerkId: user.id
+        });
       }
 
       setShowSuccessMessage(true);

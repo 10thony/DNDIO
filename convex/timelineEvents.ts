@@ -1,9 +1,9 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { MutationCtx, QueryCtx } from "./_generated/server";
 
 export const createTimelineEvent = mutation({
   args: {
-    campaignId: v.id("campaigns"),
     title: v.string(),
     description: v.string(),
     date: v.number(),
@@ -18,43 +18,49 @@ export const createTimelineEvent = mutation({
         v.literal("Custom")
       )
     ),
-    relatedLocationIds: v.optional(v.array(v.id("locations"))),
-    relatedNpcIds: v.optional(v.array(v.id("npcs"))),
-    relatedFactionIds: v.optional(v.array(v.id("factions"))),
-    relatedQuestIds: v.optional(v.array(v.id("quests"))),
     clerkId: v.string(),
   },
-  handler: async (ctx, args) => {
-    // Get user ID from clerkId
+  handler: async (ctx: MutationCtx, args) => {
+    // Get the user ID from clerkId
     const user = await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("clerkId"), args.clerkId))
       .first();
-    
+
     if (!user) {
       throw new Error("User not found");
     }
 
-    const { clerkId, ...eventData } = args;
+    // Create the timeline event
     const timelineEventId = await ctx.db.insert("timelineEvents", {
-      ...eventData,
+      title: args.title,
+      description: args.description,
+      date: args.date,
+      type: args.type,
       userId: user._id,
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      // Optional fields
+      campaignId: null as any, // Will be set when added to campaign
+      relatedLocationIds: [],
+      relatedNpcIds: [],
+      relatedFactionIds: [],
+      relatedQuestIds: [],
     });
+
     return timelineEventId;
   },
 });
 
 export const getAllTimelineEvents = query({
-  handler: async (ctx) => {
+  handler: async (ctx: QueryCtx) => {
     return await ctx.db.query("timelineEvents").order("desc").collect();
   },
 });
 
 export const getTimelineEventsByCampaign = query({
   args: { campaignId: v.id("campaigns") },
-  handler: async (ctx, args) => {
+  handler: async (ctx: QueryCtx, args) => {
     return await ctx.db
       .query("timelineEvents")
       .filter((q) => q.eq(q.field("campaignId"), args.campaignId))
@@ -65,7 +71,7 @@ export const getTimelineEventsByCampaign = query({
 
 export const getTimelineEventById = query({
   args: { id: v.id("timelineEvents") },
-  handler: async (ctx, args) => {
+  handler: async (ctx: QueryCtx, args) => {
     return await ctx.db.get(args.id);
   },
 });
@@ -113,14 +119,14 @@ export const addLocationsToTimelineEvent = mutation({
     id: v.id("timelineEvents"),
     locationIds: v.array(v.id("locations")),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx: MutationCtx, args) => {
     const timelineEvent = await ctx.db.get(args.id);
     if (!timelineEvent) {
       throw new Error("Timeline event not found");
     }
 
     const currentLocations = timelineEvent.relatedLocationIds || [];
-    const updatedLocations = [...new Set([...currentLocations, ...args.locationIds])];
+    const updatedLocations = Array.from(new Set([...currentLocations, ...args.locationIds]));
 
     await ctx.db.patch(args.id, {
       relatedLocationIds: updatedLocations,
@@ -134,14 +140,14 @@ export const addNpcsToTimelineEvent = mutation({
     id: v.id("timelineEvents"),
     npcIds: v.array(v.id("npcs")),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx: MutationCtx, args) => {
     const timelineEvent = await ctx.db.get(args.id);
     if (!timelineEvent) {
       throw new Error("Timeline event not found");
     }
 
     const currentNpcs = timelineEvent.relatedNpcIds || [];
-    const updatedNpcs = [...new Set([...currentNpcs, ...args.npcIds])];
+    const updatedNpcs = Array.from(new Set([...currentNpcs, ...args.npcIds]));
 
     await ctx.db.patch(args.id, {
       relatedNpcIds: updatedNpcs,
@@ -155,14 +161,14 @@ export const addFactionsToTimelineEvent = mutation({
     id: v.id("timelineEvents"),
     factionIds: v.array(v.id("factions")),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx: MutationCtx, args) => {
     const timelineEvent = await ctx.db.get(args.id);
     if (!timelineEvent) {
       throw new Error("Timeline event not found");
     }
 
     const currentFactions = timelineEvent.relatedFactionIds || [];
-    const updatedFactions = [...new Set([...currentFactions, ...args.factionIds])];
+    const updatedFactions = Array.from(new Set([...currentFactions, ...args.factionIds]));
 
     await ctx.db.patch(args.id, {
       relatedFactionIds: updatedFactions,
@@ -176,14 +182,14 @@ export const addQuestsToTimelineEvent = mutation({
     id: v.id("timelineEvents"),
     questIds: v.array(v.id("quests")),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx: MutationCtx, args) => {
     const timelineEvent = await ctx.db.get(args.id);
     if (!timelineEvent) {
       throw new Error("Timeline event not found");
     }
 
     const currentQuests = timelineEvent.relatedQuestIds || [];
-    const updatedQuests = [...new Set([...currentQuests, ...args.questIds])];
+    const updatedQuests = Array.from(new Set([...currentQuests, ...args.questIds]));
 
     await ctx.db.patch(args.id, {
       relatedQuestIds: updatedQuests,

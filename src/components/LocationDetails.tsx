@@ -5,7 +5,6 @@ import { Id } from "../../convex/_generated/dataModel";
 import { useAuth } from "@clerk/clerk-react";
 import { MapPreview } from "./maps/MapPreview";
 import { MapCard } from "./maps/MapCard";
-import BackToCampaign from "./BackToCampaign";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";

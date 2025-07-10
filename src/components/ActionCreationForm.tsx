@@ -8,7 +8,6 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Checkbox } from "./ui/checkbox";
@@ -18,13 +17,8 @@ import {
   AlertCircle, 
   ArrowLeft, 
   BookOpen,
-  Zap,
   Shield,
-  Sparkles,
-  Sword,
-  Clock,
-  MapPin,
-  Timer
+  Sparkles
 } from "lucide-react";
 
 interface ActionCreationFormProps {
@@ -160,19 +154,19 @@ const ActionCreationForm: React.FC<ActionCreationFormProps> = ({
     }));
   };
 
-  const getActionTypeIcon = (type: string) => {
-    switch (type) {
-      case "SPELL":
-        return <Sparkles className="h-4 w-4" />;
-      case "CLASS_FEATURE":
-        return <Shield className="h-4 w-4" />;
-      case "MELEE_ATTACK":
-      case "RANGED_ATTACK":
-        return <Sword className="h-4 w-4" />;
-      default:
-        return <Zap className="h-4 w-4" />;
-    }
-  };
+  // const getActionTypeIcon = (type: string) => {
+  //   switch (type) {
+  //     case "SPELL":
+  //       return <Sparkles className="h-4 w-4" />;
+  //     case "CLASS_FEATURE":
+  //       return <Shield className="h-4 w-4" />;
+  //     case "MELEE_ATTACK":
+  //     case "RANGED_ATTACK":
+  //       return <Sword className="h-4 w-4" />;
+  //     default:
+  //       return <Zap className="h-4 w-4" />;
+  //   }
+  // };
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">

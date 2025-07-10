@@ -11,12 +11,9 @@ import { Textarea } from '../ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Alert, AlertDescription } from '../ui/alert';
 import { Checkbox } from '../ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Separator } from '../ui/separator';
 import { 
-  AlertCircle, 
   ArrowLeft, 
   Users,
   MapPin,
@@ -45,8 +42,8 @@ export const LiveInteractionCreationForm: React.FC<LiveInteractionCreationFormPr
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    relatedLocationId: '' as Id<"locations"> | '',
-    relatedQuestId: '' as Id<"quests"> | '',
+    relatedLocationId: null as Id<"locations"> | null,
+    relatedQuestId: null as Id<"quests"> | null,
   });
 
   // Participant selection
@@ -121,13 +118,10 @@ export const LiveInteractionCreationForm: React.FC<LiveInteractionCreationFormPr
         description: formData.description || undefined,
         clerkId: user.id,
         campaignId: campaignId,
-
         relatedQuestId: formData.relatedQuestId || undefined,
         playerCharacterIds: selectedPlayerCharacters,
         npcIds: selectedNPCs,
         monsterIds: selectedMonsters,
-        // rewardItemIds: rewardItems,
-        // xpAwards: xpAwards,
       });
 
       console.log('Live interaction created:', interactionId);
@@ -422,14 +416,17 @@ export const LiveInteractionCreationForm: React.FC<LiveInteractionCreationFormPr
                 <div className="space-y-2">
                   <Label htmlFor="relatedLocationId">Related Location</Label>
                   <Select 
-                    value={formData.relatedLocationId} 
-                    onValueChange={(value) => setFormData({ ...formData, relatedLocationId: value as Id<"locations"> })}
+                    value={formData.relatedLocationId || "none"} 
+                    onValueChange={(value) => setFormData({ 
+                      ...formData, 
+                      relatedLocationId: value === "none" ? null : value as Id<"locations"> 
+                    })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a location (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No location</SelectItem>
+                      <SelectItem value="none">No location</SelectItem>
                       {campaignLocations.map((location) => (
                         <SelectItem key={location._id} value={location._id}>
                           {location.name}
@@ -442,14 +439,17 @@ export const LiveInteractionCreationForm: React.FC<LiveInteractionCreationFormPr
                 <div className="space-y-2">
                   <Label htmlFor="relatedQuestId">Related Quest</Label>
                   <Select 
-                    value={formData.relatedQuestId} 
-                    onValueChange={(value) => setFormData({ ...formData, relatedQuestId: value as Id<"quests"> })}
+                    value={formData.relatedQuestId || "none"} 
+                    onValueChange={(value) => setFormData({ 
+                      ...formData, 
+                      relatedQuestId: value === "none" ? null : value as Id<"quests"> 
+                    })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a quest (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No quest</SelectItem>
+                      <SelectItem value="none">No quest</SelectItem>
                       {campaignQuests.map((quest) => (
                         <SelectItem key={quest._id} value={quest._id}>
                           {quest.name}

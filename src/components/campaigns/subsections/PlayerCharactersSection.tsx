@@ -6,6 +6,7 @@ import { Id } from "../../../../convex/_generated/dataModel";
 import { useCollapsibleSection } from "../../../hooks/useCollapsibleSection";
 import { useNavigationState } from "../../../hooks/useNavigationState";
 import EntitySelectionModal from "../../modals/EntitySelectionModal";
+import NPCCreationModal from "../../modals/NPCCreationModal";
 import "./PlayerCharactersSection.css";
 
 interface PlayerCharactersSectionProps {
@@ -16,7 +17,7 @@ interface PlayerCharactersSectionProps {
   canUnlink?: boolean;
 }
 
-type ModalType = "entitySelection" | null;
+type ModalType = "entitySelection" | "characterCreation" | "characterView" | null;
 
 const PlayerCharactersSection: React.FC<PlayerCharactersSectionProps> = ({
   campaignId,
@@ -27,6 +28,7 @@ const PlayerCharactersSection: React.FC<PlayerCharactersSectionProps> = ({
 }) => {
   const { user } = useUser();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [selectedCharacterId, setSelectedCharacterId] = useState<Id<"playerCharacters"> | Id<"npcs"> | null>(null);
   const { isCollapsed, toggleCollapsed } = useCollapsibleSection(
     `player-characters-${campaignId}`,
     false
@@ -44,8 +46,13 @@ const PlayerCharactersSection: React.FC<PlayerCharactersSectionProps> = ({
     setActiveModal("entitySelection");
   };
 
+  const openCharacterCreation = () => {
+    setActiveModal("characterCreation");
+  };
+
   const closeModal = () => {
     setActiveModal(null);
+    setSelectedCharacterId(null);
   };
 
   const handleEntitySelect = async (entityId: Id<any>) => {
@@ -65,6 +72,29 @@ const PlayerCharactersSection: React.FC<PlayerCharactersSectionProps> = ({
     } catch (error) {
       console.error("Error linking player character:", error);
       alert("Failed to link player character. Please try again.");
+    }
+    
+    closeModal();
+  };
+
+  const handleCharacterCreated = async (characterId: Id<"playerCharacters">) => {
+    if (!user?.id) {
+      alert("You must be logged in to perform this action.");
+      return;
+    }
+    
+    try {
+      const currentChars = playerCharacterIds || [];
+      await updateCampaign({ 
+        id: campaignId,
+        clerkId: user.id,
+        participantPlayerCharacterIds: [...currentChars, characterId] 
+      });
+      onUpdate();
+      alert("Player character created and linked successfully!");
+    } catch (error) {
+      console.error("Error linking player character:", error);
+      alert("Player character created but failed to link. You can link it manually.");
     }
     
     closeModal();
@@ -91,7 +121,9 @@ const PlayerCharactersSection: React.FC<PlayerCharactersSectionProps> = ({
   };
 
   const handleCharacterClick = (characterId: Id<"playerCharacters">) => {
-    navigateToDetail(`/characters/${characterId}?campaignId=${campaignId}`);
+    // Open the character in read-only mode in the modal
+    setSelectedCharacterId(characterId);
+    setActiveModal("characterView");
   };
 
   return (
@@ -109,12 +141,20 @@ const PlayerCharactersSection: React.FC<PlayerCharactersSectionProps> = ({
         </div>
         <div className="header-actions" onClick={(e) => e.stopPropagation()}>
           {canAdd && (
-            <button 
-              className="add-button"
-              onClick={openEntitySelection}
-            >
-              + Add Character
-            </button>
+            <>
+              <button 
+                className="add-button"
+                onClick={openEntitySelection}
+              >
+                + Link Character
+              </button>
+              <button 
+                className="add-button"
+                onClick={openCharacterCreation}
+              >
+                + Create Character
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -164,6 +204,28 @@ const PlayerCharactersSection: React.FC<PlayerCharactersSectionProps> = ({
           entityType="playerCharacters"
           title="Link Player Character"
           currentLinkedIds={playerCharacterIds}
+        />
+      )}
+
+      {activeModal === "characterCreation" && (
+        <NPCCreationModal
+          isOpen={true}
+          onClose={closeModal}
+          onSuccess={handleCharacterCreated}
+          characterType="PlayerCharacter"
+          campaignId={campaignId}
+        />
+      )}
+
+      {activeModal === "characterView" && selectedCharacterId && (
+        <NPCCreationModal
+          isOpen={true}
+          onClose={closeModal}
+          onSuccess={() => {}} // No action needed for view mode
+          characterType="PlayerCharacter"
+          isReadOnly={true}
+          characterId={selectedCharacterId}
+          campaignId={campaignId}
         />
       )}
     </div>

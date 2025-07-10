@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import {  useSearchParams, Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -22,7 +22,6 @@ const QuestList: React.FC = () => {
   const quests = useQuery(api.quests.getAllQuests);
   const deleteQuest = useMutation(api.quests.deleteQuest);
   const generateSampleQuests = useMutation(api.quests.generateSampleQuests);
-  const navigate = useNavigate();
 
   // Check if we should show creation form based on query parameter
   useEffect(() => {
@@ -141,9 +140,10 @@ const QuestList: React.FC = () => {
     return (
       <div className="quest-list">
         <QuestForm
+          mode={editingQuest ? 'edit' : 'create'}
+          editingQuestId={editingQuest}
           onSubmitSuccess={handleSubmitSuccess}
           onCancel={handleCancel}
-          editingQuestId={editingQuest}
         />
       </div>
     );

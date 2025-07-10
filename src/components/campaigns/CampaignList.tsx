@@ -275,17 +275,6 @@ const CampaignList: React.FC = () => {
                       >
                         📖 View Details
                       </button>
-                      {(isAdmin || campaign.dmId === user?.id) && (
-                        <button
-                          className="edit-button secondary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/campaigns/${campaign._id}/edit`);
-                          }}
-                        >
-                          ✏️ Edit Campaign
-                        </button>
-                      )}
                       <AdminOnly>
                         <button
                           className="delete-button danger"

@@ -71,7 +71,6 @@ const TimelineSection: React.FC<TimelineSectionProps> = ({
 
     try {
       const eventId = await createTimelineEvent({
-        campaignId,
         title: formData.title,
         description: formData.description,
         date: formData.date,

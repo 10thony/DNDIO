@@ -16,7 +16,7 @@ import { Progress } from "../ui/progress";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Checkbox } from "../ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Separator } from "../ui/separator";
+import QuestCreationModal from "../modals/QuestCreationModal";
 import { 
   AlertCircle, 
   CheckCircle, 
@@ -58,14 +58,14 @@ const CampaignCreationForm: React.FC = () => {
     title: string;
     description: string;
     date: number;
-    type: string;
+    type: "Custom" | "Battle" | "Alliance" | "Discovery" | "Disaster" | "Political" | "Cultural";
   }>>([]);
   const [isAddingTimelineEvent, setIsAddingTimelineEvent] = useState(false);
   const [newTimelineEvent, setNewTimelineEvent] = useState({
     title: "",
     description: "",
     date: new Date().getTime(),
-    type: "Custom",
+    type: "Custom" as "Custom" | "Battle" | "Alliance" | "Discovery" | "Disaster" | "Political" | "Cultural",
   });
 
   // Player characters
@@ -78,6 +78,7 @@ const CampaignCreationForm: React.FC = () => {
 
   // Quests
   const [selectedQuests, setSelectedQuests] = useState<string[]>([]);
+  const [isQuestModalOpen, setIsQuestModalOpen] = useState(false);
   const quests = useQuery(api.quests.getAllQuests);
 
   // Locations
@@ -256,12 +257,13 @@ const CampaignCreationForm: React.FC = () => {
         description: formData.description,
         worldSetting: formData.worldSetting,
         isPublic: formData.isPublic,
-        playerCharacterIds: selectedPlayerCharacters,
-        npcIds: selectedNPCs,
-        questIds: selectedQuests,
-        locationIds: selectedLocations,
-        bossMonsterIds: selectedBossMonsters,
-        clerkId: user!.id,
+        participantPlayerCharacterIds: selectedPlayerCharacters as Id<"playerCharacters">[],
+        npcIds: selectedNPCs as Id<"npcs">[],
+        questIds: selectedQuests as Id<"quests">[],
+        locationIds: selectedLocations as Id<"locations">[],
+        monsterIds: selectedBossMonsters as Id<"monsters">[],
+        creatorId: convexUser!._id,
+        dmId: user!.id,
       });
 
       // Create timeline events and add them to campaign
@@ -312,6 +314,12 @@ const CampaignCreationForm: React.FC = () => {
 
   const navigateToCreateMonster = () => {
     navigate("/monsters/new?returnTo=campaign-form");
+  };
+
+  const handleQuestCreated = (questId: Id<"quests">) => {
+    // Add the newly created quest to the selected quests
+    setSelectedQuests(prev => [...prev, questId]);
+    setIsQuestModalOpen(false);
   };
 
   const navigateToEditCharacter = (characterId: string) => {
@@ -809,15 +817,26 @@ const CampaignCreationForm: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={navigateToCreateQuest}
-                  className="w-full"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create New Quest
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsQuestModalOpen(true)}
+                    className="flex-1"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Quest
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={navigateToCreateQuest}
+                    className="flex-1"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Quest (Full Page)
+                  </Button>
+                </div>
 
                 {quests && quests.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1081,6 +1100,14 @@ const CampaignCreationForm: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Quest Creation Modal */}
+      <QuestCreationModal
+        isOpen={isQuestModalOpen}
+        onClose={() => setIsQuestModalOpen(false)}
+        onQuestCreated={handleQuestCreated}
+        returnTo="campaign-form"
+      />
     </div>
   );
 };

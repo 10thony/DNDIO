@@ -17,7 +17,7 @@ interface NPCsSectionProps {
   canUnlink?: boolean;
 }
 
-type ModalType = "entitySelection" | "npcCreation" | null;
+type ModalType = "entitySelection" | "npcCreation" | "characterView" | null;
 
 const NPCsSection: React.FC<NPCsSectionProps> = ({
   campaignId,
@@ -28,6 +28,7 @@ const NPCsSection: React.FC<NPCsSectionProps> = ({
 }) => {
   const { user } = useUser();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [selectedCharacterId, setSelectedCharacterId] = useState<Id<"playerCharacters"> | Id<"npcs"> | null>(null);
   const { isCollapsed, toggleCollapsed } = useCollapsibleSection(
     `npcs-${campaignId}`,
     false
@@ -51,6 +52,7 @@ const NPCsSection: React.FC<NPCsSectionProps> = ({
 
   const closeModal = () => {
     setActiveModal(null);
+    setSelectedCharacterId(null);
   };
 
   const handleEntitySelect = async (entityId: Id<any>) => {
@@ -119,7 +121,9 @@ const NPCsSection: React.FC<NPCsSectionProps> = ({
   };
 
   const handleNPCClick = (npcId: Id<"npcs">) => {
-    navigateToDetail(`/npcs/${npcId}?campaignId=${campaignId}`);
+    // Open the NPC in read-only mode in the modal
+    setSelectedCharacterId(npcId);
+    setActiveModal("characterView");
   };
 
   return (
@@ -208,6 +212,20 @@ const NPCsSection: React.FC<NPCsSectionProps> = ({
           isOpen={true}
           onClose={closeModal}
           onSuccess={handleNPCCreated}
+          characterType="NonPlayerCharacter"
+          campaignId={campaignId}
+        />
+      )}
+
+      {activeModal === "characterView" && selectedCharacterId && (
+        <NPCCreationModal
+          isOpen={true}
+          onClose={closeModal}
+          onSuccess={() => {}} // No action needed for view mode
+          characterType="NonPlayerCharacter"
+          isReadOnly={true}
+          characterId={selectedCharacterId}
+          campaignId={campaignId}
         />
       )}
     </div>

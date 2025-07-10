@@ -22,7 +22,6 @@ import {
   MapPin,
   Users,
   Package,
-  Target,
   Link,
   CheckSquare
 } from "lucide-react";
@@ -412,14 +411,14 @@ const QuestTaskCreationForm: React.FC = () => {
                 <div className="space-y-2">
                   <Label htmlFor="locationId">Location</Label>
                   <Select 
-                    value={formData.locationId || ""} 
-                    onValueChange={(value) => handleInputChange({ target: { name: 'locationId', value } } as any)}
+                    value={formData.locationId || "none"} 
+                    onValueChange={(value) => handleInputChange({ target: { name: 'locationId', value: value === "none" ? "" : value } } as any)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a location (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No location</SelectItem>
+                      <SelectItem value="none">No location</SelectItem>
                       {locations?.map((location: any) => (
                         <SelectItem key={location._id} value={location._id}>
                           {location.name}
@@ -432,14 +431,14 @@ const QuestTaskCreationForm: React.FC = () => {
                 <div className="space-y-2">
                   <Label htmlFor="targetNpcId">Target NPC</Label>
                   <Select 
-                    value={formData.targetNpcId || ""} 
-                    onValueChange={(value) => handleInputChange({ target: { name: 'targetNpcId', value } } as any)}
+                    value={formData.targetNpcId || "none"} 
+                    onValueChange={(value) => handleInputChange({ target: { name: 'targetNpcId', value: value === "none" ? "" : value } } as any)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a target NPC (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No target NPC</SelectItem>
+                      <SelectItem value="none">No target NPC</SelectItem>
                       {npcs?.map((npc: any) => (
                         <SelectItem key={npc._id} value={npc._id}>
                           {npc.name}

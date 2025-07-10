@@ -2,7 +2,6 @@ import React from 'react';
 import { PlayerCharacterAction } from '../types/dndRules';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { Separator } from './ui/separator';
 
 interface ActionProps {
   action: PlayerCharacterAction;

@@ -8,7 +8,6 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Checkbox } from "./ui/checkbox";
@@ -19,11 +18,7 @@ import {
   ArrowLeft, 
   Users,
   MapPin,
-  Target,
-  Package,
-  Gift,
-  Sword,
-  Crown
+  Target
 } from "lucide-react";
 
 interface InteractionCreationFormProps {
@@ -208,7 +203,7 @@ const InteractionCreationForm: React.FC<InteractionCreationFormProps> = ({
               Context
             </TabsTrigger>
             <TabsTrigger value="rewards" className="flex items-center gap-2">
-              <Gift className="h-4 w-4" />
+              {/* Removed Gift icon */}
               Rewards
             </TabsTrigger>
           </TabsList>
@@ -344,14 +339,14 @@ const InteractionCreationForm: React.FC<InteractionCreationFormProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="questId">Associated Quest</Label>
                   <Select
-                    value={formData.questId}
-                    onValueChange={(value) => handleInputChange("questId", value)}
+                    value={formData.questId || "none"}
+                    onValueChange={(value) => handleInputChange("questId", value === "none" ? "" : value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a quest (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No quest</SelectItem>
+                      <SelectItem value="none">No quest</SelectItem>
                       {quests?.map((quest) => (
                         <SelectItem key={quest._id} value={quest._id}>
                           {quest.name}
@@ -364,15 +359,15 @@ const InteractionCreationForm: React.FC<InteractionCreationFormProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="questTaskId">Associated Quest Task</Label>
                   <Select
-                    value={formData.questTaskId}
-                    onValueChange={(value) => handleInputChange("questTaskId", value)}
+                    value={formData.questTaskId || "none"}
+                    onValueChange={(value) => handleInputChange("questTaskId", value === "none" ? "" : value)}
                     disabled={!formData.questId}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={formData.questId ? "Select a task (optional)" : "Select a quest first"} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No task</SelectItem>
+                      <SelectItem value="none">No task</SelectItem>
                       {filteredQuestTasks.map((task) => (
                         <SelectItem key={task._id} value={task._id}>
                           {task.title}
@@ -389,7 +384,7 @@ const InteractionCreationForm: React.FC<InteractionCreationFormProps> = ({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Gift className="h-5 w-5" />
+                  {/* Removed Gift icon */}
                   Rewards
                 </CardTitle>
                 <CardDescription>
@@ -398,7 +393,7 @@ const InteractionCreationForm: React.FC<InteractionCreationFormProps> = ({
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center py-8 text-muted-foreground">
-                  <Gift className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  {/* Removed Gift icon */}
                   <p>Reward configuration coming soon...</p>
                   <p className="text-sm">This feature will allow you to set XP, gold, and item rewards.</p>
                 </div>

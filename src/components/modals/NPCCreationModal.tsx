@@ -1,166 +1,181 @@
-import React, { useState } from "react";
-import { useMutation } from "convex/react";
+import React, { useState, useEffect } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import "./NPCCreationModal.css";
+import { BaseModal, FormTabs, LoadingSpinner, ErrorDisplay } from "./shared";
+import { Button } from "../ui/button";
+import { Separator } from "../ui/separator";
+import { 
+  User,
+  Shield,
+  Zap,
+  Award,
+  Package,
+  FileText,
+  Loader2,
+  Save,
+  Eye,
+  Edit
+} from "lucide-react";
+import { CharacterFormData, CharacterType } from "./NPCCreationModal/types/npcForm";
+import { useCharacterForm } from "./NPCCreationModal/hooks/useNPCForm";
+import { useCharacterValidation } from "./NPCCreationModal/hooks/useNPCValidation";
+import BasicInfoTab from "./NPCCreationModal/components/BasicInfoTab";
+import StatsCombatTab from "./NPCCreationModal/components/StatsCombatTab";
+import AbilityScoresTab from "./NPCCreationModal/components/AbilityScoresTab";
+import SkillsProficienciesTab from "./NPCCreationModal/components/SkillsProficienciesTab";
+import TraitsEquipmentTab from "./NPCCreationModal/components/TraitsEquipmentTab";
+import DescriptionTab from "./NPCCreationModal/components/DescriptionTab";
 
-interface NPCCreationModalProps {
+interface CharacterCreationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (npcId: Id<"npcs">) => void;
+  onSuccess: (characterId: Id<"npcs"> | Id<"playerCharacters">) => void;
+  characterType?: CharacterType;
+  isReadOnly?: boolean;
+  initialData?: Partial<CharacterFormData>;
+  title?: string;
+  description?: string;
+  characterId?: Id<"npcs"> | Id<"playerCharacters">;
+  campaignId?: Id<"campaigns">;
 }
 
-interface NPCFormData {
-  name: string;
-  race: string;
-  class: string;
-  background: string;
-  alignment: string;
-  level: number;
-  hitPoints: number;
-  armorClass: number;
-  proficiencyBonus: number;
-  abilityScores: {
-    strength: number;
-    dexterity: number;
-    constitution: number;
-    intelligence: number;
-    wisdom: number;
-    charisma: number;
-  };
-  skills: string[];
-  savingThrows: string[];
-  proficiencies: string[];
-  traits: string[];
-  languages: string[];
-  equipment: string[];
-  description: string;
-}
-
-const NPCCreationModal: React.FC<NPCCreationModalProps> = ({
+const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
+  characterType = "NonPlayerCharacter",
+  isReadOnly = false,
+  initialData,
+  title,
+  description,
+  characterId,
+  campaignId,
 }) => {
   const { user } = useUser();
   const createNPC = useMutation(api.npcs.createNpc);
+  const createPlayerCharacter = useMutation(api.characters.createPlayerCharacter);
   
-  const [formData, setFormData] = useState<NPCFormData>({
-    name: "",
-    race: "",
-    class: "",
-    background: "",
-    alignment: "",
-    level: 1,
-    hitPoints: 10,
-    armorClass: 10,
-    proficiencyBonus: 2,
-    abilityScores: {
-      strength: 10,
-      dexterity: 10,
-      constitution: 10,
-      intelligence: 10,
-      wisdom: 10,
-      charisma: 10,
-    },
-    skills: [],
-    savingThrows: [],
-    proficiencies: [],
-    traits: [],
-    languages: [],
-    equipment: [],
-    description: "",
-  });
+  // Get character data if viewing an existing character
+  const character = useQuery(
+    api.characters.getCharacterOrNpcById,
+    characterId ? { id: characterId } : "skip"
+  );
+  
+  // Get campaign data for ownership checks
+  const campaign = useQuery(
+    api.campaigns.getCampaignById,
+    campaignId ? { id: campaignId, clerkId: user?.id } : "skip"
+  );
+  
+  // Get user role for admin checks
+  const userRole = useQuery(
+    api.users.getUserRole,
+    user?.id ? { clerkId: user.id } : "skip"
+  );
+  
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  const {
+    formData,
+    setField,
+    setNestedField,
+    reset,
+    isSubmitting,
+    setIsSubmitting,
+    populateForm
+  } = useCharacterForm();
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const {
+    errors,
+    validateForm,
+    clearErrors,
+    setErrors
+  } = useCharacterValidation(formData);
 
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
+  // Check if user can edit this character
+  const canEditCharacter = () => {
+    if (!user?.id) return false;
+    
+    // Admins can edit everything
+    if (userRole === "admin") return true;
+    
+    // If we have character data, check if user is the creator
+    // For now, we'll allow DM to edit any character in their campaign
+    if (character && campaign && campaign.dmId === user.id) {
+      return true;
     }
+    
+    return false;
   };
 
-  const handleAbilityScoreChange = (ability: string, value: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      abilityScores: {
-        ...prev.abilityScores,
-        [ability]: value,
-      },
-    }));
-  };
-
-  const handleArrayChange = (field: keyof NPCFormData, value: string) => {
-    // const currentArray = formData[field] as string[];
-    const newArray = value.split(',').map(item => item.trim()).filter(item => item);
-    setFormData((prev) => ({
-      ...prev,
-      [field]: newArray,
-    }));
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "NPC name is required";
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      reset();
+      clearErrors();
     }
+  }, [isOpen, reset, clearErrors]);
 
-    if (!formData.race.trim()) {
-      newErrors.race = "Race is required";
+  // Populate form with character data when viewing existing character
+  useEffect(() => {
+    if (isOpen && character && isReadOnly) {
+      // Check if character has the expected structure
+      if (character.name && character.race && character.class) {
+        const characterData: Partial<CharacterFormData> = {
+          name: character.name,
+          race: character.race,
+          class: character.class,
+          background: character.background,
+          alignment: character.alignment || "",
+          level: character.level,
+          hitPoints: character.hitPoints,
+          armorClass: character.armorClass,
+          proficiencyBonus: character.proficiencyBonus,
+          abilityScores: character.abilityScores,
+          skills: character.skills,
+          savingThrows: character.savingThrows,
+          proficiencies: character.proficiencies,
+          traits: character.traits || [],
+          languages: character.languages || [],
+          equipment: character.equipment || [],
+        };
+        populateForm(characterData);
+        
+        // Update character type based on the actual character data
+        if (character._table) {
+          // The character type is determined by which table it came from
+          // This is handled by the parent component passing the correct characterType
+        }
+      }
     }
+  }, [isOpen, character, isReadOnly, populateForm]);
 
-    if (!formData.class.trim()) {
-      newErrors.class = "Class is required";
+  // Populate form with initial data when provided
+  useEffect(() => {
+    if (isOpen && initialData && !character) {
+      populateForm(initialData);
     }
-
-    if (!formData.background.trim()) {
-      newErrors.background = "Background is required";
-    }
-
-    if (formData.level < 1) {
-      newErrors.level = "Level must be at least 1";
-    }
-
-    if (formData.hitPoints < 1) {
-      newErrors.hitPoints = "Hit points must be at least 1";
-    }
-
-    if (formData.armorClass < 1) {
-      newErrors.armorClass = "Armor class must be at least 1";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  }, [isOpen, initialData, character, populateForm]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm() || !user) {
+    if (isReadOnly || !validateForm() || !user) {
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const npcData = {
+      const characterData = {
         name: formData.name.trim(),
         race: formData.race.trim(),
         class: formData.class.trim(),
         background: formData.background.trim(),
         alignment: formData.alignment.trim(),
-        characterType: "NonPlayerCharacter" as const,
+        characterType,
         level: formData.level,
         experiencePoints: 0,
         hitPoints: formData.hitPoints,
@@ -174,271 +189,209 @@ const NPCCreationModal: React.FC<NPCCreationModalProps> = ({
         languages: formData.languages,
         equipment: formData.equipment,
         actions: [] as Id<"actions">[],
+        clerkId: user.id,
       };
 
-      const npcId = await createNPC({
-        ...npcData,
-        clerkId: user!.id,
-      });
-      onSuccess(npcId);
-      handleClose();
+      let characterId: Id<"npcs"> | Id<"playerCharacters">;
+      
+      if (characterType === "NonPlayerCharacter") {
+        characterId = await createNPC(characterData);
+      } else {
+        characterId = await createPlayerCharacter(characterData);
+      }
+      
+      onSuccess(characterId);
+      onClose();
     } catch (error) {
-      console.error("Error creating NPC:", error);
-      setErrors({ submit: "Failed to create NPC. Please try again." });
+      console.error("Error creating character:", error);
+      setErrors({ submit: "Failed to create character. Please try again." });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleClose = () => {
-    setFormData({
-      name: "",
-      race: "",
-      class: "",
-      background: "",
-      alignment: "",
-      level: 1,
-      hitPoints: 10,
-      armorClass: 10,
-      proficiencyBonus: 2,
-      abilityScores: {
-        strength: 10,
-        dexterity: 10,
-        constitution: 10,
-        intelligence: 10,
-        wisdom: 10,
-        charisma: 10,
-      },
-      skills: [],
-      savingThrows: [],
-      proficiencies: [],
-      traits: [],
-      languages: [],
-      equipment: [],
-      description: "",
-    });
-    setErrors({});
-    setIsSubmitting(false);
+  const handleCancel = () => {
     onClose();
   };
 
-  if (!isOpen) return null;
+  const handleEdit = () => {
+    // Switch to edit mode by closing and reopening in edit mode
+    onClose();
+    // The parent component should handle reopening in edit mode
+    // For now, we'll just close and let the parent handle it
+  };
+
+  if (!user) {
+    return null;
+  }
+
+  const getModalTitle = () => {
+    if (title) return title;
+    if (isReadOnly) return `View ${characterType === "PlayerCharacter" ? "Player Character" : "NPC"}`;
+    return `Create New ${characterType === "PlayerCharacter" ? "Player Character" : "NPC"}`;
+  };
+
+  const getModalDescription = () => {
+    if (description) return description;
+    if (isReadOnly) return `View details for ${characterType === "PlayerCharacter" ? "this player character" : "this NPC"}`;
+    return `Define a new ${characterType === "PlayerCharacter" ? "player character" : "non-player character"} with comprehensive stats and background`;
+  };
+
+  const tabs = [
+    {
+      value: "basic",
+      label: "Basic Info",
+      icon: <User className="h-4 w-4" />,
+      content: (
+        <BasicInfoTab
+          formData={formData}
+          setField={setField}
+          errors={errors}
+          isReadOnly={isReadOnly}
+          characterType={characterType} setNestedField={function (parentField: keyof CharacterFormData, childField: string, value: any): void {
+            throw new Error("Function not implemented.");
+          } }        />
+      ),
+    },
+    {
+      value: "stats",
+      label: "Stats & Combat",
+      icon: <Shield className="h-4 w-4" />,
+      content: (
+        <StatsCombatTab
+          formData={formData}
+          setField={setField}
+          errors={errors}
+          isReadOnly={isReadOnly}
+          characterType={characterType} setNestedField={function (parentField: keyof CharacterFormData, childField: string, value: any): void {
+            throw new Error("Function not implemented.");
+          } }        />
+      ),
+    },
+    {
+      value: "abilities",
+      label: "Ability Scores",
+      icon: <Zap className="h-4 w-4" />,
+      content: (
+        <AbilityScoresTab
+          formData={formData}
+          setNestedField={setNestedField}
+          errors={errors}
+          isReadOnly={isReadOnly}
+          characterType={characterType} setField={function (field: keyof CharacterFormData, value: any): void {
+            throw new Error("Function not implemented.");
+          } }        />
+      ),
+    },
+    {
+      value: "skills",
+      label: "Skills & Proficiencies",
+      icon: <Award className="h-4 w-4" />,
+      content: (
+        <SkillsProficienciesTab
+          formData={formData}
+          setField={setField}
+          errors={errors}
+          isReadOnly={isReadOnly}
+          characterType={characterType} setNestedField={function (parentField: keyof CharacterFormData, childField: string, value: any): void {
+            throw new Error("Function not implemented.");
+          } }        />
+      ),
+    },
+    {
+      value: "traits",
+      label: "Traits & Equipment",
+      icon: <Package className="h-4 w-4" />,
+      content: (
+        <TraitsEquipmentTab
+          formData={formData}
+          setField={setField}
+          errors={errors}
+          isReadOnly={isReadOnly}
+          characterType={characterType} setNestedField={function (parentField: keyof CharacterFormData, childField: string, value: any): void {
+            throw new Error("Function not implemented.");
+          } }        />
+      ),
+    },
+    {
+      value: "description",
+      label: "Description",
+      icon: <FileText className="h-4 w-4" />,
+      content: (
+        <DescriptionTab
+          formData={formData}
+          setField={setField}
+          errors={errors}
+          isReadOnly={isReadOnly}
+          characterType={characterType} setNestedField={function (parentField: keyof CharacterFormData, childField: string, value: any): void {
+            throw new Error("Function not implemented.");
+          } }        />
+      ),
+    },
+  ];
 
   return (
-    <div className="modal-overlay">
-      <div className="npc-creation-modal">
-        <div className="modal-header">
-          <h2>Create New NPC</h2>
-          <button className="close-button" onClick={handleClose}>
-            ×
-          </button>
-        </div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={getModalTitle()}
+      description={getModalDescription()}
+      size="5xl"
+      maxHeight="90vh"
+    >
+      <LoadingSpinner isLoading={isSubmitting} overlay text={isReadOnly ? "Loading..." : "Creating character..."} />
 
-        <form onSubmit={handleSubmit} className="modal-content">
-          <div className="form-section">
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="name">NPC Name *</label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className={errors.name ? "error" : ""}
-                  placeholder="Enter NPC name"
-                />
-                {errors.name && <span className="error-message">{errors.name}</span>}
-              </div>
+      <ErrorDisplay errors={errors} />
 
-              <div className="form-group">
-                <label htmlFor="race">Race *</label>
-                <input
-                  type="text"
-                  id="race"
-                  name="race"
-                  value={formData.race}
-                  onChange={handleInputChange}
-                  className={errors.race ? "error" : ""}
-                  placeholder="e.g., Human, Elf, Dwarf"
-                />
-                {errors.race && <span className="error-message">{errors.race}</span>}
-              </div>
-            </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <FormTabs tabs={tabs} defaultValue="basic" />
 
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="class">Class *</label>
-                <input
-                  type="text"
-                  id="class"
-                  name="class"
-                  value={formData.class}
-                  onChange={handleInputChange}
-                  className={errors.class ? "error" : ""}
-                  placeholder="e.g., Fighter, Wizard, Rogue"
-                />
-                {errors.class && <span className="error-message">{errors.class}</span>}
-              </div>
+        <Separator />
 
-              <div className="form-group">
-                <label htmlFor="background">Background *</label>
-                <input
-                  type="text"
-                  id="background"
-                  name="background"
-                  value={formData.background}
-                  onChange={handleInputChange}
-                  className={errors.background ? "error" : ""}
-                  placeholder="e.g., Soldier, Sage, Criminal"
-                />
-                {errors.background && <span className="error-message">{errors.background}</span>}
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="alignment">Alignment</label>
-                <select
-                  id="alignment"
-                  name="alignment"
-                  value={formData.alignment}
-                  onChange={handleInputChange}
-                >
-                  <option value="">Select alignment</option>
-                  <option value="Lawful Good">Lawful Good</option>
-                  <option value="Neutral Good">Neutral Good</option>
-                  <option value="Chaotic Good">Chaotic Good</option>
-                  <option value="Lawful Neutral">Lawful Neutral</option>
-                  <option value="True Neutral">True Neutral</option>
-                  <option value="Chaotic Neutral">Chaotic Neutral</option>
-                  <option value="Lawful Evil">Lawful Evil</option>
-                  <option value="Neutral Evil">Neutral Evil</option>
-                  <option value="Chaotic Evil">Chaotic Evil</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="level">Level</label>
-                <input
-                  type="number"
-                  id="level"
-                  name="level"
-                  value={formData.level}
-                  onChange={handleInputChange}
-                  className={errors.level ? "error" : ""}
-                  min="1"
-                  max="20"
-                />
-                {errors.level && <span className="error-message">{errors.level}</span>}
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="hitPoints">Hit Points</label>
-                <input
-                  type="number"
-                  id="hitPoints"
-                  name="hitPoints"
-                  value={formData.hitPoints}
-                  onChange={handleInputChange}
-                  className={errors.hitPoints ? "error" : ""}
-                  min="1"
-                />
-                {errors.hitPoints && <span className="error-message">{errors.hitPoints}</span>}
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="armorClass">Armor Class</label>
-                <input
-                  type="number"
-                  id="armorClass"
-                  name="armorClass"
-                  value={formData.armorClass}
-                  onChange={handleInputChange}
-                  className={errors.armorClass ? "error" : ""}
-                  min="1"
-                />
-                {errors.armorClass && <span className="error-message">{errors.armorClass}</span>}
-              </div>
-            </div>
-
-            <div className="form-section-title">Ability Scores</div>
-            <div className="ability-scores-grid">
-              {Object.entries(formData.abilityScores).map(([ability, score]) => (
-                <div key={ability} className="ability-score-group">
-                  <label htmlFor={ability}>{ability.charAt(0).toUpperCase() + ability.slice(1)}</label>
-                  <input
-                    type="number"
-                    id={ability}
-                    value={score}
-                    onChange={(e) => handleAbilityScoreChange(ability, parseInt(e.target.value) || 10)}
-                    min="1"
-                    max="20"
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="form-section-title">Additional Information</div>
-            
-            <div className="form-group">
-              <label htmlFor="skills">Skills (comma-separated)</label>
-              <input
-                type="text"
-                id="skills"
-                value={formData.skills.join(', ')}
-                onChange={(e) => handleArrayChange('skills', e.target.value)}
-                placeholder="e.g., Athletics, Stealth, Persuasion"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="savingThrows">Saving Throws (comma-separated)</label>
-              <input
-                type="text"
-                id="savingThrows"
-                value={formData.savingThrows.join(', ')}
-                onChange={(e) => handleArrayChange('savingThrows', e.target.value)}
-                placeholder="e.g., Strength, Dexterity"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="description">Description</label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Describe the NPC's appearance, personality, and background..."
-                rows={4}
-              />
-            </div>
-          </div>
-
-          {errors.submit && (
-            <div className="error-message global-error">{errors.submit}</div>
-          )}
-        </form>
-
-        <div className="modal-footer">
-          <button className="cancel-button" onClick={handleClose}>
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="confirm-button"
-            onClick={handleSubmit}
+        <div className="flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Creating..." : "Create NPC"}
-          </button>
+            {isReadOnly ? "Close" : "Cancel"}
+          </Button>
+          {isReadOnly && canEditCharacter() && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleEdit}
+              className="flex items-center gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              Edit
+            </Button>
+          )}
+          {!isReadOnly && (
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex items-center gap-2"
+            >
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Create {characterType === "PlayerCharacter" ? "Player Character" : "NPC"}
+            </Button>
+          )}
         </div>
-      </div>
-    </div>
+      </form>
+    </BaseModal>
   );
 };
 
-export default NPCCreationModal; 
+// Legacy export for backward compatibility
+const NPCCreationModal: React.FC<Omit<CharacterCreationModalProps, 'characterType'> & { characterType?: CharacterType }> = (props) => {
+  return <CharacterCreationModal {...props} characterType={props.characterType || "NonPlayerCharacter"} />;
+};
+
+export default CharacterCreationModal;
+export { NPCCreationModal }; 

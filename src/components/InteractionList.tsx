@@ -12,7 +12,6 @@ import { Separator } from "./ui/separator";
 import "./InteractionList.css";
 
 const InteractionList: React.FC = () => {
-  const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
   const [editingInteraction, setEditingInteraction] = useState<Id<"interactions"> | null>(null);
   const [isDeleting, setIsDeleting] = useState<Id<"interactions"> | null>(null);

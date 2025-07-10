@@ -41,7 +41,7 @@ import SignUp from "./pages/SignUp";
 import { AdminOnly } from "./components/AdminOnly";
 import CharacterForm from "./components/CharacterForm";
 import NPCCreationForm from "./components/NPCCreationForm";
-import QuestCreationForm from "./components/QuestCreationForm";
+import QuestForm from "./components/QuestForm";
 import LocationForm from "./components/LocationForm";
 import MonsterForm from "./components/MonsterForm";
 import { MapCreator } from "./components/maps/MapCreator";
@@ -258,6 +258,11 @@ const App: React.FC = () => {
                       <QuestDetail />
                     </ProtectedRoute>
                   } />
+                  <Route path="/quests/:questId/edit" element={
+                    <ProtectedRoute>
+                      <QuestEditWrapper />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/quests/:questId/tasks/new" element={
                     <AdminRoute>
                       <QuestTaskCreationForm />
@@ -374,7 +379,45 @@ const NPCCreationWrapper: React.FC = () => {
 
 // Wrapper component for quest creation
 const QuestCreationWrapper: React.FC = () => {
-  return <QuestCreationForm />;
+  return <QuestForm mode="create" redirectAfterCreate={true} />;
+};
+
+// Wrapper component for quest editing
+const QuestEditWrapper: React.FC = () => {
+  const { questId } = useParams<{ questId: string }>();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
+
+  const handleSubmitSuccess = () => {
+    if (returnTo === 'campaign-form') {
+      navigate("/campaigns/new?refresh=true");
+    } else {
+      navigate(`/quests/${questId}`);
+    }
+  };
+
+  const handleCancel = () => {
+    if (returnTo === 'campaign-form') {
+      navigate("/campaigns/new?refresh=true");
+    } else {
+      navigate(`/quests/${questId}`);
+    }
+  };
+
+  if (!questId) {
+    return <div>Quest ID not found</div>;
+  }
+
+  return (
+    <QuestForm
+      mode="edit"
+      editingQuestId={questId as Id<"quests">}
+      returnTo={returnTo || undefined}
+      onSubmitSuccess={handleSubmitSuccess}
+      onCancel={handleCancel}
+    />
+  );
 };
 
 // Wrapper component for location creation

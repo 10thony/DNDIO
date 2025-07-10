@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import {  useSearchParams, Link } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { useUser } from "@clerk/clerk-react";
@@ -22,7 +22,6 @@ const MonsterList: React.FC = () => {
   const [editingMonster, setEditingMonster] = useState<Id<"monsters"> | null>(null);
   const [isDeleting, setIsDeleting] = useState<Id<"monsters"> | null>(null);
   const [isImporting, setIsImporting] = useState(false);
-  const navigate = useNavigate();
   const monsters = useQuery(api.monsters.getAllMonsters);
   const deleteMonster = useMutation(api.monsters.deleteMonster);
   const bulkCreateMonsters = useMutation(api.monsters.bulkCreateMonsters);

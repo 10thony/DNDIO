@@ -6,6 +6,7 @@ import { Id } from "../../../../convex/_generated/dataModel";
 import { useCollapsibleSection } from "../../../hooks/useCollapsibleSection";
 import { useNavigationState } from "../../../hooks/useNavigationState";
 import EntitySelectionModal from "../../modals/EntitySelectionModal";
+import QuestCreationModal from "../../modals/QuestCreationModal";
 import "./QuestsSection.css";
 
 interface QuestsSectionProps {
@@ -27,6 +28,7 @@ const QuestsSection: React.FC<QuestsSectionProps> = ({
 }) => {
   const { user } = useUser();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [isQuestModalOpen, setIsQuestModalOpen] = useState(false);
   const { isCollapsed, toggleCollapsed } = useCollapsibleSection(
     `quests-${campaignId}`,
     false
@@ -94,6 +96,13 @@ const QuestsSection: React.FC<QuestsSectionProps> = ({
     navigateToDetail(`/quests/${questId}?campaignId=${campaignId}`);
   };
 
+  const handleQuestCreated = () => {
+    // The quest will be automatically added to the campaign by the modal
+    // We just need to trigger an update to refresh the quest list
+    onUpdate();
+    setIsQuestModalOpen(false);
+  };
+
   return (
     <div className="quests-section">
       <div className="section-header">
@@ -109,12 +118,20 @@ const QuestsSection: React.FC<QuestsSectionProps> = ({
         </div>
         <div className="header-actions" onClick={(e) => e.stopPropagation()}>
           {canAdd && (
-            <button 
-              className="add-button"
-              onClick={openEntitySelection}
-            >
-              + Add Quest
-            </button>
+            <>
+              <button 
+                className="add-button"
+                onClick={openEntitySelection}
+              >
+                + Link Quest
+              </button>
+              <button 
+                className="add-button"
+                onClick={() => setIsQuestModalOpen(true)}
+              >
+                + Create Quest
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -167,6 +184,15 @@ const QuestsSection: React.FC<QuestsSectionProps> = ({
           currentLinkedIds={questIds}
         />
       )}
+
+      {/* Quest Creation Modal */}
+      <QuestCreationModal
+        isOpen={isQuestModalOpen}
+        onClose={() => setIsQuestModalOpen(false)}
+        onQuestCreated={handleQuestCreated}
+        campaignId={campaignId}
+        returnTo="campaign-detail"
+      />
     </div>
   );
 };

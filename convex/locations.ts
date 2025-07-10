@@ -1,21 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-
-export const locationTypes = [
-  "Town",
-  "City",
-  "Village",
-  "Dungeon",
-  "Castle",
-  "Forest",
-  "Mountain",
-  "Temple",
-  "Ruins",
-  "Camp",
-  "Other"
-] as const;
-
-export type LocationType = typeof locationTypes[number];
+import { LocationType } from "../src/types/location";
 
 // Note: These functions are duplicated in other files and should be removed
 // Campaign functions are in campaigns.ts

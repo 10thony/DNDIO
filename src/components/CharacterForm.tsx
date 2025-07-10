@@ -24,7 +24,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 import "./CharacterForm.css";
 
 interface CharacterFormProps {
@@ -281,7 +280,7 @@ const CharacterForm: React.FC<CharacterFormProps> = ({ onSuccess, defaultCharact
         characterType: formData.characterType,
         abilityScores: finalAbilityScores,
         clerkId: user?.id || "",
-        factionId: formData.factionId || undefined,
+        factionId: formData.factionId ? formData.factionId as Id<"factions"> : undefined,
         actions: selectedActions,
         level: 1,
         experiencePoints: 0,

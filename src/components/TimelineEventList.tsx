@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
-import { useNavigate, Link } from "react-router-dom";
+import {  Link } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -13,7 +13,6 @@ import { Separator } from "./ui/separator";
 import "./TimelineEventList.css";
 
 const TimelineEventList: React.FC = () => {
-  const navigate = useNavigate();
   const { isAdmin } = useRoleAccess();
   const [isCreating, setIsCreating] = useState(false);
   const [editingTimelineEvent, setEditingTimelineEvent] = useState<Id<"timelineEvents"> | null>(null);

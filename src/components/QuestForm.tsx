@@ -23,7 +23,6 @@ import {
   Users,
   Package,
   Gift,
-  Target
 } from "lucide-react";
 
 interface QuestFormData {
@@ -43,20 +42,40 @@ interface QuestFormData {
 }
 
 interface QuestFormProps {
-  onSubmitSuccess: () => void;
-  onCancel: () => void;
+  // Mode control
+  mode?: 'create' | 'edit';
   editingQuestId?: Id<"quests"> | null;
+  
+  // Navigation control
+  returnTo?: string;
+  redirectAfterCreate?: boolean;
+  
+  // Callbacks
+  onSubmitSuccess?: () => void;
+  onCancel?: () => void;
+  
+  // Optional overrides
+  initialData?: Partial<QuestFormData>;
+  customValidation?: (data: QuestFormData) => Record<string, string>;
 }
 
 const QuestForm: React.FC<QuestFormProps> = ({
+  mode = 'create',
+  editingQuestId,
+  returnTo,
+  redirectAfterCreate = true,
   onSubmitSuccess,
   onCancel,
-  editingQuestId,
+  initialData,
+  customValidation
 }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const returnTo = searchParams.get('returnTo');
+  const urlReturnTo = searchParams.get('returnTo');
+  const finalReturnTo = returnTo || urlReturnTo;
   const { user } = useUser();
+  
+  // Mode-aware mutations
   const createQuest = useMutation(api.quests.createQuest);
   const updateQuest = useMutation(api.quests.updateQuest);
   
@@ -67,20 +86,22 @@ const QuestForm: React.FC<QuestFormProps> = ({
   const characters = useQuery(api.characters.getAllCharacters);
   const interactions = useQuery(api.interactions.getAllInteractions);
   
-  // Fetch quest data if editing
-  const questData = editingQuestId 
+  // Conditional data fetching for edit mode
+  const questData = mode === 'edit' && editingQuestId 
     ? useQuery(api.quests.getQuestById, { id: editingQuestId })
     : null;
 
+  // Enhanced state with mode awareness and initial data support
   const [formData, setFormData] = useState<QuestFormData>({
-    name: "",
-    description: "",
-    status: "NotStarted",
-    requiredItemIds: [],
-    involvedNpcIds: [],
-    participantIds: [],
-    interactions: [],
-    rewards: {},
+    name: initialData?.name || "",
+    description: initialData?.description || "",
+    status: initialData?.status || "NotStarted",
+    locationId: initialData?.locationId,
+    requiredItemIds: initialData?.requiredItemIds || [],
+    involvedNpcIds: initialData?.involvedNpcIds || [],
+    participantIds: initialData?.participantIds || [],
+    interactions: initialData?.interactions || [],
+    rewards: initialData?.rewards || {},
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -88,7 +109,7 @@ const QuestForm: React.FC<QuestFormProps> = ({
 
   // Load quest data when editing
   useEffect(() => {
-    if (questData && editingQuestId) {
+    if (questData && mode === 'edit' && editingQuestId) {
       setFormData({
         name: questData.name || "",
         description: questData.description || "",
@@ -101,7 +122,7 @@ const QuestForm: React.FC<QuestFormProps> = ({
         rewards: questData.rewards || {},
       });
     }
-  }, [questData, editingQuestId]);
+  }, [questData, editingQuestId, mode]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -149,6 +170,12 @@ const QuestForm: React.FC<QuestFormProps> = ({
       newErrors.name = "Quest name is required";
     }
 
+    // Apply custom validation if provided
+    if (customValidation) {
+      const customErrors = customValidation(formData);
+      Object.assign(newErrors, customErrors);
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -175,23 +202,24 @@ const QuestForm: React.FC<QuestFormProps> = ({
         rewards: Object.keys(formData.rewards).length > 0 ? formData.rewards : undefined,
       };
 
-      if (editingQuestId) {
-        // Update existing quest
+      if (mode === 'edit' && editingQuestId) {
         await updateQuest({
           id: editingQuestId,
           ...questData,
         });
       } else {
-        // Create new quest
         const questId = await createQuest({
           ...questData,
           clerkId: user.id,
           taskIds: [],
         });
-        navigate(`/quests/${questId}`);
+        
+        if (redirectAfterCreate) {
+          navigate(`/quests/${questId}`);
+        }
       }
 
-      onSubmitSuccess();
+      onSubmitSuccess?.();
     } catch (error) {
       console.error("Error saving quest:", error);
       setErrors({ submit: "Failed to save quest. Please try again." });
@@ -201,11 +229,20 @@ const QuestForm: React.FC<QuestFormProps> = ({
   };
 
   const handleCancel = () => {
-    if (returnTo === 'campaign-form') {
+    if (onCancel) {
+      onCancel();
+    } else if (finalReturnTo === 'campaign-form') {
       navigate("/campaigns/new");
     } else {
-      onCancel();
+      navigate("/quests");
     }
+  };
+
+  const getBackButtonText = () => {
+    if (finalReturnTo === 'campaign-form') {
+      return "Back to Campaign Form";
+    }
+    return mode === 'edit' ? "Back to Quest" : "Back to Quests";
   };
 
   if (!user) {
@@ -219,26 +256,32 @@ const QuestForm: React.FC<QuestFormProps> = ({
     );
   }
 
-  const isEditing = !!editingQuestId;
-
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Header */}
+      {/* Enhanced Header Section */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={handleCancel}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            {returnTo === 'campaign-form' ? "Back to Campaign Form" : "Back to Quests"}
+            {getBackButtonText()}
           </Button>
           <div>
             <h1 className="text-3xl font-bold">
-              {isEditing ? "Edit Quest" : "Create New Quest"}
+              {mode === 'edit' ? "Edit Quest" : "Create New Quest"}
             </h1>
             <p className="text-muted-foreground">
-              {isEditing ? "Update quest details" : "Define a new quest with objectives and rewards"}
+              {mode === 'edit' 
+                ? "Update quest details and relationships" 
+                : "Define a new quest with objectives, participants, and rewards"
+              }
             </p>
           </div>
         </div>
+        
+        {/* Mode indicator */}
+        <Badge variant={mode === 'edit' ? 'secondary' : 'default'}>
+          {mode === 'edit' ? 'Editing' : 'Creating'}
+        </Badge>
       </div>
 
       {/* Error Messages */}
@@ -270,13 +313,11 @@ const QuestForm: React.FC<QuestFormProps> = ({
             </TabsTrigger>
           </TabsList>
 
+          {/* Basic Information Tab */}
           <TabsContent value="basic" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
-                  Basic Information
-                </CardTitle>
+                <CardTitle>Basic Information</CardTitle>
                 <CardDescription>
                   Core details about the quest
                 </CardDescription>
@@ -304,54 +345,63 @@ const QuestForm: React.FC<QuestFormProps> = ({
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
-                    placeholder="Describe the quest..."
+                    placeholder="Enter quest description"
                     rows={4}
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NotStarted">Not Started</SelectItem>
-                        <SelectItem value="InProgress">In Progress</SelectItem>
-                        <SelectItem value="Completed">Completed</SelectItem>
-                        <SelectItem value="Failed">Failed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select value={formData.status} onValueChange={(value) => handleInputChange({ target: { name: 'status', value } } as any)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NotStarted">Not Started</SelectItem>
+                      <SelectItem value="InProgress">In Progress</SelectItem>
+                      <SelectItem value="Completed">Completed</SelectItem>
+                      <SelectItem value="Failed">Failed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="locationId">Location</Label>
-                    <Select
-                      value={formData.locationId || ""}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, locationId: value || undefined }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a location (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">No location</SelectItem>
-                        {locations?.map((location) => (
-                          <SelectItem key={location._id} value={location._id}>
-                            {location.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Location
+                </CardTitle>
+                <CardDescription>
+                  Associated location for this quest
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="locationId">Associated Location</Label>
+                  <Select 
+                    value={formData.locationId || "none"} 
+                    onValueChange={(value) => handleInputChange({ target: { name: 'locationId', value: value === "none" ? "" : value } } as any)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a location (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No location</SelectItem>
+                      {locations?.map((location: any) => (
+                        <SelectItem key={location._id} value={location._id}>
+                          {location.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Participants Tab */}
           <TabsContent value="participants" className="space-y-6">
             <Card>
               <CardHeader>
@@ -360,74 +410,101 @@ const QuestForm: React.FC<QuestFormProps> = ({
                   Participants
                 </CardTitle>
                 <CardDescription>
-                  Select characters, NPCs, and interactions involved in this quest
+                  Characters, NPCs, and interactions involved in this quest
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Player Characters */}
-                <div className="space-y-3">
-                  <Label>Player Characters</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                    {characters?.map((character) => (
-                      <div key={character._id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`char-${character._id}`}
-                          checked={formData.participantIds.includes(character._id)}
-                          onCheckedChange={() => handleMultiSelectChange("participantIds", character._id)}
-                        />
-                        <Label htmlFor={`char-${character._id}`} className="text-sm cursor-pointer">
-                          {character.name}
-                        </Label>
-                      </div>
-                    ))}
+                {/* Enhanced Player Characters Section */}
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-base font-medium">Player Characters</Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Select characters participating in this quest
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto border rounded-md p-3">
+                      {characters?.map((character: any) => (
+                        <div key={character._id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`character-${character._id}`}
+                            checked={formData.participantIds.includes(character._id)}
+                            onCheckedChange={() => handleMultiSelectChange("participantIds", character._id)}
+                          />
+                          <Label 
+                            htmlFor={`character-${character._id}`}
+                            className="text-sm font-normal cursor-pointer flex items-center gap-2"
+                          >
+                            {character.name}
+                            <Badge variant="outline" className="text-xs">
+                              Level {character.level}
+                            </Badge>
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                <Separator />
+                  <Separator />
 
-                {/* NPCs */}
-                <div className="space-y-3">
-                  <Label>Involved NPCs</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                    {npcs?.map((npc) => (
-                      <div key={npc._id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`npc-${npc._id}`}
-                          checked={formData.involvedNpcIds.includes(npc._id)}
-                          onCheckedChange={() => handleMultiSelectChange("involvedNpcIds", npc._id)}
-                        />
-                        <Label htmlFor={`npc-${npc._id}`} className="text-sm cursor-pointer">
-                          {npc.name}
-                        </Label>
-                      </div>
-                    ))}
+                  {/* Enhanced NPCs Section */}
+                  <div>
+                    <Label className="text-base font-medium">Involved NPCs</Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Select NPCs involved in this quest
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto border rounded-md p-3">
+                      {npcs?.map((npc: any) => (
+                        <div key={npc._id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`npc-${npc._id}`}
+                            checked={formData.involvedNpcIds.includes(npc._id)}
+                            onCheckedChange={() => handleMultiSelectChange("involvedNpcIds", npc._id)}
+                          />
+                          <Label 
+                            htmlFor={`npc-${npc._id}`}
+                            className="text-sm font-normal cursor-pointer flex items-center gap-2"
+                          >
+                            {npc.name}
+                            <Badge variant="outline" className="text-xs">
+                              Level {npc.level}
+                            </Badge>
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                <Separator />
+                  <Separator />
 
-                {/* Interactions */}
-                <div className="space-y-3">
-                  <Label>Related Interactions</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                    {interactions?.map((interaction) => (
-                      <div key={interaction._id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`interaction-${interaction._id}`}
-                          checked={formData.interactions.includes(interaction._id)}
-                          onCheckedChange={() => handleMultiSelectChange("interactions", interaction._id)}
-                        />
-                        <Label htmlFor={`interaction-${interaction._id}`} className="text-sm cursor-pointer">
-                          {interaction.name}
-                        </Label>
-                      </div>
-                    ))}
+                  {/* Interactions Section (from QuestForm) */}
+                  <div>
+                    <Label className="text-base font-medium">Related Interactions</Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Select interactions related to this quest
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-48 overflow-y-auto border rounded-md p-3">
+                      {interactions?.map((interaction: any) => (
+                        <div key={interaction._id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`interaction-${interaction._id}`}
+                            checked={formData.interactions.includes(interaction._id)}
+                            onCheckedChange={() => handleMultiSelectChange("interactions", interaction._id)}
+                          />
+                          <Label 
+                            htmlFor={`interaction-${interaction._id}`}
+                            className="text-sm font-normal cursor-pointer"
+                          >
+                            {interaction.name}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Requirements Tab */}
           <TabsContent value="requirements" className="space-y-6">
             <Card>
               <CardHeader>
@@ -436,22 +513,33 @@ const QuestForm: React.FC<QuestFormProps> = ({
                   Requirements
                 </CardTitle>
                 <CardDescription>
-                  Items and conditions required to complete this quest
+                  Items required to complete this quest
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <Label>Required Items</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                    {items?.map((item) => (
+              <CardContent>
+                <div className="space-y-4">
+                  <Label className="text-base font-medium">Required Items</Label>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Select items that are required to complete this quest
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {items?.map((item: any) => (
                       <div key={item._id} className="flex items-center space-x-2">
                         <Checkbox
                           id={`item-${item._id}`}
                           checked={formData.requiredItemIds.includes(item._id)}
                           onCheckedChange={() => handleMultiSelectChange("requiredItemIds", item._id)}
                         />
-                        <Label htmlFor={`item-${item._id}`} className="text-sm cursor-pointer">
+                        <Label 
+                          htmlFor={`item-${item._id}`}
+                          className="text-sm font-normal cursor-pointer flex items-center gap-2"
+                        >
                           {item.name}
+                          {item.rarity && (
+                            <Badge variant="outline" className="text-xs">
+                              {item.rarity}
+                            </Badge>
+                          )}
                         </Label>
                       </div>
                     ))}
@@ -461,6 +549,7 @@ const QuestForm: React.FC<QuestFormProps> = ({
             </Card>
           </TabsContent>
 
+          {/* Rewards Tab */}
           <TabsContent value="rewards" className="space-y-6">
             <Card>
               <CardHeader>
@@ -469,38 +558,45 @@ const QuestForm: React.FC<QuestFormProps> = ({
                   Rewards
                 </CardTitle>
                 <CardDescription>
-                  Configure rewards for completing this quest
+                  Rewards for completing this quest
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="xp">Experience Points</Label>
+                    <Label htmlFor="xpReward">Experience Points</Label>
                     <Input
-                      id="xp"
                       type="number"
+                      id="xpReward"
                       value={formData.rewards.xp || ""}
-                      onChange={(e) => handleRewardChange("xp", e.target.value ? parseInt(e.target.value) : undefined)}
-                      placeholder="XP reward"
+                      onChange={(e) => handleRewardChange("xp", Number(e.target.value) || undefined)}
+                      placeholder="0"
+                      min="0"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="gold">Gold</Label>
+                    <Label htmlFor="goldReward">Gold</Label>
                     <Input
-                      id="gold"
                       type="number"
+                      id="goldReward"
                       value={formData.rewards.gold || ""}
-                      onChange={(e) => handleRewardChange("gold", e.target.value ? parseInt(e.target.value) : undefined)}
-                      placeholder="Gold reward"
+                      onChange={(e) => handleRewardChange("gold", Number(e.target.value) || undefined)}
+                      placeholder="0"
+                      min="0"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <Label>Reward Items</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                    {items?.map((item) => (
+                <Separator />
+
+                <div className="space-y-4">
+                  <Label className="text-base font-medium">Reward Items</Label>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Select items that will be rewarded upon completion
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {items?.map((item: any) => (
                       <div key={item._id} className="flex items-center space-x-2">
                         <Checkbox
                           id={`reward-item-${item._id}`}
@@ -508,13 +604,21 @@ const QuestForm: React.FC<QuestFormProps> = ({
                           onCheckedChange={() => {
                             const currentItems = formData.rewards.itemIds || [];
                             const newItems = currentItems.includes(item._id)
-                              ? currentItems.filter(id => id !== item._id)
+                              ? currentItems.filter((id) => id !== item._id)
                               : [...currentItems, item._id];
                             handleRewardChange("itemIds", newItems);
                           }}
                         />
-                        <Label htmlFor={`reward-item-${item._id}`} className="text-sm cursor-pointer">
+                        <Label 
+                          htmlFor={`reward-item-${item._id}`}
+                          className="text-sm font-normal cursor-pointer flex items-center gap-2"
+                        >
                           {item.name}
+                          {item.rarity && (
+                            <Badge variant="outline" className="text-xs">
+                              {item.rarity}
+                            </Badge>
+                          )}
                         </Label>
                       </div>
                     ))}
@@ -526,12 +630,23 @@ const QuestForm: React.FC<QuestFormProps> = ({
         </Tabs>
 
         {/* Form Actions */}
-        <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={handleCancel}>
+        <div className="flex justify-end gap-4 pt-6 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : (isEditing ? "Update Quest" : "Create Quest")}
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+          >
+            {isSubmitting 
+              ? (mode === 'edit' ? "Updating Quest..." : "Creating Quest...") 
+              : (mode === 'edit' ? "Update Quest" : "Create Quest")
+            }
           </Button>
         </div>
       </form>

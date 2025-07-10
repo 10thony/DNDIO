@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../../convex/_generated/api";
-import { LocationType, locationTypes } from "../../convex/locations";
+import { LocationType, locationTypes } from "../types/location.ts";
 import { Id } from "../../convex/_generated/dataModel";
 import { Link } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
@@ -14,7 +14,6 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Checkbox } from "./ui/checkbox";
@@ -25,7 +24,6 @@ import {
   ArrowLeft, 
   MapPin,
   Users,
-  Link as LinkIcon,
   Eye,
   Plus,
   Map
