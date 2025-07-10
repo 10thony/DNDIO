@@ -27,7 +27,7 @@ const FormTabs: React.FC<FormTabsProps> = ({
 
   return (
     <Tabs defaultValue={defaultTab} className={`w-full ${className}`}>
-      <TabsList className={`grid w-full ${orientation === "horizontal" ? "grid-cols-" + tabs.length : "grid-cols-1"}`}>
+      <TabsList className="flex w-full flex-row">
         {tabs.map((tab) => (
           <TabsTrigger
             key={tab.value}

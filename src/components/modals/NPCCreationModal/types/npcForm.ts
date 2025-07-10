@@ -1,3 +1,5 @@
+import { Id } from "../../../convex/_generated/dataModel";
+
 export interface CharacterFormData {
   name: string;
   race: string;
@@ -23,6 +25,7 @@ export interface CharacterFormData {
   languages: string[];
   equipment: string[];
   description: string;
+  actions: Id<"actions">[];
 }
 
 // Legacy interface for backward compatibility
@@ -50,6 +53,15 @@ export interface CharacterFormHook {
   isSubmitting: boolean;
   setIsSubmitting: (submitting: boolean) => void;
   populateForm: (data: Partial<CharacterFormData>) => void;
+  // Enhanced state management for ability scores
+  selectedActions: Id<"actions">[];
+  setSelectedActions: (actions: Id<"actions">[]) => void;
+  racialBonusesApplied: boolean;
+  setRacialBonusesApplied: (applied: boolean) => void;
+  appliedRace: string;
+  setAppliedRace: (race: string) => void;
+  error: string | null;
+  setError: (error: string | null) => void;
 }
 
 // Legacy interface for backward compatibility
@@ -60,6 +72,13 @@ export interface CharacterValidationHook {
   validateForm: () => boolean;
   clearErrors: () => void;
   setErrors: (errors: Record<string, string>) => void;
+  // Additional validation utilities
+  validateField: (fieldName: string, value: any) => string | null;
+  clearFieldError: (fieldName: string) => void;
+  setFieldError: (fieldName: string, error: string) => void;
+  hasErrors: boolean;
+  hasFieldError: (fieldName: string) => boolean;
+  getFieldError: (fieldName: string) => string | null;
 }
 
 // Legacy interface for backward compatibility

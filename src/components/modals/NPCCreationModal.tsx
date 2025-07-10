@@ -16,7 +16,8 @@ import {
   Loader2,
   Save,
   // Eye,
-  Edit
+  Edit,
+  Calculator
 } from "lucide-react";
 import { CharacterFormData, CharacterType } from "./NPCCreationModal/types/npcForm";
 import { useCharacterForm } from "./NPCCreationModal/hooks/useNPCForm";
@@ -27,6 +28,17 @@ import AbilityScoresTab from "./NPCCreationModal/components/AbilityScoresTab";
 import SkillsProficienciesTab from "./NPCCreationModal/components/SkillsProficienciesTab";
 import TraitsEquipmentTab from "./NPCCreationModal/components/TraitsEquipmentTab";
 import DescriptionTab from "./NPCCreationModal/components/DescriptionTab";
+import ActionsTab from "./NPCCreationModal/components/ActionsTab";
+import { 
+  calculateHitPoints,
+  calculateArmorClass,
+  getProficiencyBonus,
+  getClassSavingThrows,
+  getClassSkills,
+  getBackgroundSkills,
+  getRacialBonuses
+} from "../../types/dndRules";
+import { AbilityScores } from "../../types/character";
 
 interface CharacterCreationModalProps {
   isOpen: boolean;
@@ -84,14 +96,24 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
     reset,
     isSubmitting,
     setIsSubmitting,
-    populateForm
+    populateForm,
+    selectedActions,
+    setSelectedActions,
+    racialBonusesApplied,
+    setRacialBonusesApplied,
+    appliedRace,
+    setAppliedRace,
+    error,
+    setError
   } = useCharacterForm();
 
   const {
     errors,
     validateForm,
     clearErrors,
-    setErrors
+    setErrors,
+    hasErrors,
+    getFieldError
   } = useCharacterValidation(formData);
 
   // Check if user can edit this character
@@ -110,13 +132,52 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
     return false;
   };
 
+  // Calculate final ability scores with racial bonuses
+  const calculateFinalAbilityScores = (): AbilityScores => {
+    const racialBonuses = getRacialBonuses(formData.race);
+    const finalScores: AbilityScores = { ...formData.abilityScores };
+
+    Object.entries(racialBonuses).forEach(([ability, bonus]) => {
+      if (bonus) {
+        finalScores[ability as keyof AbilityScores] += bonus;
+      }
+    });
+
+    return finalScores;
+  };
+
+  // Auto-calculate D&D stats when class/race/background changes
+  const handleAutoCalculateStats = () => {
+    if (!formData.class || !formData.race) return;
+
+    const finalAbilityScores = calculateFinalAbilityScores();
+    
+    const autoHitPoints = calculateHitPoints(formData.class, finalAbilityScores.constitution);
+    const autoArmorClass = calculateArmorClass(finalAbilityScores.dexterity);
+    const autoProficiencyBonus = getProficiencyBonus(formData.level);
+    const autoSavingThrows = getClassSavingThrows(formData.class);
+    const autoSkills = [
+      ...new Set([
+        ...getClassSkills(formData.class),
+        ...getBackgroundSkills(formData.background),
+      ]),
+    ];
+
+    setField("hitPoints", autoHitPoints);
+    setField("armorClass", autoArmorClass);
+    setField("proficiencyBonus", autoProficiencyBonus);
+    setField("savingThrows", autoSavingThrows);
+    setField("skills", autoSkills);
+  };
+
   // Reset form when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
       reset();
       clearErrors();
+      setError(null);
     }
-  }, [isOpen, reset, clearErrors]);
+  }, [isOpen, reset, clearErrors, setError]);
 
   // Populate form with character data when viewing existing character
   useEffect(() => {
@@ -159,16 +220,35 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
     }
   }, [isOpen, initialData, character, populateForm]);
 
+  // Auto-calculate stats when relevant fields change
+  useEffect(() => {
+    if (!isReadOnly && formData.class && formData.race && formData.background) {
+      // Only auto-calculate if we don't have manually set values or if this is a new character
+      const shouldAutoCalculate = !characterId || 
+        (formData.hitPoints === 10 && formData.armorClass === 10 && formData.proficiencyBonus === 2);
+      
+      if (shouldAutoCalculate) {
+        handleAutoCalculateStats();
+      }
+    }
+  }, [formData.class, formData.race, formData.background, formData.level, isReadOnly, characterId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (isReadOnly || !validateForm() || !user) {
+      if (hasErrors) {
+        setError("Please fix the form errors before submitting.");
+      }
       return;
     }
 
     setIsSubmitting(true);
+    setError(null);
 
     try {
+      const finalAbilityScores = calculateFinalAbilityScores();
+      
       const characterData = {
         name: formData.name.trim(),
         race: formData.race.trim(),
@@ -181,14 +261,14 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
         hitPoints: formData.hitPoints,
         armorClass: formData.armorClass,
         proficiencyBonus: formData.proficiencyBonus,
-        abilityScores: formData.abilityScores,
+        abilityScores: finalAbilityScores,
         skills: formData.skills,
         savingThrows: formData.savingThrows,
         proficiencies: formData.proficiencies,
         traits: formData.traits,
         languages: formData.languages,
         equipment: formData.equipment,
-        actions: [] as Id<"actions">[],
+        actions: selectedActions,
         clerkId: user.id,
       };
 
@@ -204,7 +284,7 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
       onClose();
     } catch (error) {
       console.error("Error creating character:", error);
-      setErrors({ submit: "Failed to create character. Please try again." });
+      setError("Failed to create character. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -234,7 +314,7 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
   const getModalDescription = () => {
     if (description) return description;
     if (isReadOnly) return `View details for ${characterType === "PlayerCharacter" ? "this player character" : "this NPC"}`;
-    return `Define a new ${characterType === "PlayerCharacter" ? "player character" : "non-player character"} with comprehensive stats and background`;
+    return `Define a new ${characterType === "PlayerCharacter" ? "player character" : "non-player character"} with comprehensive D&D 5e stats and background`;
   };
 
   const tabs = [
@@ -244,21 +324,6 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
       icon: <User className="h-4 w-4" />,
       content: (
         <BasicInfoTab
-          formData={formData}
-          setField={setField}
-          setNestedField={setNestedField}
-          errors={errors}
-          isReadOnly={isReadOnly}
-          characterType={characterType}
-        />
-      ),
-    },
-    {
-      value: "stats",
-      label: "Stats & Combat",
-      icon: <Shield className="h-4 w-4" />,
-      content: (
-        <StatsCombatTab
           formData={formData}
           setField={setField}
           setNestedField={setNestedField}
@@ -284,11 +349,41 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
       ),
     },
     {
+      value: "stats",
+      label: "Stats & Combat",
+      icon: <Shield className="h-4 w-4" />,
+      content: (
+        <StatsCombatTab
+          formData={formData}
+          setField={setField}
+          setNestedField={setNestedField}
+          errors={errors}
+          isReadOnly={isReadOnly}
+          characterType={characterType}
+        />
+      ),
+    },
+    {
       value: "skills",
       label: "Skills & Proficiencies",
       icon: <Award className="h-4 w-4" />,
       content: (
         <SkillsProficienciesTab
+          formData={formData}
+          setField={setField}
+          setNestedField={setNestedField}
+          errors={errors}
+          isReadOnly={isReadOnly}
+          characterType={characterType}
+        />
+      ),
+    },
+    {
+      value: "actions",
+      label: "Actions",
+      icon: <Zap className="h-4 w-4" />,
+      content: (
+        <ActionsTab
           formData={formData}
           setField={setField}
           setNestedField={setNestedField}
@@ -341,47 +436,85 @@ const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({
     >
       <LoadingSpinner isLoading={isSubmitting} overlay text={isReadOnly ? "Loading..." : "Creating character..."} />
 
-      <ErrorDisplay errors={errors} />
+      {/* Enhanced Error Display */}
+      {(error || hasErrors) && (
+        <div className="mb-4 space-y-2">
+          {error && (
+            <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded-md">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Error:</span>
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
+          {hasErrors && (
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Form Validation:</span>
+                <span>Please correct the highlighted fields before submitting.</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <FormTabs tabs={tabs} defaultValue="basic" />
 
         <Separator />
 
-        <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isSubmitting}
-          >
-            {isReadOnly ? "Close" : "Cancel"}
-          </Button>
-          {isReadOnly && canEditCharacter() && (
+        {/* Action Bar */}
+        <div className="flex justify-between items-center gap-3">
+          <div className="flex gap-2">
+            {!isReadOnly && formData.class && formData.race && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAutoCalculateStats}
+                className="flex items-center gap-2"
+                title="Auto-calculate HP, AC, proficiency bonus, and skills based on D&D 5e rules"
+              >
+                <Calculator className="h-4 w-4" />
+                Auto-Calculate D&D Stats
+              </Button>
+            )}
+          </div>
+          
+          <div className="flex gap-3">
             <Button
               type="button"
               variant="outline"
-              onClick={handleEdit}
-              className="flex items-center gap-2"
-            >
-              <Edit className="h-4 w-4" />
-              Edit
-            </Button>
-          )}
-          {!isReadOnly && (
-            <Button
-              type="submit"
+              onClick={handleCancel}
               disabled={isSubmitting}
-              className="flex items-center gap-2"
             >
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              Create {characterType === "PlayerCharacter" ? "Player Character" : "NPC"}
+              {isReadOnly ? "Close" : "Cancel"}
             </Button>
-          )}
+            {isReadOnly && canEditCharacter() && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleEdit}
+                className="flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Edit
+              </Button>
+            )}
+            {!isReadOnly && (
+              <Button
+                type="submit"
+                disabled={isSubmitting || hasErrors}
+                className="flex items-center gap-2"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                Create {characterType === "PlayerCharacter" ? "Player Character" : "NPC"}
+              </Button>
+            )}
+          </div>
         </div>
       </form>
     </BaseModal>
