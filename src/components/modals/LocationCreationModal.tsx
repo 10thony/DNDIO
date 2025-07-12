@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
@@ -6,12 +6,34 @@ import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useRoleAccess } from "../../hooks/useRoleAccess";
 import { MapCard } from "../maps/MapCard";
-import "./LocationCreationModal.css";
+import { BaseModal, FormTabs, LoadingSpinner, ErrorDisplay } from "./shared";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Separator } from "../ui/separator";
+import { 
+  MapPin,
+  Map,
+  Plus,
+  Loader2,
+  Save,
+  Edit
+} from "lucide-react";
 
 interface LocationCreationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (locationId: Id<"locations">) => void;
+  initialData?: {
+    id?: Id<"locations">;
+    name?: string;
+    description?: string;
+    type?: string;
+    mapId?: Id<"maps">;
+  } | null;
+  isEditing?: boolean;
 }
 
 interface LocationFormData {
@@ -24,12 +46,15 @@ interface LocationFormData {
 const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
+  initialData = null,
+  isEditing = false
 }) => {
   const { user } = useUser();
   const { isAdmin } = useRoleAccess();
   const navigate = useNavigate();
   const createLocation = useMutation(api.locations.create);
+  const updateLocation = useMutation(api.locations.update);
   const maps = useQuery(api.maps.getUserMaps, user?.id ? { clerkId: user.id } : "skip") || [];
   
   const [formData, setFormData] = useState<LocationFormData>({
@@ -41,22 +66,18 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
-    
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name || "",
+        description: initialData.description || "",
+        type: (initialData.type as LocationFormData["type"]) || "Other",
+        mapId: initialData.mapId,
+      });
     }
-  };
+  }, [initialData]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -68,8 +89,6 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
     if (!formData.description.trim()) {
       newErrors.description = "Location description is required";
     }
-
-
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -83,6 +102,7 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
     }
 
     setIsSubmitting(true);
+    setError(null);
 
     try {
       const locationData = {
@@ -98,7 +118,19 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
         clerkId: user.id,
       };
 
-      const locationId = await createLocation(locationData);
+      let locationId;
+      if (isEditing && initialData?.id) {
+        // Update existing location
+        await updateLocation({
+          id: initialData.id,
+          ...locationData,
+        });
+        locationId = initialData.id;
+      } else {
+        // Create new location
+        locationId = await createLocation(locationData);
+      }
+
       onSuccess(locationId);
       
       // Handle navigation based on user role
@@ -112,8 +144,8 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
       
       handleClose();
     } catch (error) {
-      console.error("Error creating location:", error);
-      setErrors({ submit: "Failed to create location. Please try again." });
+      console.error("Error creating/updating location:", error);
+      setError(`Failed to ${isEditing ? 'update' : 'create'} location. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -127,136 +159,171 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
       mapId: undefined,
     });
     setErrors({});
+    setError(null);
     setIsSubmitting(false);
     onClose();
   };
 
-  if (!isOpen) return null;
+  const getModalTitle = () => {
+    if (isEditing) return "Edit Location";
+    return "Create New Location";
+  };
 
-  return (
-    <div className="modal-overlay">
-      <div className="location-creation-modal">
-        <div className="modal-header">
-          <h2>Create New Location</h2>
-          <button className="close-button" onClick={handleClose}>
-            ×
-          </button>
-        </div>
+  const getModalDescription = () => {
+    if (isEditing) return "Edit location details";
+    return "Define a new location for your campaign world";
+  };
 
-        <form onSubmit={handleSubmit} className="modal-content">
-          <div className="form-section">
-            <div className="form-group">
-              <label htmlFor="name">Location Name *</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className={errors.name ? "error" : ""}
-                placeholder="Enter location name"
-              />
-              {errors.name && <span className="error-message">{errors.name}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="description">Description *</label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className={errors.description ? "error" : ""}
-                placeholder="Describe the location..."
-                rows={4}
-              />
-              {errors.description && <span className="error-message">{errors.description}</span>}
-            </div>
-
-
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="type">Location Type</label>
-                <select
-                  id="type"
-                  name="type"
-                  value={formData.type}
-                  onChange={handleInputChange}
-                >
-                  <option value="City">City</option>
-                  <option value="Town">Town</option>
-                  <option value="Village">Village</option>
-                  <option value="Dungeon">Dungeon</option>
-                  <option value="Forest">Forest</option>
-                  <option value="Mountain">Mountain</option>
-                  <option value="Desert">Desert</option>
-                  <option value="Swamp">Swamp</option>
-                  <option value="Castle">Castle</option>
-                  <option value="Temple">Temple</option>
-                  <option value="Tavern">Tavern</option>
-                  <option value="Shop">Shop</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Maps Section */}
-            <div className="form-section-title">Available Maps</div>
-            <div className="form-group">
-              <label>Select a map (optional)</label>
-              {maps.length > 0 ? (
-                <div className="maps-grid">
-                  {maps.map((map) => (
-                    <MapCard
-                      key={map._id}
-                      map={map}
-                      isSelected={formData.mapId === map._id}
-                      onSelect={(mapId) => setFormData({
-                        ...formData,
-                        mapId: formData.mapId === mapId ? undefined : mapId
-                      })}
-                      compact={true}
-                      className="modal-map-card"
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="no-maps-message">
-                  <p>No maps created yet. Create a map to associate with locations.</p>
-                  <a 
-                    href="/maps/new" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="create-map-link"
-                  >
-                    Create New Map
-                  </a>
-                </div>
-              )}
-            </div>
+  const tabs = [
+    {
+      value: "basic",
+      label: "Basic Info",
+      icon: <MapPin className="h-4 w-4" />,
+      content: (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Location Name *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className={errors.name ? "border-destructive" : ""}
+              placeholder="Enter location name"
+            />
+            {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
           </div>
 
-          {errors.submit && (
-            <div className="error-message global-error">{errors.submit}</div>
-          )}
-        </form>
+          <div className="space-y-2">
+            <Label htmlFor="type">Location Type</Label>
+            <Select
+              value={formData.type}
+              onValueChange={(value) => setFormData({ ...formData, type: value as LocationFormData["type"] })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select location type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="City">City</SelectItem>
+                <SelectItem value="Town">Town</SelectItem>
+                <SelectItem value="Village">Village</SelectItem>
+                <SelectItem value="Dungeon">Dungeon</SelectItem>
+                <SelectItem value="Forest">Forest</SelectItem>
+                <SelectItem value="Mountain">Mountain</SelectItem>
+                <SelectItem value="Desert">Desert</SelectItem>
+                <SelectItem value="Swamp">Swamp</SelectItem>
+                <SelectItem value="Castle">Castle</SelectItem>
+                <SelectItem value="Temple">Temple</SelectItem>
+                <SelectItem value="Tavern">Tavern</SelectItem>
+                <SelectItem value="Shop">Shop</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="modal-footer">
-          <button className="cancel-button" onClick={handleClose}>
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="confirm-button"
-            onClick={handleSubmit}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description *</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className={errors.description ? "border-destructive" : ""}
+              placeholder="Describe the location..."
+              rows={4}
+            />
+            {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
+          </div>
+        </div>
+      ),
+    },
+    {
+      value: "map",
+      label: "Map",
+      icon: <Map className="h-4 w-4" />,
+      content: (
+        <div className="space-y-4">
+          <Label>Select a map (optional)</Label>
+          {maps.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {maps.map((map) => (
+                <MapCard
+                  key={map._id}
+                  map={map}
+                  isSelected={formData.mapId === map._id}
+                  onSelect={(mapId) => setFormData({
+                    ...formData,
+                    mapId: formData.mapId === mapId ? undefined : mapId
+                  })}
+                  compact={true}
+                  className="modal-map-card"
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Map className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium mb-2">No maps created yet</p>
+              <p className="text-sm mb-4">Create your first map to associate with locations</p>
+              <Button asChild variant="outline">
+                <a href="/maps/new" target="_blank" rel="noopener noreferrer">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New Map
+                </a>
+              </Button>
+            </div>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={getModalTitle()}
+      description={getModalDescription()}
+      size="4xl"
+      maxHeight="90vh"
+    >
+      <LoadingSpinner isLoading={isSubmitting} overlay text={isEditing ? "Updating location..." : "Creating location..."} />
+
+      {/* Error Display */}
+      {error && (
+        <div className="mb-4">
+          <ErrorDisplay error={error} />
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <FormTabs tabs={tabs} defaultValue="basic" />
+
+        <Separator />
+
+        {/* Action Bar */}
+        <div className="flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClose}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Creating..." : "Create Location"}
-          </button>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex items-center gap-2"
+          >
+            {isSubmitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            {isEditing ? "Update Location" : "Create Location"}
+          </Button>
         </div>
-      </div>
-    </div>
+      </form>
+    </BaseModal>
   );
 };
 

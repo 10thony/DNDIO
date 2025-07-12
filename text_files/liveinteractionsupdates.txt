@@ -1,0 +1,92 @@
+we will need to add a new turn object into the project
+
+a turn is comproised of:
+a turnOwner which can either be an reference to an instance of a NPC, player character or monster 
+an action taken column that references the action the turnOwner took during the turn
+a turnTarget which is a reference to either an npc, player character or monster that is the target of the action taken by the turn turnOwner.
+a distance available to travel field 
+
+live interactions modal needs to be updated as following:
+
+player characters (pc), npcs, monsters, will need to be update to support an initiative column, this value is set when a DM starts a live interaction and is triggered for all instances of the objects within the live interaction.
+
+the live interaction needs a modal.
+
+below are the Live Interaction Rules, global UI components (ui components that show in all tabs across the modal) tabs, states, and flows that the live interaction modal needs to support
+##
+Live interactions Rules
+
+initiative gets rolled for applicable objects when a live interaction begins (npcs,pcs,monsters)
+The live interaction modal is populated to all users with player character's in the interaction.
+a live interaction must have a reward XP value
+a live interaction must have atleast 1 reward item
+a turn can only be skipped by the person who's turn it is or the DM
+a turn can only be taken by player character's in the interaction
+an npc turn or monster turn is taken by the DM
+all updates must be reflected live
+a DM can skip a player's turn but must submit a reason why and the turn must be logged as skipped
+
+DMs are able to submit turns for NPCS and monsters ahead of time
+Players are able
+
+
+##
+Global components
+
+an initiative bar that shows the order of initiative this will contain a list of InitiativeBarButtons which are buttons that navigate the user to the details modal of the object (monster modal if its a monster initiative bar button which is only available to DMs not normal users, or the npcreationmodal if its a player character and the signed in user is the creator of said character, or the npccreationmodal if the logged in user is the live interaction's dm)
+##
+
+##
+Tabs
+
+---
+Live interaction Map Tab
+
+this displays the Map associated with the live interaction  (if the interaction has multiple maps, allow the DM to select the "current" map)
+
+for DMs they can "place" a monster or NPC where they please, DMs can assign default locations on the map for specific player characters
+for players they need to be able to move their player character (accori)
+
+
+
+------
+(N)PC Turn Tab, Monster turn tab. (
+    for player's this is the "My Turn Tab" that allows them to navigate their options or presumbit their turn early
+    for DM's they get one tab for each NPC or Monster so they can prepare for that object's turn either presubmitting the turn or just navigating the options)
+
+this allows for dialog to be submitted as a bonus action (this needs to be automated for NPCS and monsters they will have references to a dialog table but this is not implemented yet so for now this can be just a chat feature thats not saved to the database and clears when the modals closed)
+this allows the user to select a target for their action (self or a npc,pc or monster in the interaction)
+This allows the user to select from the Npcs,pc or monster available actions list , 
+this displays the available spell slots (if applicable for the class of the (N)PC or monster)
+this displays any affects that the monster or (N)PC might have on it (poisin,healing from another player, encumberance, burning, shocked etc)
+this tab must have a subcomponent that contains another tabbed container, this data in these subtabs is dynamic but the tabs exist globally
+the subtabs are:
+     an actions subtab (where the user can select the action theyll take this turn)
+     an equipment subtab which shows the equipment of the (N)PC/Monster (when the user does something in the equipment tab this is a bonus action)
+     a maps subtap that allows the user to move their player character (or lets the dm move the monster or npc)
+
+
+------
+Current Turn tab
+this plays through a (N)PCs or monsters submitted turn tab if one hasnt been submitted whoever's turn it is can submit their turn tab in the current turn tab
+this will run the update on the affected target of the turn
+##
+states
+
+pending initiative
+initiative rolled
+pending turn sumbissions
+pending current turn
+current turn submitted
+presubmit turn
+
+
+##
+flows
+
+base flow:
+
+the DM starts an interaction
+initiative is calculated for all pcs,npcs,monsters in the interaction
+the turn order is generated
+the players and DM is displayed the live interaciton modal

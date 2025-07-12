@@ -1,0 +1,17 @@
+npcs, pcs need a speed column that dictate how far they can travel in feet -done
+
+maps need more states for cells, currently its just occupied but we need to be able to reference what occupies it (refence to either a player character, npcs, or monster instance)
+maps needs more general functionality, they can be created  used in a preview (the current way theyre used)
+    but now they need to also be able to be used in live interactions, this means placing monsters, player characters, npcs, in initial positions on the map
+        and having the ability for them to move within the distance of their speed (one cell they want to traverse through costs 5ft of their available turn distance travel)
+    map cells also need a additional state of terrain, from soft, rough, intense, brutal, deadly, with modifiers of (-1,-3,-5,-7,-9) these modifiers get added against a player character's ability scores, the targeted abilty scores can be specified by the map creator
+    maps also need the ability to track the current and previous positions of whatever objects (monsters, pcs,npcs) exist in an instance of the map
+    maps need the ability to reset to original position or to redo (move the last tracked position(s)  and let the user override the positon(s) value)
+    map cells when being assigned an occupant (or a different type other than open/available) require a custom colour code for easy identification on the grid
+maps need to support "moving" objects which means if an object is placed to occupy one cell, users must be able to move that occupant to a different cell, but the map needs to check the distance from the original cell to the new cell and make sure the object trying to move has enough speed (speed is measured by distance avialble to travel)
+map previews need to show cells that are in a different state 
+
+if the 
+
+we need to make the above enhancements and then the equipement.txt enhancements before we can implement the liveinteractionsupdates.txt
+

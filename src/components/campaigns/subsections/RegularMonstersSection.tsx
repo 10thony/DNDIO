@@ -17,7 +17,7 @@ interface RegularMonstersSectionProps {
   canUnlink?: boolean;
 }
 
-type ModalType = "entitySelection" | "monsterCreation" | null;
+type ModalType = "entitySelection" | "monsterCreation" | "monsterView" | null;
 
 const RegularMonstersSection: React.FC<RegularMonstersSectionProps> = ({
   campaignId,
@@ -28,6 +28,7 @@ const RegularMonstersSection: React.FC<RegularMonstersSectionProps> = ({
 }) => {
   const { user } = useUser();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [selectedMonsterId, setSelectedMonsterId] = useState<Id<"monsters"> | null>(null);
   const { isCollapsed, toggleCollapsed } = useCollapsibleSection(
     `regular-monsters-${campaignId}`,
     false
@@ -53,6 +54,7 @@ const RegularMonstersSection: React.FC<RegularMonstersSectionProps> = ({
 
   const closeModal = () => {
     setActiveModal(null);
+    setSelectedMonsterId(null);
   };
 
   const handleEntitySelect = async (entityId: Id<any>) => {
@@ -121,7 +123,19 @@ const RegularMonstersSection: React.FC<RegularMonstersSectionProps> = ({
   };
 
   const handleMonsterClick = (monsterId: Id<"monsters">) => {
-    navigateToDetail(`/monsters/${monsterId}?campaignId=${campaignId}`);
+    setSelectedMonsterId(monsterId);
+    setActiveModal("monsterView");
+  };
+
+  const handleMonsterViewSuccess = (monsterId: Id<"monsters">) => {
+    // Refresh the data after editing
+    onUpdate();
+    closeModal();
+  };
+
+  const handleMonsterViewClose = () => {
+    // Always close the modal when the close button is clicked
+    closeModal();
   };
 
   return (
@@ -211,6 +225,19 @@ const RegularMonstersSection: React.FC<RegularMonstersSectionProps> = ({
           isOpen={true}
           onClose={closeModal}
           onSuccess={handleMonsterCreated}
+        />
+      )}
+
+      {activeModal === "monsterView" && selectedMonsterId && (
+        <MonsterCreationModal
+          isOpen={true}
+          onClose={handleMonsterViewClose}
+          onSuccess={handleMonsterViewSuccess}
+          isReadOnly={true}
+          monsterId={selectedMonsterId}
+          campaignId={campaignId}
+          title="View Monster"
+          description="View monster details"
         />
       )}
     </div>

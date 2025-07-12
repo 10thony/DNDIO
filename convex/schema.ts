@@ -49,6 +49,7 @@ export default defineSchema({
     hitPoints: v.float64(),
     armorClass: v.float64(),
     proficiencyBonus: v.float64(),
+    speed: v.optional(v.string()),
     actions: v.array(v.id("actions")),
     factionId: v.optional(v.id("factions")),
     userId: v.id("users"),
@@ -93,6 +94,7 @@ export default defineSchema({
     hitPoints: v.float64(),
     armorClass: v.float64(),
     proficiencyBonus: v.float64(),
+    speed: v.optional(v.string()),
     actions: v.array(v.id("actions")),
     userId: v.id("users"),
     createdAt: v.number(),
@@ -234,7 +236,29 @@ export default defineSchema({
         v.literal("inbounds"),
         v.literal("outbounds"),
         v.literal("occupied")
-      )
+      ),
+      terrain: v.optional(v.union(
+        v.literal("normal"),
+        v.literal("soft"),
+        v.literal("rough"),
+        v.literal("intense"),
+        v.literal("brutal"),
+        v.literal("deadly")
+      )),
+      terrainModifier: v.optional(v.number()),
+      affectedAbilityScores: v.optional(v.array(v.string())),
+      occupant: v.optional(v.object({
+        id: v.string(),
+        type: v.union(
+          v.literal("playerCharacter"),
+          v.literal("npc"),
+          v.literal("monster")
+        ),
+        color: v.string(),
+        speed: v.number(),
+        name: v.string()
+      })),
+      customColor: v.optional(v.string())
     })),
     createdBy: v.id("users"),
     createdAt: v.number(),
@@ -773,5 +797,41 @@ export default defineSchema({
     payload: v.any(),
     isRead: v.boolean(),
     createdAt: v.number(),
+  }),
+  mapInstances: defineTable({
+    mapId: v.id("maps"),
+    campaignId: v.optional(v.id("campaigns")),
+    interactionId: v.optional(v.id("interactions")),
+    name: v.string(),
+    currentPositions: v.array(v.object({
+      entityId: v.string(),
+      entityType: v.union(
+        v.literal("playerCharacter"),
+        v.literal("npc"),
+        v.literal("monster")
+      ),
+      x: v.number(),
+      y: v.number(),
+      speed: v.number(),
+      name: v.string(),
+      color: v.string()
+    })),
+    movementHistory: v.array(v.object({
+      entityId: v.string(),
+      entityType: v.union(
+        v.literal("playerCharacter"),
+        v.literal("npc"),
+        v.literal("monster")
+      ),
+      fromX: v.number(),
+      fromY: v.number(),
+      toX: v.number(),
+      toY: v.number(),
+      timestamp: v.number(),
+      distance: v.number()
+    })),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
   }),
 });

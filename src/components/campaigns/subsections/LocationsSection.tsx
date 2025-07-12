@@ -4,7 +4,6 @@ import { useUser } from "@clerk/clerk-react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { useCollapsibleSection } from "../../../hooks/useCollapsibleSection";
-import { useNavigationState } from "../../../hooks/useNavigationState";
 import EntitySelectionModal from "../../modals/EntitySelectionModal";
 import LocationCreationModal from "../../modals/LocationCreationModal";
 import "./LocationsSection.css";
@@ -17,7 +16,15 @@ interface LocationsSectionProps {
   canUnlink?: boolean;
 }
 
-type ModalType = "entitySelection" | "locationCreation" | null;
+type ModalType = "entitySelection" | "locationCreation" | "locationEdit" | null;
+
+interface LocationModalData {
+  id?: Id<"locations">;
+  name?: string;
+  description?: string;
+  type?: string;
+  mapId?: Id<"maps">;
+}
 
 const LocationsSection: React.FC<LocationsSectionProps> = ({
   campaignId,
@@ -28,11 +35,11 @@ const LocationsSection: React.FC<LocationsSectionProps> = ({
 }) => {
   const { user } = useUser();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [selectedLocation, setSelectedLocation] = useState<LocationModalData | null>(null);
   const { isCollapsed, toggleCollapsed } = useCollapsibleSection(
     `locations-${campaignId}`,
     false
   );
-  const { navigateToDetail } = useNavigationState();
 
   const locations = useQuery(api.locations.list);
   const updateCampaign = useMutation(api.campaigns.updateCampaign);
@@ -46,11 +53,24 @@ const LocationsSection: React.FC<LocationsSectionProps> = ({
   };
 
   const openLocationCreation = () => {
+    setSelectedLocation(null);
     setActiveModal("locationCreation");
+  };
+
+  const openLocationEdit = (location: any) => {
+    setSelectedLocation({
+      id: location._id,
+      name: location.name,
+      description: location.description,
+      type: location.type,
+      mapId: location.mapId,
+    });
+    setActiveModal("locationEdit");
   };
 
   const closeModal = () => {
     setActiveModal(null);
+    setSelectedLocation(null);
   };
 
   const handleEntitySelect = async (entityId: Id<any>) => {
@@ -118,10 +138,6 @@ const LocationsSection: React.FC<LocationsSectionProps> = ({
     }
   };
 
-  const handleLocationClick = (locationId: Id<"locations">) => {
-    navigateToDetail(`/locations/${locationId}?campaignId=${campaignId}`);
-  };
-
   return (
     <div className="locations-section">
       <div className="section-header">
@@ -163,7 +179,7 @@ const LocationsSection: React.FC<LocationsSectionProps> = ({
                 <div key={location._id} className="entity-card">
                   <div 
                     className="entity-info clickable"
-                    onClick={() => handleLocationClick(location._id)}
+                    onClick={() => openLocationEdit(location)}
                   >
                     <h4 className="entity-name">{location.name}</h4>
                     <p className="entity-description">
@@ -204,11 +220,13 @@ const LocationsSection: React.FC<LocationsSectionProps> = ({
         />
       )}
 
-      {activeModal === "locationCreation" && (
+      {(activeModal === "locationCreation" || activeModal === "locationEdit") && (
         <LocationCreationModal
           isOpen={true}
           onClose={closeModal}
           onSuccess={handleLocationCreated}
+          initialData={selectedLocation}
+          isEditing={activeModal === "locationEdit"}
         />
       )}
     </div>

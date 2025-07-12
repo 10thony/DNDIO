@@ -40,6 +40,7 @@ export const createNpc = mutation({
     hitPoints: v.float64(),
     armorClass: v.float64(),
     proficiencyBonus: v.float64(),
+    speed: v.optional(v.string()),
     actions: v.array(v.id("actions")),
     clerkId: v.string(),
   },
@@ -88,6 +89,7 @@ export const updateNpc = mutation({
   args: {
     id: v.id("npcs"),
     name: v.optional(v.string()),
+    speed: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
@@ -147,6 +149,7 @@ export const importNpcData = mutation({
           "hitPoints": 6,
           "armorClass": 10,
           "proficiencyBonus": 2,
+          "speed": "30 ft",
           "actions": [],
           "createdAt": 1722200000,
           "updatedAt": 1722200000
@@ -180,6 +183,7 @@ export const importNpcData = mutation({
           "hitPoints": 15,
           "armorClass": 13,
           "proficiencyBonus": 2,
+          "speed": "30 ft",
           "actions": [],
           "createdAt": 1722200000,
           "updatedAt": 1722200000
@@ -211,6 +215,7 @@ export const importNpcData = mutation({
           "hitPoints": 7,
           "armorClass": 13,
           "proficiencyBonus": 2,
+          "speed": "30 ft",
           "actions": [],
           "createdAt": 1722200000,
           "updatedAt": 1722200000
@@ -244,6 +249,7 @@ export const importNpcData = mutation({
           "hitPoints": 27,
           "armorClass": 18,
           "proficiencyBonus": 2,
+          "speed": "30 ft",
           "actions": [],
           "createdAt": 1722200000,
           "updatedAt": 1722200000
@@ -282,6 +288,7 @@ export const importNpcData = mutation({
           "hitPoints": 18,
           "armorClass": 14,
           "proficiencyBonus": 2,
+          "speed": "30 ft",
           "actions": [],
           "createdAt": 1722200000,
           "updatedAt": 1722200000

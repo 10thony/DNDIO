@@ -88,36 +88,78 @@ const CampaignDetail: React.FC = () => {
 
   // Calculate boss monsters (CR 10 or higher) - memoized to prevent recalculation
   const getBossMonsterCount = useMemo(() => {
-    if (!campaign || !monsters) return 0;
-    const campaignMonsters = monsters.filter(monster => 
-      campaign.monsterIds?.includes(monster._id)
-    );
-    return campaignMonsters.filter(monster => {
-      const cr = parseFloat(monster.challengeRating);
-      return !isNaN(cr) && cr >= 10;
-    }).length;
+    try {
+      if (!campaign || !monsters) return 0;
+      const campaignMonsters = monsters.filter(monster => 
+        campaign.monsterIds?.includes(monster._id)
+      );
+      return campaignMonsters.filter(monster => {
+        const cr = parseFloat(monster.challengeRating);
+        return !isNaN(cr) && cr >= 10;
+      }).length;
+    } catch (error) {
+      console.error('Error calculating boss monster count:', error);
+      return 0;
+    }
   }, [campaign, monsters]);
 
   // Update validation state when campaign data changes - memoized to prevent unnecessary updates
   const newValidationState = useMemo(() => {
-    if (!campaign) return validationState;
+    if (!campaign) {
+      return {
+        hasName: false,
+        hasTimelineEvents: false,
+        hasPlayerCharacters: false,
+        hasNPCs: false,
+        hasQuests: false,
+        hasLocations: false,
+        hasBossMonsters: false,
+        hasInteractions: false,
+      };
+    }
 
-    return {
-      hasName: !!campaign.name?.trim(),
-      hasTimelineEvents: (campaign.timelineEventIds?.length || 0) >= requirements.timelineEventsRequired,
-      hasPlayerCharacters: (campaign.participantPlayerCharacterIds?.length || 0) >= requirements.playerCharactersRequired,
-      hasNPCs: (campaign.npcIds?.length || 0) >= requirements.npcsRequired,
-      hasQuests: (campaign.questIds?.length || 0) >= requirements.questsRequired,
-      hasLocations: (campaign.locationIds?.length || 0) >= requirements.locationsRequired,
-      hasBossMonsters: getBossMonsterCount >= requirements.bossMonstersRequired,
-      hasInteractions: (interactions?.length || 0) >= requirements.interactionsRequired,
-    };
-  }, [campaign, getBossMonsterCount, interactions, validationState]);
+    try {
+      return {
+        hasName: !!campaign.name?.trim(),
+        hasTimelineEvents: (campaign.timelineEventIds?.length || 0) >= requirements.timelineEventsRequired,
+        hasPlayerCharacters: (campaign.participantPlayerCharacterIds?.length || 0) >= requirements.playerCharactersRequired,
+        hasNPCs: (campaign.npcIds?.length || 0) >= requirements.npcsRequired,
+        hasQuests: (campaign.questIds?.length || 0) >= requirements.questsRequired,
+        hasLocations: (campaign.locationIds?.length || 0) >= requirements.locationsRequired,
+        hasBossMonsters: getBossMonsterCount >= requirements.bossMonstersRequired,
+        hasInteractions: (interactions?.length || 0) >= requirements.interactionsRequired,
+      };
+    } catch (error) {
+      console.error('Error calculating validation state:', error);
+      // Return safe default state in case of error
+      return {
+        hasName: false,
+        hasTimelineEvents: false,
+        hasPlayerCharacters: false,
+        hasNPCs: false,
+        hasQuests: false,
+        hasLocations: false,
+        hasBossMonsters: false,
+        hasInteractions: false,
+      };
+    }
+  }, [campaign, getBossMonsterCount, interactions]);
 
   // Update validation state only when it actually changes
   useEffect(() => {
-    setValidationState(newValidationState);
-  }, [newValidationState]);
+    try {
+      // Only update if the validation state actually changed
+      const hasChanged = Object.keys(newValidationState).some(
+        key => validationState[key as keyof CampaignValidationState] !== newValidationState[key as keyof CampaignValidationState]
+      );
+      
+      if (hasChanged) {
+        setValidationState(newValidationState);
+      }
+    } catch (error) {
+      console.error('Error updating validation state:', error);
+    }
+  }, [newValidationState, validationState]);
 
   const isCampaignComplete = Object.values(validationState).every(Boolean);
 
@@ -252,14 +294,7 @@ const CampaignDetail: React.FC = () => {
               🎲 Request to Join
             </button>
           )}
-          {(isAdmin || campaign.dmId === user?.id) && (
-            <button 
-              className="edit-button"
-              onClick={() => navigate(`/campaigns/${campaign._id}/edit`)}
-            >
-              ✏️ Edit Campaign
-            </button>
-          )}
+         
           <AdminOnly>
             <button 
               className="delete-button danger"

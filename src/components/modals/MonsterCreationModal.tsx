@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../../convex/_generated/api";
@@ -51,6 +51,10 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
 }) => {
   const { user } = useUser();
   const createMonster = useMutation(api.monsters.createMonster);
+  const updateMonster = useMutation(api.monsters.updateMonster);
+  
+  // Internal edit state
+  const [isEditing, setIsEditing] = useState(false);
   
   // Get monster data if viewing an existing monster
   const monster = useQuery(
@@ -124,6 +128,9 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
     return false;
   };
 
+  // Determine if the modal should be in read-only mode
+  const isReadOnlyMode = isReadOnly && !isEditing;
+
   // Auto-calculate monster stats based on CR and other factors
   const handleAutoCalculateStats = () => {
     if (!formData.challengeRating) return;
@@ -154,12 +161,13 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
       reset();
       clearErrors();
       setError(null);
+      setIsEditing(false);
     }
   }, [isOpen, reset, clearErrors, setError]);
 
   // Populate form with monster data when viewing existing monster
   useEffect(() => {
-    if (isOpen && monster && isReadOnly) {
+    if (isOpen && monster && (isReadOnly || monsterId)) {
       // Type guard to ensure we have a monster object with the expected properties
       if (monster && typeof monster === 'object') {
         const monsterData: Partial<MonsterFormData> = {
@@ -198,7 +206,7 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
         populateForm(monsterData);
       }
     }
-  }, [isOpen, monster, isReadOnly, populateForm]);
+  }, [isOpen, monster, isReadOnly, monsterId, populateForm]);
 
   // Populate form with initial data when provided
   useEffect(() => {
@@ -210,7 +218,7 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (isReadOnly || !validateForm() || !user) {
+    if (isReadOnlyMode || !validateForm() || !user) {
       if (hasErrors) {
         setError("Please fix the form errors before submitting.");
       }
@@ -221,32 +229,77 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
     setError(null);
 
     try {
-      const monsterData = {
-        ...formData,
-        clerkId: user.id,
-      };
+      if (monsterId) {
+        // Update existing monster
+        const updateData = {
+          id: monsterId,
+          name: formData.name,
+          source: formData.source,
+          page: formData.page,
+          size: formData.size,
+          type: formData.type,
+          tags: formData.tags,
+          alignment: formData.alignment,
+          armorClass: formData.armorClass,
+          armorType: formData.armorType,
+          hitPoints: formData.hitPoints,
+          hitDice: formData.hitDice,
+          proficiencyBonus: formData.proficiencyBonus,
+          speed: formData.speed,
+          abilityScores: formData.abilityScores,
+          savingThrows: formData.savingThrows,
+          skills: formData.skills,
+          damageVulnerabilities: formData.damageVulnerabilities,
+          damageResistances: formData.damageResistances,
+          damageImmunities: formData.damageImmunities,
+          conditionImmunities: formData.conditionImmunities,
+          senses: formData.senses,
+          languages: formData.languages,
+          challengeRating: formData.challengeRating,
+          experiencePoints: formData.experiencePoints,
+          traits: formData.traits,
+          actions: formData.actions,
+          reactions: formData.reactions,
+          legendaryActions: formData.legendaryActions,
+          lairActions: formData.lairActions,
+          regionalEffects: formData.regionalEffects,
+          environment: formData.environment,
+        };
 
-      const monsterId = await createMonster(monsterData);
+        await updateMonster(updateData);
+        onSuccess(monsterId);
+        setIsEditing(false); // Exit edit mode after successful update
+      } else {
+        // Create new monster
+        const monsterData = {
+          ...formData,
+          clerkId: user.id,
+        };
+
+        const newMonsterId = await createMonster(monsterData);
+        onSuccess(newMonsterId);
+      }
       
-      onSuccess(monsterId);
       onClose();
     } catch (error) {
-      console.error("Error creating monster:", error);
-      setError("Failed to create monster. Please try again.");
+      console.error("Error saving monster:", error);
+      setError("Failed to save monster. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleCancel = () => {
-    onClose();
+    if (isEditing) {
+      // If in edit mode, exit edit mode and return to read-only view
+      setIsEditing(false);
+    } else {
+      onClose();
+    }
   };
 
   const handleEdit = () => {
-    // Switch to edit mode by closing and reopening in edit mode
-    onClose();
-    // The parent component should handle reopening in edit mode
-    // For now, we'll just close and let the parent handle it
+    setIsEditing(true);
   };
 
   if (!user) {
@@ -255,13 +308,15 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
 
   const getModalTitle = () => {
     if (title) return title;
-    if (isReadOnly) return "View Monster";
+    if (isReadOnlyMode) return "View Monster";
+    if (monsterId) return "Edit Monster";
     return "Create New Monster";
   };
 
   const getModalDescription = () => {
     if (description) return description;
-    if (isReadOnly) return "View details for this monster";
+    if (isReadOnlyMode) return "View details for this monster";
+    if (monsterId) return "Edit monster details";
     return "Define a new monster with comprehensive D&D 5e stats and abilities";
   };
 
@@ -276,7 +331,7 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
           setField={setField}
           setNestedField={setNestedField}
           errors={errors}
-          isReadOnly={isReadOnly}
+          isReadOnly={isReadOnlyMode}
         />
       ),
     },
@@ -290,7 +345,7 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
           setField={setField}
           setNestedField={setNestedField}
           errors={errors}
-          isReadOnly={isReadOnly}
+          isReadOnly={isReadOnlyMode}
         />
       ),
     },
@@ -304,7 +359,7 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
           setField={setField}
           setNestedField={setNestedField}
           errors={errors}
-          isReadOnly={isReadOnly}
+          isReadOnly={isReadOnlyMode}
         />
       ),
     },
@@ -318,7 +373,7 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
           setField={setField}
           setNestedField={setNestedField}
           errors={errors}
-          isReadOnly={isReadOnly}
+          isReadOnly={isReadOnlyMode}
         />
       ),
     },
@@ -332,7 +387,7 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
           setField={setField}
           setNestedField={setNestedField}
           errors={errors}
-          isReadOnly={isReadOnly}
+          isReadOnly={isReadOnlyMode}
         />
       ),
     },
@@ -347,7 +402,7 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
       size="5xl"
       maxHeight="90vh"
     >
-      <LoadingSpinner isLoading={isSubmitting} overlay text={isReadOnly ? "Loading..." : "Creating monster..."} />
+      <LoadingSpinner isLoading={isSubmitting} overlay text={isReadOnlyMode ? "Loading..." : (monsterId ? "Updating monster..." : "Creating monster...")} />
 
       {/* Enhanced Error Display */}
       {(error || hasErrors) && (
@@ -379,7 +434,7 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
         {/* Action Bar */}
         <div className="flex justify-between items-center gap-3">
           <div className="flex gap-2">
-            {!isReadOnly && formData.challengeRating && (
+            {!isReadOnlyMode && formData.challengeRating && (
               <Button
                 type="button"
                 variant="outline"
@@ -400,9 +455,9 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
               onClick={handleCancel}
               disabled={isSubmitting}
             >
-              {isReadOnly ? "Close" : "Cancel"}
+              {isReadOnlyMode ? "Close" : (isEditing ? "Cancel Edit" : "Cancel")}
             </Button>
-            {isReadOnly && canEditMonster() && (
+            {isReadOnlyMode && canEditMonster() && (
               <Button
                 type="button"
                 variant="outline"
@@ -413,7 +468,7 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
                 Edit
               </Button>
             )}
-            {!isReadOnly && (
+            {!isReadOnlyMode && (
               <Button
                 type="submit"
                 disabled={isSubmitting || hasErrors}
@@ -424,7 +479,7 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
                 ) : (
                   <Save className="h-4 w-4" />
                 )}
-                Create Monster
+                {monsterId ? "Update Monster" : "Create Monster"}
               </Button>
             )}
           </div>

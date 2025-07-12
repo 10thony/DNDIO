@@ -1,0 +1,31 @@
+Player Characters (aka PCs), NPCs and Monsters will all need to be updated to support references to equipment.
+
+currently there are items and this is a good foundation, the item object structure must be adapted to have modifiers that
+determine how they affect the character/monster's ability score.
+the item schema will also need to be updated to support a new optional column that represents the typeOfArmor (if this is null/empty its assumed the item is not armor).
+items must also have a decay timer (durability) which wont be represented by a date but rather by a random max number (the more rare an item the longer the durability max cap can be)
+durability gets generated based on the calculated (base durability base dur mapping *2) + randomlygeneratednumber(maxNumber by rarity see MaxDurMapping)
+
+base dur mapping:
+common 10
+uncommon 12
+rare 15
+very rare 20
+legendary 25
+unique 30
+
+Max Dur Mapping:
+common 100
+uncommon 125
+rare 150
+very rare 175
+legendary 200
+artifact 225 
+unique 250
+
+PCs, npcs, monsters, must have their schema updated to have multiple sets of items now, an inventory with a Capacity is calculated by the PCs,Npcs,monster's Strength attribute * 2 + randomNumber(strength attribute as the max)
+a subset of that is their Equipment which includeds, headgear, armwear, chestwear, legwear, footwear. 
+
+
+the modals for pcs npcs monsters must be updated to reflect the changes made to their schemas
+

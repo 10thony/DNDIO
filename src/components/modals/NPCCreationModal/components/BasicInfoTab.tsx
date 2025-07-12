@@ -50,7 +50,7 @@ const BasicInfoTab: React.FC<CharacterFormProps> = ({
       return (
         <div className="p-3 bg-muted rounded-md border">
           <span className="text-sm font-medium text-muted-foreground">{fieldName}:</span>
-          <span className="ml-2">{value || "Not specified"}</span>
+          <span className="ml-2">{fieldName === "speed" && value ? `${value} ft` : value || "Not specified"}</span>
         </div>
       );
     }
@@ -67,6 +67,25 @@ const BasicInfoTab: React.FC<CharacterFormProps> = ({
             ))}
           </SelectContent>
         </Select>
+      );
+    }
+
+    // Special handling for speed field
+    if (fieldName === "speed") {
+      const numericValue = typeof value === "string" ? value.replace(" ft", "") : value;
+      return (
+        <Input
+          type="number"
+          value={numericValue}
+          onChange={(e) => {
+            const numValue = parseInt(e.target.value) || 0;
+            setField(fieldName as any, numValue.toString());
+          }}
+          placeholder="Enter speed"
+          className={errors[fieldName] ? "border-destructive" : ""}
+          min="0"
+          max="200"
+        />
       );
     }
 
@@ -138,6 +157,12 @@ const BasicInfoTab: React.FC<CharacterFormProps> = ({
             <Label htmlFor="proficiencyBonus">Proficiency Bonus</Label>
             {renderField("proficiencyBonus", formData.proficiencyBonus, "number")}
             <ErrorDisplay errors={errors} field="proficiencyBonus" variant="inline" />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="speed">Speed (ft)</Label>
+            {renderField("speed", formData.speed, "number")}
+            <ErrorDisplay errors={errors} field="speed" variant="inline" />
           </div>
         </div>
       </FormSection>

@@ -10,6 +10,7 @@ export interface CharacterFormData {
   hitPoints: number;
   armorClass: number;
   proficiencyBonus: number;
+  speed: string;
   abilityScores: {
     strength: number;
     dexterity: number;
