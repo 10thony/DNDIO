@@ -7,6 +7,9 @@ export interface AbilityScores {
   charisma: number;
 }
 
+// Re-export item types for convenience
+export type { Item, ItemType, ItemRarity, ArmorType, Durability, AbilityModifiers, DamageRoll } from './item';
+
 export interface Equipment {
   headgear?: string; // Item ID
   armwear?: string;

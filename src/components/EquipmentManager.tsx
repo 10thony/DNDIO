@@ -30,7 +30,7 @@ import {
   Wrench,
   Star
 } from "lucide-react";
-import { Equipment, Inventory, EquipmentBonuses, Item } from "../types/character";
+import { Equipment, Inventory, EquipmentBonuses, Item, AbilityScores } from "../types/character";
 import { 
   calculateInventoryCapacity, 
   calculateEquipmentBonuses, 
@@ -43,14 +43,7 @@ interface EquipmentManagerProps {
   equipment: Equipment;
   inventory: Inventory;
   equipmentBonuses?: EquipmentBonuses;
-  abilityScores: {
-    strength: number;
-    dexterity: number;
-    constitution: number;
-    intelligence: number;
-    wisdom: number;
-    charisma: number;
-  };
+  abilityScores: AbilityScores;
   onEquipmentChange: (equipment: Equipment) => void;
   onInventoryChange: (inventory: Inventory) => void;
   onBonusesChange?: (bonuses: EquipmentBonuses) => void;
@@ -99,7 +92,7 @@ const EquipmentManager: React.FC<EquipmentManagerProps> = ({
   // Get inventory item details
   const inventoryItems = useQuery(
     api.items.getItemsByIds,
-    user?.id && inventory.items.length > 0 ? { clerkId: user.id, itemIds: inventory.items } : "skip"
+    user?.id && inventory.items.length > 0 ? { clerkId: user.id, itemIds: inventory.items as Id<"items">[] } : "skip"
   );
 
   const equipmentSlots = [
@@ -135,7 +128,8 @@ const EquipmentManager: React.FC<EquipmentManagerProps> = ({
     
     // Recalculate bonuses
     if (onBonusesChange && equippedItems) {
-      const updatedItems = equippedItems.concat(availableItems?.find(item => item._id === itemId) || []);
+      const foundItem = availableItems?.find((item: Item) => item._id === itemId);
+      const updatedItems = foundItem ? equippedItems.concat(foundItem) : equippedItems;
       const newBonuses = calculateEquipmentBonuses(updatedItems, abilityScores);
       onBonusesChange(newBonuses);
     }
@@ -163,7 +157,7 @@ const EquipmentManager: React.FC<EquipmentManagerProps> = ({
     
     // Recalculate bonuses
     if (onBonusesChange && equippedItems) {
-      const updatedItems = equippedItems.filter(item => item._id !== itemId);
+      const updatedItems = equippedItems.filter((item: Item) => item._id !== itemId);
       const newBonuses = calculateEquipmentBonuses(updatedItems, abilityScores);
       onBonusesChange(newBonuses);
     }
@@ -195,12 +189,12 @@ const EquipmentManager: React.FC<EquipmentManagerProps> = ({
   const getItemForSlot = (slot: string) => {
     if (slot === 'accessories') return null;
     const itemId = (equipment as any)[slot];
-    return equippedItems?.find(item => item._id === itemId) || null;
+    return equippedItems?.find((item: Item) => item._id === itemId) || null;
   };
 
   const getAccessoryItems = () => {
     if (!equippedItems) return [];
-    return equippedItems.filter(item => equipment.accessories.includes(item._id));
+    return equippedItems.filter((item: Item) => item._id && equipment.accessories.includes(item._id));
   };
 
   const renderDurabilityBar = (item: Item) => {
@@ -285,21 +279,21 @@ const EquipmentManager: React.FC<EquipmentManagerProps> = ({
         <CardContent className="p-3 pt-0">
           {accessories.length > 0 ? (
             <div className="space-y-2">
-              {accessories.map((item) => (
+              {accessories.map((item: Item) => (
                 <div key={item._id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                   <div className="flex-1">
                     <div className="text-sm font-medium">{item.name}</div>
                     {renderDurabilityBar(item)}
                   </div>
-                  {!isReadOnly && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleUnequipItem(item._id, 'accessories')}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  )}
+                                      {!isReadOnly && item._id && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleUnequipItem(item._id!, 'accessories')}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
                 </div>
               ))}
             </div>
@@ -378,10 +372,11 @@ const EquipmentManager: React.FC<EquipmentManagerProps> = ({
             <div className="mb-4 p-3 bg-gray-50 rounded">
               <Label className="text-sm font-medium mb-2 block">Select Item to Add</Label>
               <div className="space-y-2">
-                {availableItems?.filter(item => 
+                {availableItems?.filter((item: Item) => 
+                  item._id && 
                   !inventory.items.includes(item._id) && 
                   !equippedItemIds.includes(item._id)
-                ).map((item) => (
+                ).map((item: Item) => (
                   <div key={item._id} className="flex items-center justify-between p-2 bg-white rounded border">
                     <div>
                       <div className="text-sm font-medium">{item.name}</div>
@@ -390,7 +385,7 @@ const EquipmentManager: React.FC<EquipmentManagerProps> = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleAddToInventory(item._id)}
+                      onClick={() => item._id && handleAddToInventory(item._id)}
                     >
                       Add
                     </Button>
@@ -403,7 +398,7 @@ const EquipmentManager: React.FC<EquipmentManagerProps> = ({
           {/* Inventory Items */}
           <div className="space-y-2">
             {inventoryItems && inventoryItems.length > 0 ? (
-              inventoryItems.map((item) => (
+              inventoryItems.map((item: Item) => (
                 <div key={item._id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                   <div className="flex-1">
                     <div className="text-sm font-medium">{item.name}</div>
@@ -425,7 +420,7 @@ const EquipmentManager: React.FC<EquipmentManagerProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRemoveFromInventory(item._id)}
+                        onClick={() => item._id && handleRemoveFromInventory(item._id)}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -520,10 +515,10 @@ const EquipmentManager: React.FC<EquipmentManagerProps> = ({
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {inventoryItems?.filter(item => {
+                {inventoryItems?.filter((item: Item) => {
                   const slot = equipmentSlots.find(s => s.key === selectedSlot);
                   return slot?.allowedTypes.includes(item.type);
-                }).map((item) => (
+                }).map((item: Item) => (
                   <div key={item._id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                     <div>
                       <div className="text-sm font-medium">{item.name}</div>
@@ -533,8 +528,10 @@ const EquipmentManager: React.FC<EquipmentManagerProps> = ({
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        handleEquipItem(item._id, selectedSlot);
-                        setSelectedSlot(null);
+                        if (item._id) {
+                          handleEquipItem(item._id, selectedSlot);
+                          setSelectedSlot(null);
+                        }
                       }}
                     >
                       Equip

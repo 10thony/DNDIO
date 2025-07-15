@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
-import { Id } from "../../../../convex/_generated/dataModel";
+import { Id } from "../../../../../convex/_generated/dataModel";
 import { CharacterFormData, CharacterFormHook } from "../types/npcForm";
-import { calculateInventoryCapacity } from "../../../utils/equipmentUtils";
+import { calculateInventoryCapacity } from "../../../../utils/equipmentUtils";
 
 const initialFormData: CharacterFormData = {
   name: "",

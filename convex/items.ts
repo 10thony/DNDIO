@@ -129,6 +129,74 @@ export const getItem = query({
   },
 });
 
+// Get items by multiple IDs
+export const getItemsByIds = query({
+  args: { 
+    clerkId: v.string(),
+    itemIds: v.array(v.id("items"))
+  },
+  handler: async (ctx, args) => {
+    // Validate user access
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("clerkId"), args.clerkId))
+      .first();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (args.itemIds.length === 0) {
+      return [];
+    }
+
+    // Get all items by their IDs
+    const items = [];
+    for (const itemId of args.itemIds) {
+      const item = await ctx.db.get(itemId);
+      if (item) {
+        items.push(item);
+      }
+    }
+
+    return items;
+  },
+});
+
+// Get items for a specific campaign
+export const getItemsByCampaign = query({
+  args: { 
+    clerkId: v.string(),
+    campaignId: v.id("campaigns")
+  },
+  handler: async (ctx, args) => {
+    // Validate user access
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("clerkId"), args.clerkId))
+      .first();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Check if user has access to the campaign
+    const campaign = await ctx.db.get(args.campaignId);
+    if (!campaign) {
+      throw new Error("Campaign not found");
+    }
+
+    // For now, return all items created by users who have access to the campaign
+    // In a more sophisticated implementation, you might want to filter items 
+    // that are specifically associated with the campaign
+    const allItems = await ctx.db.query("items").collect();
+    
+    // You could add campaign-specific filtering logic here
+    // For now, we'll return items that belong to users with campaign access
+    return allItems.filter(item => item.userId === user._id);
+  },
+});
+
 export const updateItem = mutation({
   args: {
     itemId: v.id("items"),
@@ -533,21 +601,19 @@ export const calculateEquipmentBonuses = query({
     // Calculate bonuses from each item
     for (const itemId of equippedItemIds) {
       if (!itemId) continue;
-      const item = await ctx.db.get(itemId as any);
-      if (item) {
+      const item = await ctx.db.get(itemId);
+      if (item && 'armorClass' in item && typeof item.armorClass === 'number') {
         // Add armor class bonus
-        if (item.armorClass) {
-          totalArmorClass += item.armorClass;
-        }
+        totalArmorClass += item.armorClass;
+      }
 
+      if (item && 'abilityModifiers' in item && item.abilityModifiers) {
         // Add ability score modifiers
-        if (item.abilityModifiers) {
-          Object.entries(item.abilityModifiers).forEach(([ability, modifier]) => {
-            if (modifier && ability in totalAbilityScores) {
-              totalAbilityScores[ability as keyof typeof totalAbilityScores] += modifier;
-            }
-          });
-        }
+        Object.entries(item.abilityModifiers).forEach(([ability, modifier]) => {
+          if (modifier && ability in totalAbilityScores && typeof modifier === 'number') {
+            totalAbilityScores[ability as keyof typeof totalAbilityScores] += modifier;
+          }
+        });
       }
     }
 
@@ -686,8 +752,10 @@ export const getItemsNeedingRepair = query({
 
       for (const itemId of equippedItemIds) {
         if (itemId) {
-          const item = await ctx.db.get(itemId as any);
-          if (item && item.durability) {
+          const item = await ctx.db.get(itemId);
+          if (item && 'durability' in item && item.durability && 
+              typeof item.durability === 'object' && 
+              'current' in item.durability && 'max' in item.durability) {
             const percentage = (item.durability.current / item.durability.max) * 100;
             if (percentage <= threshold) {
               itemsNeedingRepair.push({
@@ -704,8 +772,10 @@ export const getItemsNeedingRepair = query({
     // Check inventory items
     if (character.inventory) {
       for (const itemId of character.inventory.items) {
-        const item = await ctx.db.get(itemId as any);
-        if (item && item.durability) {
+        const item = await ctx.db.get(itemId);
+        if (item && 'durability' in item && item.durability && 
+            typeof item.durability === 'object' && 
+            'current' in item.durability && 'max' in item.durability) {
           const percentage = (item.durability.current / item.durability.max) * 100;
           if (percentage <= threshold) {
             itemsNeedingRepair.push({

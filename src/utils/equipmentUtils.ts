@@ -1,4 +1,5 @@
 import { ItemRarity } from "../types/item";
+import type { Item, AbilityScores, EquipmentBonuses } from "../types/character";
 
 // Base durability mapping
 export const BASE_DURABILITY_MAP: Record<ItemRarity, number> = {
@@ -77,18 +78,88 @@ export function canEquipInSlot(itemType: string, slot: EquipmentSlot): boolean {
   return slotItemMappings[slot].includes(itemType);
 }
 
-// Calculate durability percentage
-export function getDurabilityPercentage(current: number, max: number): number {
-  return Math.floor((current / max) * 100);
+// Validate equipment slot compatibility - more robust version used by EquipmentManager
+export function validateEquipmentSlot(item: Item, slot: EquipmentSlot): boolean {
+  if (!item || !slot) return false;
+  
+  const slotItemMappings: Record<EquipmentSlot, string[]> = {
+    headgear: ["Armor", "Wondrous Item", "Ring"], // Allow rings as accessories
+    armwear: ["Armor", "Wondrous Item"],
+    chestwear: ["Armor"],
+    legwear: ["Armor"],
+    footwear: ["Armor", "Wondrous Item"],
+    mainHand: ["Weapon", "Rod", "Staff", "Wand", "Shield"],
+    offHand: ["Weapon", "Shield", "Wondrous Item"],
+    accessories: ["Ring", "Wondrous Item"]
+  };
+  
+  return slotItemMappings[slot]?.includes(item.type) || false;
 }
 
-// Get durability status color
+// Calculate durability percentage - overloaded for different usage patterns
+export function getDurabilityPercentage(current: number, max: number): number;
+export function getDurabilityPercentage(durability: { current: number; max: number }): number;
+export function getDurabilityPercentage(currentOrDurability: number | { current: number; max: number }, max?: number): number {
+  if (typeof currentOrDurability === 'object') {
+    return Math.floor((currentOrDurability.current / currentOrDurability.max) * 100);
+  }
+  if (max === undefined) {
+    throw new Error('Max durability is required when current is a number');
+  }
+  return Math.floor((currentOrDurability / max) * 100);
+}
+
+// Get durability status color - for backwards compatibility
 export function getDurabilityStatusColor(percentage: number): string {
   if (percentage >= 80) return "green";
   if (percentage >= 60) return "yellow";
   if (percentage >= 40) return "orange";
   if (percentage >= 20) return "red";
   return "darkred";
+}
+
+// Get durability color - simpler name used by EquipmentManager
+export function getDurabilityColor(percentage: number): string {
+  return getDurabilityStatusColor(percentage);
+}
+
+// Calculate equipment bonuses from equipped items
+export function calculateEquipmentBonuses(equippedItems: Item[], baseAbilityScores: AbilityScores): EquipmentBonuses {
+  const bonuses: EquipmentBonuses = {
+    armorClass: 0,
+    abilityScores: {
+      strength: 0,
+      dexterity: 0,
+      constitution: 0,
+      intelligence: 0,
+      wisdom: 0,
+      charisma: 0,
+    },
+  };
+
+  if (!equippedItems || !Array.isArray(equippedItems)) {
+    return bonuses;
+  }
+
+  for (const item of equippedItems) {
+    if (!item) continue;
+
+    // Add armor class bonus
+    if (item.armorClass) {
+      bonuses.armorClass += item.armorClass;
+    }
+
+    // Add ability score modifiers
+    if (item.abilityModifiers) {
+      Object.entries(item.abilityModifiers).forEach(([ability, modifier]) => {
+        if (modifier && ability in bonuses.abilityScores) {
+          bonuses.abilityScores[ability as keyof typeof bonuses.abilityScores] += modifier;
+        }
+      });
+    }
+  }
+
+  return bonuses;
 }
 
 // Check if item is broken
