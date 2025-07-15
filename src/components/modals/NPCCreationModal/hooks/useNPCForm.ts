@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { CharacterFormData, CharacterFormHook } from "../types/npcForm";
+import { calculateInventoryCapacity } from "../../../utils/equipmentUtils";
 
 const initialFormData: CharacterFormData = {
   name: "",
@@ -12,6 +13,7 @@ const initialFormData: CharacterFormData = {
   hitPoints: 10,
   armorClass: 10,
   proficiencyBonus: 2,
+  speed: "30",
   abilityScores: {
     strength: 10,
     dexterity: 10,
@@ -28,6 +30,33 @@ const initialFormData: CharacterFormData = {
   equipment: [],
   description: "",
   actions: [],
+  
+  // New equipment system fields
+  inventory: {
+    capacity: calculateInventoryCapacity(10), // Default strength 10
+    items: [],
+  },
+  equipmentSlots: {
+    headgear: undefined,
+    armwear: undefined,
+    chestwear: undefined,
+    legwear: undefined,
+    footwear: undefined,
+    mainHand: undefined,
+    offHand: undefined,
+    accessories: [],
+  },
+  equipmentBonuses: {
+    armorClass: 0,
+    abilityScores: {
+      strength: 0,
+      dexterity: 0,
+      constitution: 0,
+      intelligence: 0,
+      wisdom: 0,
+      charisma: 0,
+    },
+  },
 };
 
 export const useCharacterForm = (): CharacterFormHook => {

@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import type { Item, ItemType, ItemRarity } from "../types/item";
+import type { Item, ItemType, ItemRarity, ArmorType, DamageRoll, AbilityModifiers } from "../types/item";
 import { useMutation } from "convex/react";
 import { useUser } from "@clerk/clerk-react";
 import { api } from "../../convex/_generated/api";
+import { calculateDurability } from "../utils/equipmentUtils";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -12,12 +13,20 @@ import { Badge } from "./ui/badge";
 import { Alert, AlertDescription } from "./ui/alert";
 import { Checkbox } from "./ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Separator } from "./ui/separator";
 import { 
   AlertCircle, 
   ArrowLeft, 
   Package,
   Sparkles,
-  Info
+  Info,
+  Shield,
+  Sword,
+  Zap,
+  Settings,
+  Plus,
+  X
 } from "lucide-react";
 
 interface ItemCreationFormProps {
@@ -70,7 +79,17 @@ const ItemCreationForm: React.FC<ItemCreationFormProps> = ({
     weight: undefined,
     cost: undefined,
     attunement: false,
+    
+    // Enhanced equipment system fields
+    typeOfArmor: undefined,
+    durability: undefined,
+    abilityModifiers: {},
+    armorClass: undefined,
+    damageRolls: [],
   });
+
+  // Additional state for enhanced equipment system
+  const [autocalculateDurability, setAutocalculateDurability] = useState(true);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,8 +139,14 @@ const ItemCreationForm: React.FC<ItemCreationFormProps> = ({
     }
 
     try {
+      // Calculate durability if auto-calculate is enabled
+      let durability = formData.durability;
+      if (autocalculateDurability && formData.rarity) {
+        durability = calculateDurability(formData.rarity);
+      }
+
       // Ensure all required fields are present and properly typed
-      const itemData: Item = {
+      const itemData: any = {
         name: formData.name!,
         type: formData.type!,
         rarity: formData.rarity!,
@@ -129,7 +154,14 @@ const ItemCreationForm: React.FC<ItemCreationFormProps> = ({
         effects: formData.effects,
         weight: formData.weight,
         cost: formData.cost,
-        attunement: formData.attunement
+        attunement: formData.attunement,
+        
+        // Enhanced equipment system fields
+        typeOfArmor: formData.typeOfArmor,
+        durability: durability,
+        abilityModifiers: formData.abilityModifiers,
+        armorClass: formData.armorClass,
+        damageRolls: formData.damageRolls,
       };
 
       const newItemId = await createItem({

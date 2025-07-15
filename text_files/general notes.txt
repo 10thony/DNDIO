@@ -10,6 +10,8 @@ maps needs more general functionality, they can be created  used in a preview (t
     map cells when being assigned an occupant (or a different type other than open/available) require a custom colour code for easy identification on the grid
 maps need to support "moving" objects which means if an object is placed to occupy one cell, users must be able to move that occupant to a different cell, but the map needs to check the distance from the original cell to the new cell and make sure the object trying to move has enough speed (speed is measured by distance avialble to travel)
 map previews need to show cells that are in a different state 
+maps preview needs to be adapted to be a modal 
+maps needs a tab component that can let it be plugged into other modals
 
 if the 
 

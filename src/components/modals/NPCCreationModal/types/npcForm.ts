@@ -1,4 +1,5 @@
-import { Id } from "../../../convex/_generated/dataModel";
+import { Id } from "../../../../../convex/_generated/dataModel";
+import { Equipment, Inventory, EquipmentBonuses } from "../../../../types/character";
 
 export interface CharacterFormData {
   name: string;
@@ -24,9 +25,14 @@ export interface CharacterFormData {
   proficiencies: string[];
   traits: string[];
   languages: string[];
-  equipment: string[];
+  equipment: string[]; // Legacy field for backward compatibility
   description: string;
   actions: Id<"actions">[];
+  
+  // New equipment system fields
+  inventory: Inventory;
+  equipmentSlots: Equipment;
+  equipmentBonuses?: EquipmentBonuses;
 }
 
 // Legacy interface for backward compatibility

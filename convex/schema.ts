@@ -34,7 +34,34 @@ export default defineSchema({
     proficiencies: v.array(v.string()),
     traits: v.optional(v.array(v.string())),
     languages: v.optional(v.array(v.string())),
-    equipment: v.optional(v.array(v.string())),
+    
+    // Enhanced equipment system
+    inventory: v.optional(v.object({
+      capacity: v.number(),
+      items: v.array(v.id("items")),
+    })),
+    equipment: v.optional(v.object({
+      headgear: v.optional(v.id("items")),
+      armwear: v.optional(v.id("items")),
+      chestwear: v.optional(v.id("items")),
+      legwear: v.optional(v.id("items")),
+      footwear: v.optional(v.id("items")),
+      mainHand: v.optional(v.id("items")),
+      offHand: v.optional(v.id("items")),
+      accessories: v.array(v.id("items")), // Rings, amulets, etc.
+    })),
+    equipmentBonuses: v.optional(v.object({
+      armorClass: v.number(),
+      abilityScores: v.object({
+        strength: v.number(),
+        dexterity: v.number(),
+        constitution: v.number(),
+        intelligence: v.number(),
+        wisdom: v.number(),
+        charisma: v.number(),
+      }),
+    })),
+    
     level: v.float64(),
     experiencePoints: v.float64(),
     xpHistory: v.optional(
@@ -79,7 +106,34 @@ export default defineSchema({
     proficiencies: v.array(v.string()),
     traits: v.optional(v.array(v.string())),
     languages: v.optional(v.array(v.string())),
-    equipment: v.optional(v.array(v.string())),
+    
+    // Enhanced equipment system
+    inventory: v.optional(v.object({
+      capacity: v.number(),
+      items: v.array(v.id("items")),
+    })),
+    equipment: v.optional(v.object({
+      headgear: v.optional(v.id("items")),
+      armwear: v.optional(v.id("items")),
+      chestwear: v.optional(v.id("items")),
+      legwear: v.optional(v.id("items")),
+      footwear: v.optional(v.id("items")),
+      mainHand: v.optional(v.id("items")),
+      offHand: v.optional(v.id("items")),
+      accessories: v.array(v.id("items")), // Rings, amulets, etc.
+    })),
+    equipmentBonuses: v.optional(v.object({
+      armorClass: v.number(),
+      abilityScores: v.object({
+        strength: v.number(),
+        dexterity: v.number(),
+        constitution: v.number(),
+        intelligence: v.number(),
+        wisdom: v.number(),
+        charisma: v.number(),
+      }),
+    })),
+    
     level: v.float64(),
     experiencePoints: v.float64(),
     xpHistory: v.optional(
@@ -223,6 +277,58 @@ export default defineSchema({
     weight: v.optional(v.number()),
     cost: v.optional(v.number()),
     attunement: v.optional(v.boolean()),
+    
+    // Enhanced equipment system fields
+    typeOfArmor: v.optional(v.union(
+      v.literal("Light"),
+      v.literal("Medium"),
+      v.literal("Heavy"),
+      v.literal("Shield")
+    )),
+    durability: v.optional(v.object({
+      current: v.number(),
+      max: v.number(),
+      baseDurability: v.number(),
+    })),
+    abilityModifiers: v.optional(v.object({
+      strength: v.optional(v.number()),
+      dexterity: v.optional(v.number()),
+      constitution: v.optional(v.number()),
+      intelligence: v.optional(v.number()),
+      wisdom: v.optional(v.number()),
+      charisma: v.optional(v.number()),
+    })),
+    armorClass: v.optional(v.number()),
+    damageRolls: v.optional(v.array(v.object({
+      dice: v.object({
+        count: v.number(),
+        type: v.union(
+          v.literal("D4"),
+          v.literal("D6"),
+          v.literal("D8"),
+          v.literal("D10"),
+          v.literal("D12"),
+          v.literal("D20")
+        )
+      }),
+      modifier: v.number(),
+      damageType: v.union(
+        v.literal("BLUDGEONING"),
+        v.literal("PIERCING"),
+        v.literal("SLASHING"),
+        v.literal("ACID"),
+        v.literal("COLD"),
+        v.literal("FIRE"),
+        v.literal("FORCE"),
+        v.literal("LIGHTNING"),
+        v.literal("NECROTIC"),
+        v.literal("POISON"),
+        v.literal("PSYCHIC"),
+        v.literal("RADIANT"),
+        v.literal("THUNDER")
+      )
+    }))),
+    
     userId: v.id("users"),
   }),
   maps: defineTable({
@@ -639,6 +745,33 @@ export default defineSchema({
     ),
 
     environment: v.optional(v.array(v.string())),
+
+    // Enhanced equipment system
+    inventory: v.optional(v.object({
+      capacity: v.number(),
+      items: v.array(v.id("items")),
+    })),
+    equipment: v.optional(v.object({
+      headgear: v.optional(v.id("items")),
+      armwear: v.optional(v.id("items")),
+      chestwear: v.optional(v.id("items")),
+      legwear: v.optional(v.id("items")),
+      footwear: v.optional(v.id("items")),
+      mainHand: v.optional(v.id("items")),
+      offHand: v.optional(v.id("items")),
+      accessories: v.array(v.id("items")), // Rings, amulets, etc.
+    })),
+    equipmentBonuses: v.optional(v.object({
+      armorClass: v.number(),
+      abilityScores: v.object({
+        strength: v.number(),
+        dexterity: v.number(),
+        constitution: v.number(),
+        intelligence: v.number(),
+        wisdom: v.number(),
+        charisma: v.number(),
+      }),
+    })),
 
     userId: v.id("users"),
     createdAt: v.number(),

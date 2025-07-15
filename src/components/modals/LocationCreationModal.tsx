@@ -5,9 +5,10 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useRoleAccess } from "../../hooks/useRoleAccess";
-import { MapCard } from "../maps/MapCard";
-import { BaseModal, FormTabs, LoadingSpinner, ErrorDisplay } from "./shared";
+import { MapTabContent } from "../maps/MapTabContent";
+import { BaseModal, FormTabs, LoadingSpinner } from "./shared";
 import { Button } from "../ui/button";
+import { Alert, AlertDescription } from "../ui/alert";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
@@ -19,7 +20,9 @@ import {
   Plus,
   Loader2,
   Save,
-  Edit
+  Edit,
+  X,
+  AlertCircle
 } from "lucide-react";
 
 interface LocationCreationModalProps {
@@ -174,6 +177,24 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
     return "Define a new location for your campaign world";
   };
 
+  const handleMapSelected = (mapId: Id<"maps">) => {
+    setFormData({
+      ...formData,
+      mapId: formData.mapId === mapId ? undefined : mapId
+    });
+  };
+
+  const handleRemoveMap = () => {
+    setFormData({
+      ...formData,
+      mapId: undefined
+    });
+  };
+
+  const getSelectedMap = () => {
+    return maps.find(map => map._id === formData.mapId);
+  };
+
   const tabs = [
     {
       value: "basic",
@@ -242,35 +263,44 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
       content: (
         <div className="space-y-4">
           <Label>Select a map (optional)</Label>
-          {maps.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {maps.map((map) => (
-                <MapCard
-                  key={map._id}
-                  map={map}
-                  isSelected={formData.mapId === map._id}
-                  onSelect={(mapId) => setFormData({
-                    ...formData,
-                    mapId: formData.mapId === mapId ? undefined : mapId
-                  })}
-                  compact={true}
-                  className="modal-map-card"
-                />
-              ))}
+          
+          {formData.mapId ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+                <div className="flex items-center gap-3">
+                  <Map className="h-5 w-5 text-blue-600" />
+                  <div>
+                    <p className="font-medium">{getSelectedMap()?.name}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {getSelectedMap()?.width} × {getSelectedMap()?.height} dimensions
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveMap}
+                  className="h-8 w-8 p-0 hover:bg-gray-200 dark:hover:bg-gray-700"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
               <Map className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium mb-2">No maps created yet</p>
-              <p className="text-sm mb-4">Create your first map to associate with locations</p>
-              <Button asChild variant="outline">
-                <a href="/maps/new" target="_blank" rel="noopener noreferrer">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create New Map
-                </a>
-              </Button>
+              <p className="text-lg font-medium mb-2">No map selected</p>
+              <p className="text-sm mb-4">Select a map to associate with this location</p>
             </div>
           )}
+
+          {/* Integrated MapTabContent */}
+          <MapTabContent
+            userId={user?.id || ""}
+            onMapSelected={handleMapSelected}
+            isSelectMode={true}
+            className="mt-4"
+          />
         </div>
       ),
     },
@@ -290,7 +320,10 @@ const LocationCreationModal: React.FC<LocationCreationModalProps> = ({
       {/* Error Display */}
       {error && (
         <div className="mb-4">
-          <ErrorDisplay error={error} />
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         </div>
       )}
 

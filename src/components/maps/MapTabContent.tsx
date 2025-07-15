@@ -13,22 +13,24 @@ import { Label } from '../ui/label';
 import { Plus, Map, Edit, Eye, CheckSquare, Square } from 'lucide-react';
 import { Button } from '../ui/button';
 
-interface MapTabProps {
+interface MapTabContentProps {
   userId: string;
   campaignId?: Id<"campaigns">;
   interactionId?: Id<"interactions">;
   onMapInstanceSelected?: (instanceId: Id<"mapInstances">) => void;
   onMapSelected?: (mapId: Id<"maps">) => void;
   isSelectMode?: boolean;
+  className?: string;
 }
 
-export const MapTab: React.FC<MapTabProps> = ({
+export const MapTabContent: React.FC<MapTabContentProps> = ({
   userId,
   campaignId,
   interactionId,
   onMapInstanceSelected,
   onMapSelected,
-  isSelectMode = false
+  isSelectMode = false,
+  className = ""
 }) => {
   const [selectedMapId, setSelectedMapId] = useState<Id<"maps"> | null>(null);
   const [selectedInstanceId, setSelectedInstanceId] = useState<Id<"mapInstances"> | null>(null);
@@ -86,7 +88,7 @@ export const MapTab: React.FC<MapTabProps> = ({
   const selectedMap = mapDetailsId ? maps.find(m => m._id === mapDetailsId) : null;
 
   return (
-    <div className="w-full">
+    <div className={`w-full ${className}`}>
       <Tabs defaultValue="maps" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="maps" className="flex items-center gap-2">

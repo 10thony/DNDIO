@@ -23,6 +23,7 @@ import type * as items from "../items.js";
 import type * as joinRequests from "../joinRequests.js";
 import type * as locations from "../locations.js";
 import type * as maps from "../maps.js";
+import type * as migrations from "../migrations.js";
 import type * as monsters from "../monsters.js";
 import type * as npcs from "../npcs.js";
 import type * as playerActions from "../playerActions.js";
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   joinRequests: typeof joinRequests;
   locations: typeof locations;
   maps: typeof maps;
+  migrations: typeof migrations;
   monsters: typeof monsters;
   npcs: typeof npcs;
   playerActions: typeof playerActions;

@@ -7,6 +7,34 @@ export interface AbilityScores {
   charisma: number;
 }
 
+export interface Equipment {
+  headgear?: string; // Item ID
+  armwear?: string;
+  chestwear?: string;
+  legwear?: string;
+  footwear?: string;
+  mainHand?: string;
+  offHand?: string;
+  accessories: string[]; // Array of item IDs
+}
+
+export interface Inventory {
+  capacity: number;
+  items: string[]; // Array of item IDs
+}
+
+export interface EquipmentBonuses {
+  armorClass: number;
+  abilityScores: {
+    strength: number;
+    dexterity: number;
+    constitution: number;
+    intelligence: number;
+    wisdom: number;
+    charisma: number;
+  };
+}
+
 export interface PlayerCharacter {
   _id?: string;
   name: string;
@@ -21,7 +49,12 @@ export interface PlayerCharacter {
   proficiencies: string[];
   traits?: string[];
   languages?: string[];
-  equipment?: string[];
+  
+  // Enhanced equipment system
+  inventory?: Inventory;
+  equipment?: Equipment;
+  equipmentBonuses?: EquipmentBonuses;
+  
   level: number;
   hitPoints: number;
   armorClass: number;

@@ -241,3 +241,557 @@ export const createBulkItems = mutation({
     return itemIds;
   },
 });
+
+// Enhanced equipment system functions
+
+// Equip item
+export const equipItem = mutation({
+  args: {
+    characterId: v.union(v.id("playerCharacters"), v.id("npcs"), v.id("monsters")),
+    characterType: v.union(v.literal("playerCharacter"), v.literal("npc"), v.literal("monster")),
+    itemId: v.id("items"),
+    slot: v.union(
+      v.literal("headgear"), 
+      v.literal("armwear"), 
+      v.literal("chestwear"),
+      v.literal("legwear"), 
+      v.literal("footwear"), 
+      v.literal("mainHand"),
+      v.literal("offHand"), 
+      v.literal("accessories")
+    ),
+    clerkId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Validate user access
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("clerkId"), args.clerkId))
+      .first();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Get character
+    const tableName = args.characterType === "playerCharacter" ? "playerCharacters" : 
+                      args.characterType === "npc" ? "npcs" : "monsters";
+    const character = await ctx.db.get(args.characterId);
+    
+    if (!character) {
+      throw new Error("Character not found");
+    }
+
+    // Get item
+    const item = await ctx.db.get(args.itemId);
+    if (!item) {
+      throw new Error("Item not found");
+    }
+
+    // Update character equipment
+    const currentEquipment = character.equipment || {
+      headgear: undefined,
+      armwear: undefined,
+      chestwear: undefined,
+      legwear: undefined,
+      footwear: undefined,
+      mainHand: undefined,
+      offHand: undefined,
+      accessories: []
+    };
+
+    const currentInventory = character.inventory || { capacity: 50, items: [] };
+
+    // Remove item from inventory
+    const inventoryItems = currentInventory.items.filter((id: string) => id !== args.itemId);
+
+    // Equip item
+    if (args.slot === "accessories") {
+      currentEquipment.accessories.push(args.itemId);
+    } else {
+      // If slot is already occupied, unequip the current item
+      const currentItem = currentEquipment[args.slot as keyof typeof currentEquipment];
+      if (currentItem && typeof currentItem === 'string') {
+        inventoryItems.push(currentItem);
+      }
+      (currentEquipment as any)[args.slot] = args.itemId;
+    }
+
+    // Update character
+    await ctx.db.patch(args.characterId, {
+      equipment: currentEquipment,
+      inventory: { ...currentInventory, items: inventoryItems },
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+// Unequip item
+export const unequipItem = mutation({
+  args: {
+    characterId: v.union(v.id("playerCharacters"), v.id("npcs"), v.id("monsters")),
+    characterType: v.union(v.literal("playerCharacter"), v.literal("npc"), v.literal("monster")),
+    slot: v.union(
+      v.literal("headgear"), 
+      v.literal("armwear"), 
+      v.literal("chestwear"),
+      v.literal("legwear"), 
+      v.literal("footwear"), 
+      v.literal("mainHand"),
+      v.literal("offHand"), 
+      v.literal("accessories")
+    ),
+    itemId: v.optional(v.id("items")), // For accessories
+    clerkId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Validate user access
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("clerkId"), args.clerkId))
+      .first();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Get character
+    const character = await ctx.db.get(args.characterId);
+    if (!character) {
+      throw new Error("Character not found");
+    }
+
+    const currentEquipment = character.equipment || {
+      headgear: undefined,
+      armwear: undefined,
+      chestwear: undefined,
+      legwear: undefined,
+      footwear: undefined,
+      mainHand: undefined,
+      offHand: undefined,
+      accessories: []
+    };
+
+    const currentInventory = character.inventory || { capacity: 50, items: [] };
+
+    // Unequip item
+    let unequippedItemId: string | undefined;
+    
+    if (args.slot === "accessories" && args.itemId) {
+      const accessoryIndex = currentEquipment.accessories.indexOf(args.itemId);
+      if (accessoryIndex > -1) {
+        currentEquipment.accessories.splice(accessoryIndex, 1);
+        unequippedItemId = args.itemId;
+      }
+    } else {
+      const currentItem = currentEquipment[args.slot as keyof typeof currentEquipment];
+      if (typeof currentItem === 'string') {
+        unequippedItemId = currentItem;
+      }
+      (currentEquipment as any)[args.slot] = undefined;
+    }
+
+    // Add item back to inventory
+    if (unequippedItemId) {
+      currentInventory.items.push(unequippedItemId as any);
+    }
+
+    // Update character
+    await ctx.db.patch(args.characterId, {
+      equipment: currentEquipment,
+      inventory: currentInventory,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true, unequippedItemId };
+  },
+});
+
+// Add item to inventory
+export const addItemToInventory = mutation({
+  args: {
+    characterId: v.union(v.id("playerCharacters"), v.id("npcs"), v.id("monsters")),
+    characterType: v.union(v.literal("playerCharacter"), v.literal("npc"), v.literal("monster")),
+    itemId: v.id("items"),
+    clerkId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Validate user access
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("clerkId"), args.clerkId))
+      .first();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Get character
+    const character = await ctx.db.get(args.characterId);
+    if (!character) {
+      throw new Error("Character not found");
+    }
+
+    const currentInventory = character.inventory || { capacity: 50, items: [] };
+
+    // Check inventory capacity
+    if (currentInventory.items.length >= currentInventory.capacity) {
+      throw new Error("Inventory is full");
+    }
+
+    // Add item to inventory
+    currentInventory.items.push(args.itemId);
+
+    // Update character
+    await ctx.db.patch(args.characterId, {
+      inventory: currentInventory,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+// Remove item from inventory
+export const removeItemFromInventory = mutation({
+  args: {
+    characterId: v.union(v.id("playerCharacters"), v.id("npcs"), v.id("monsters")),
+    characterType: v.union(v.literal("playerCharacter"), v.literal("npc"), v.literal("monster")),
+    itemId: v.id("items"),
+    clerkId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Validate user access
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("clerkId"), args.clerkId))
+      .first();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Get character
+    const character = await ctx.db.get(args.characterId);
+    if (!character) {
+      throw new Error("Character not found");
+    }
+
+    const currentInventory = character.inventory || { capacity: 50, items: [] };
+
+    // Remove item from inventory
+    const updatedItems = currentInventory.items.filter((id: string) => id !== args.itemId);
+
+    // Update character
+    await ctx.db.patch(args.characterId, {
+      inventory: { ...currentInventory, items: updatedItems },
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
+// Calculate equipment bonuses
+export const calculateEquipmentBonuses = query({
+  args: { 
+    characterId: v.union(v.id("playerCharacters"), v.id("npcs"), v.id("monsters")),
+    characterType: v.union(v.literal("playerCharacter"), v.literal("npc"), v.literal("monster")),
+  },
+  handler: async (ctx, args) => {
+    // Get character
+    const character = await ctx.db.get(args.characterId);
+    if (!character) {
+      throw new Error("Character not found");
+    }
+
+    const equipment = character.equipment;
+    if (!equipment) {
+      return {
+        armorClass: 0,
+        abilityScores: { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 }
+      };
+    }
+
+    let totalArmorClass = 0;
+    const totalAbilityScores = { strength: 0, dexterity: 0, constitution: 0, intelligence: 0, wisdom: 0, charisma: 0 };
+
+    // Get all equipped items
+    const equippedItemIds = [
+      equipment.headgear,
+      equipment.armwear,
+      equipment.chestwear,
+      equipment.legwear,
+      equipment.footwear,
+      equipment.mainHand,
+      equipment.offHand,
+      ...equipment.accessories
+    ].filter(Boolean);
+
+    // Calculate bonuses from each item
+    for (const itemId of equippedItemIds) {
+      if (!itemId) continue;
+      const item = await ctx.db.get(itemId as any);
+      if (item) {
+        // Add armor class bonus
+        if (item.armorClass) {
+          totalArmorClass += item.armorClass;
+        }
+
+        // Add ability score modifiers
+        if (item.abilityModifiers) {
+          Object.entries(item.abilityModifiers).forEach(([ability, modifier]) => {
+            if (modifier && ability in totalAbilityScores) {
+              totalAbilityScores[ability as keyof typeof totalAbilityScores] += modifier;
+            }
+          });
+        }
+      }
+    }
+
+    return {
+      armorClass: totalArmorClass,
+      abilityScores: totalAbilityScores
+    };
+  },
+});
+
+// Durability system functions
+
+// Reduce item durability
+export const reduceItemDurability = mutation({
+  args: {
+    itemId: v.id("items"),
+    amount: v.number(),
+    clerkId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Validate user access
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("clerkId"), args.clerkId))
+      .first();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Get item
+    const item = await ctx.db.get(args.itemId);
+    if (!item) {
+      throw new Error("Item not found");
+    }
+
+    if (!item.durability) {
+      throw new Error("Item does not have durability");
+    }
+
+    // Reduce durability
+    const newCurrent = Math.max(0, item.durability.current - args.amount);
+    
+    await ctx.db.patch(args.itemId, {
+      durability: {
+        ...item.durability,
+        current: newCurrent
+      }
+    });
+
+    return { 
+      success: true,
+      newDurability: newCurrent,
+      isBroken: newCurrent <= 0
+    };
+  },
+});
+
+// Repair item
+export const repairItem = mutation({
+  args: {
+    itemId: v.id("items"),
+    repairAmount: v.optional(v.number()),
+    clerkId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Validate user access
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("clerkId"), args.clerkId))
+      .first();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Get item
+    const item = await ctx.db.get(args.itemId);
+    if (!item) {
+      throw new Error("Item not found");
+    }
+
+    if (!item.durability) {
+      throw new Error("Item does not have durability");
+    }
+
+    // Calculate repair amount (default to full repair)
+    const repairAmount = args.repairAmount || (item.durability.max - item.durability.current);
+    const newCurrent = Math.min(item.durability.max, item.durability.current + repairAmount);
+
+    await ctx.db.patch(args.itemId, {
+      durability: {
+        ...item.durability,
+        current: newCurrent
+      }
+    });
+
+    return { 
+      success: true,
+      repairedAmount: newCurrent - item.durability.current,
+      newDurability: newCurrent
+    };
+  },
+});
+
+// Get items needing repair for a character
+export const getItemsNeedingRepair = query({
+  args: { 
+    characterId: v.union(v.id("playerCharacters"), v.id("npcs"), v.id("monsters")),
+    characterType: v.union(v.literal("playerCharacter"), v.literal("npc"), v.literal("monster")),
+    threshold: v.optional(v.number()), // Durability percentage threshold
+  },
+  handler: async (ctx, args) => {
+    const threshold = args.threshold || 50; // Default 50% threshold
+
+    // Get character
+    const character = await ctx.db.get(args.characterId);
+    if (!character) {
+      throw new Error("Character not found");
+    }
+
+    const itemsNeedingRepair = [];
+
+    // Check equipped items
+    if (character.equipment) {
+      const equippedItemIds = [
+        character.equipment.headgear,
+        character.equipment.armwear,
+        character.equipment.chestwear,
+        character.equipment.legwear,
+        character.equipment.footwear,
+        character.equipment.mainHand,
+        character.equipment.offHand,
+        ...character.equipment.accessories
+      ].filter(Boolean);
+
+      for (const itemId of equippedItemIds) {
+        if (itemId) {
+          const item = await ctx.db.get(itemId as any);
+          if (item && item.durability) {
+            const percentage = (item.durability.current / item.durability.max) * 100;
+            if (percentage <= threshold) {
+              itemsNeedingRepair.push({
+                ...item,
+                durabilityPercentage: percentage,
+                isEquipped: true
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // Check inventory items
+    if (character.inventory) {
+      for (const itemId of character.inventory.items) {
+        const item = await ctx.db.get(itemId as any);
+        if (item && item.durability) {
+          const percentage = (item.durability.current / item.durability.max) * 100;
+          if (percentage <= threshold) {
+            itemsNeedingRepair.push({
+              ...item,
+              durabilityPercentage: percentage,
+              isEquipped: false
+            });
+          }
+        }
+      }
+    }
+
+    return itemsNeedingRepair;
+  },
+});
+
+// Update item with enhanced fields (migration helper)
+export const updateItemWithEnhancedFields = mutation({
+  args: {
+    itemId: v.id("items"),
+    durability: v.optional(v.object({
+      current: v.number(),
+      max: v.number(),
+      baseDurability: v.number(),
+    })),
+    typeOfArmor: v.optional(v.union(
+      v.literal("Light"),
+      v.literal("Medium"),
+      v.literal("Heavy"),
+      v.literal("Shield")
+    )),
+    abilityModifiers: v.optional(v.object({
+      strength: v.optional(v.number()),
+      dexterity: v.optional(v.number()),
+      constitution: v.optional(v.number()),
+      intelligence: v.optional(v.number()),
+      wisdom: v.optional(v.number()),
+      charisma: v.optional(v.number()),
+    })),
+    armorClass: v.optional(v.number()),
+    damageRolls: v.optional(v.array(v.object({
+      dice: v.object({
+        count: v.number(),
+        type: v.union(
+          v.literal("D4"),
+          v.literal("D6"),
+          v.literal("D8"),
+          v.literal("D10"),
+          v.literal("D12"),
+          v.literal("D20")
+        )
+      }),
+      modifier: v.number(),
+      damageType: v.union(
+        v.literal("BLUDGEONING"),
+        v.literal("PIERCING"),
+        v.literal("SLASHING"),
+        v.literal("ACID"),
+        v.literal("COLD"),
+        v.literal("FIRE"),
+        v.literal("FORCE"),
+        v.literal("LIGHTNING"),
+        v.literal("NECROTIC"),
+        v.literal("POISON"),
+        v.literal("PSYCHIC"),
+        v.literal("RADIANT"),
+        v.literal("THUNDER")
+      )
+    }))),
+    clerkId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Validate user access
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("clerkId"), args.clerkId))
+      .first();
+    
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const { clerkId, itemId, ...updates } = args;
+
+    await ctx.db.patch(itemId, updates);
+
+    return { success: true };
+  },
+});

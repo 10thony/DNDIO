@@ -1,7 +1,8 @@
-export { MapPreview } from './MapPreview';
 export { MapCreator } from './MapCreator';
-export { MapsList } from './MapsList';
-export { MapInstanceManager } from './MapInstanceManager';
+export { MapCard } from './MapCard';
+export { MapPreview } from './MapPreview';
 export { MapTab } from './MapTab';
+export { MapTabContent } from './MapTabContent';
 export { MapModal } from './MapModal';
-export { MapDetailsModal } from './MapDetailsModal'; 
+export { MapDetailsModal } from './MapDetailsModal';
+export { MapInstanceManager } from './MapInstanceManager'; 

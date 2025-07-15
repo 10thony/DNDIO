@@ -15,7 +15,8 @@ import {
   Loader2,
   Save,
   Edit,
-  Calculator
+  Calculator,
+  Package
 } from "lucide-react";
 import { MonsterFormData } from "./MonsterCreationModal/types/monsterForm";
 import { useMonsterForm } from "./MonsterCreationModal/hooks/useMonsterForm";
@@ -25,6 +26,7 @@ import CombatStatsTab from "./MonsterCreationModal/components/CombatStatsTab";
 import AbilityScoresTab from "./MonsterCreationModal/components/AbilityScoresTab";
 import MovementSensesTab from "./MonsterCreationModal/components/MovementSensesTab";
 import ActionsTab from "./MonsterCreationModal/components/ActionsTab";
+import EquipmentTab from "./MonsterCreationModal/components/EquipmentTab";
 
 interface MonsterCreationModalProps {
   isOpen: boolean;
@@ -383,6 +385,20 @@ const MonsterCreationModal: React.FC<MonsterCreationModalProps> = ({
       icon: <Sword className="h-4 w-4" />,
       content: (
         <ActionsTab
+          formData={formData}
+          setField={setField}
+          setNestedField={setNestedField}
+          errors={errors}
+          isReadOnly={isReadOnlyMode}
+        />
+      ),
+    },
+    {
+      value: "equipment",
+      label: "Equipment",
+      icon: <Package className="h-4 w-4" />,
+      content: (
+        <EquipmentTab
           formData={formData}
           setField={setField}
           setNestedField={setNestedField}

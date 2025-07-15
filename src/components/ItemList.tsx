@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import ItemCard from "./ItemCard";
-import ItemCreationForm from "./ItemCreationForm";
+import ItemCreationFormEnhanced from "./ItemCreationFormEnhanced";
 import BulkItemGenerator from "./BulkItemGenerator";
 import { Button } from "./ui/button";
 import "./ItemList.css";
@@ -35,7 +35,7 @@ const ItemList: React.FC = () => {
             ← Back to Items
           </Button>
         </div>
-        <ItemCreationForm 
+        <ItemCreationFormEnhanced 
           onSubmitSuccess={handleSubmitSuccess}
           onCancel={handleCancel}
         />

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { MapTab } from './MapTab';
+import { MapTabContent } from './MapTabContent';
 import { Id } from '../../../convex/_generated/dataModel';
 
 interface MapModalProps {
@@ -10,6 +10,8 @@ interface MapModalProps {
   campaignId?: Id<"campaigns">;
   interactionId?: Id<"interactions">;
   onMapInstanceSelected?: (instanceId: Id<"mapInstances">) => void;
+  onMapSelected?: (mapId: Id<"maps">) => void;
+  isSelectMode?: boolean;
 }
 
 export const MapModal: React.FC<MapModalProps> = ({
@@ -18,11 +20,20 @@ export const MapModal: React.FC<MapModalProps> = ({
   userId,
   campaignId,
   interactionId,
-  onMapInstanceSelected
+  onMapInstanceSelected,
+  onMapSelected,
+  isSelectMode = false
 }) => {
   const handleMapInstanceSelected = (instanceId: Id<"mapInstances">) => {
     if (onMapInstanceSelected) {
       onMapInstanceSelected(instanceId);
+    }
+    onClose();
+  };
+
+  const handleMapSelected = (mapId: Id<"maps">) => {
+    if (onMapSelected) {
+      onMapSelected(mapId);
     }
     onClose();
   };
@@ -33,11 +44,13 @@ export const MapModal: React.FC<MapModalProps> = ({
         <DialogHeader>
           <DialogTitle>Map Management</DialogTitle>
         </DialogHeader>
-        <MapTab
+        <MapTabContent
           userId={userId}
           campaignId={campaignId}
           interactionId={interactionId}
           onMapInstanceSelected={handleMapInstanceSelected}
+          onMapSelected={handleMapSelected}
+          isSelectMode={isSelectMode}
         />
       </DialogContent>
     </Dialog>

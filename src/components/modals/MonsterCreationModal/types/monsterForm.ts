@@ -1,4 +1,5 @@
 import { Id } from "../../../../convex/_generated/dataModel";
+import { Equipment, Inventory, EquipmentBonuses } from "../../../../types/character";
 
 export interface MonsterFormData {
   name: string;
@@ -54,6 +55,11 @@ export interface MonsterFormData {
   lairActions: { name: string; description: string }[];
   regionalEffects: { name: string; description: string }[];
   environment: string[];
+  
+  // Equipment system fields
+  inventory: Inventory;
+  equipmentSlots: Equipment;
+  equipmentBonuses?: EquipmentBonuses;
 }
 
 export interface MonsterFormProps {
@@ -178,6 +184,33 @@ export const defaultMonsterFormData: MonsterFormData = {
   lairActions: [],
   regionalEffects: [],
   environment: [],
+  
+  // Equipment system fields
+  inventory: {
+    capacity: 20, // Default capacity for monsters
+    items: [],
+  },
+  equipmentSlots: {
+    headgear: undefined,
+    armwear: undefined,
+    chestwear: undefined,
+    legwear: undefined,
+    footwear: undefined,
+    mainHand: undefined,
+    offHand: undefined,
+    accessories: [],
+  },
+  equipmentBonuses: {
+    armorClass: 0,
+    abilityScores: {
+      strength: 0,
+      dexterity: 0,
+      constitution: 0,
+      intelligence: 0,
+      wisdom: 0,
+      charisma: 0,
+    },
+  },
 };
 
 // Helper functions

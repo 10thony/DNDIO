@@ -4,6 +4,7 @@ import { Input } from "../../../ui/input";
 import { Label } from "../../../ui/label";
 import { CharacterFormProps } from "../types/npcForm";
 import { Package, Languages, Sword } from "lucide-react";
+import EquipmentManager from "../../../EquipmentManager";
 
 const TraitsEquipmentTab: React.FC<CharacterFormProps> = ({
   formData,
@@ -91,13 +92,33 @@ const TraitsEquipmentTab: React.FC<CharacterFormProps> = ({
         description="Items and equipment this character carries"
         icon={<Sword className="h-5 w-5" />}
       >
-        <div className="space-y-2">
-          <Label htmlFor="equipment">Equipment</Label>
-          {renderArrayField(
-            "equipment",
-            formData.equipment,
-            "e.g., Longsword, Chain Mail, Backpack, Rations",
-            "Enter equipment items separated by commas"
+        <div className="space-y-4">
+          {/* Legacy Equipment Field */}
+          <div className="space-y-2">
+            <Label htmlFor="equipment">Legacy Equipment</Label>
+            {renderArrayField(
+              "equipment",
+              formData.equipment,
+              "e.g., Longsword, Chain Mail, Backpack, Rations",
+              "Enter equipment items separated by commas (for backward compatibility)"
+            )}
+          </div>
+
+          {/* New Equipment Manager */}
+          {formData.inventory && formData.equipmentSlots && (
+            <div className="space-y-2">
+              <Label>Equipment & Inventory Management</Label>
+              <EquipmentManager
+                equipment={formData.equipmentSlots}
+                inventory={formData.inventory}
+                equipmentBonuses={formData.equipmentBonuses}
+                abilityScores={formData.abilityScores}
+                onEquipmentChange={(equipment) => setField('equipmentSlots', equipment)}
+                onInventoryChange={(inventory) => setField('inventory', inventory)}
+                onBonusesChange={(bonuses) => setField('equipmentBonuses', bonuses)}
+                isReadOnly={isReadOnly}
+              />
+            </div>
           )}
         </div>
       </FormSection>
