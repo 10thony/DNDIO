@@ -43,6 +43,7 @@ UPS can:
 
 
 The schema for the objects exist in the convex folder. its the schema.ts
+
 --------
 need to update the pcs,npcs and monster schemas to have seperate modifer
 ---------
@@ -133,6 +134,7 @@ the live interaction modal has:
         a way to select an action to perform.
         a way to select a target for the action.
         a way to see how many available actions the pc/npc/monster has
+        a way to roll a dice (sides specified by the user) against a specific save modifier (strength, constitution etc) this will be used to determine if a pc/npc/monster saves a DC check.
     a action tab,
         this tab shows the list of actions available for the user to take, this takes into consideration the actions already taken (see the actionruleset.txt document for details on the action ruleset).
     a inventory tab,
