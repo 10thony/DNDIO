@@ -33,7 +33,12 @@ Players are able
 ##
 Global components
 
-an initiative bar that shows the order of initiative this will contain a list of InitiativeBarButtons which are buttons that navigate the user to the details modal of the object (monster modal if its a monster initiative bar button which is only available to DMs not normal users, or the npcreationmodal if its a player character and the signed in user is the creator of said character, or the npccreationmodal if the logged in user is the live interaction's dm)
+an initiative bar that shows the order of initiative this will contain a list of InitiativeBarButtons
+which are buttons that navigate the user to the details modal of the object
+(monster modal buttons
+ if its a monster initiative bar button which is only available to DMs not normal users, or the npcreationmodal 
+ if its a player character and the signed in user is the creator of said character, or the npccreationmodal
+  if the logged in user is the live interaction's dm)
 ##
 
 ##
@@ -54,7 +59,10 @@ for players they need to be able to move their player character (accori)
     for player's this is the "My Turn Tab" that allows them to navigate their options or presumbit their turn early
     for DM's they get one tab for each NPC or Monster so they can prepare for that object's turn either presubmitting the turn or just navigating the options)
 
-this allows for dialog to be submitted as a bonus action (this needs to be automated for NPCS and monsters they will have references to a dialog table but this is not implemented yet so for now this can be just a chat feature thats not saved to the database and clears when the modals closed)
+this allows for dialog to be submitted as a bonus action 
+(this needs to be automated for NPCS and monsters they will have references to a dialog table 
+but this is not implemented yet
+so for now this can be just a chat feature thats not saved to the database and clears when the modals closed)
 this allows the user to select a target for their action (self or a npc,pc or monster in the interaction)
 This allows the user to select from the Npcs,pc or monster available actions list , 
 this displays the available spell slots (if applicable for the class of the (N)PC or monster)
